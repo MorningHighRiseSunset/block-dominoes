@@ -290,6 +290,7 @@ export class BlockDominoScene {
       (g) => g.parent === this.handsRoot,
     );
     
+    // Try raycasting first with all objects in the group
     const hits = this.raycaster.intersectObjects(handGroups, true);
     
     for (const hit of hits) {
@@ -302,7 +303,7 @@ export class BlockDominoScene {
       }
     }
     
-    // If no direct hits, try distance-based selection as fallback
+    // If no direct hits, try distance-based selection as fallback with larger radius
     let closestHandIndex: number | null = null;
     let closestDist = Infinity;
     
@@ -321,8 +322,8 @@ export class BlockDominoScene {
       // Calculate distance from click to domino center on screen
       const dist = Math.hypot(screenX - clientX, screenY - clientY);
       
-      // Use a generous hit radius (in pixels)
-      if (dist < 80 && dist < closestDist) {
+      // Use very generous hit radius (in pixels) to account for rotation
+      if (dist < 120 && dist < closestDist) {
         closestDist = dist;
         closestHandIndex = mesh.userData.handIndex as number;
       }

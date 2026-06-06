@@ -71,7 +71,7 @@ export function createDominoMesh(
   g.add(body);
 
   const face = new THREE.Mesh(
-    new THREE.PlaneGeometry(TILE_W * 0.96, TILE_D * 0.96),
+    new THREE.PlaneGeometry(TILE_W * 0.98, TILE_D * 0.98),
     new THREE.MeshBasicMaterial({
       map: getFaceTexture(leftPip, rightPip),
       transparent: false,

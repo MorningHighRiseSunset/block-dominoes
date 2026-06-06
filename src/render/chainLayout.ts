@@ -140,6 +140,7 @@ export function extensionSlot(
     return { x: fwd.x, z: fwd.z, rotationY: rotationYForDir(dir), travelDir: dir };
   }
 
+  // When turning, need to account for domino width to ensure touching
   let tryDir = turnRight(dir);
   for (let t = 0; t < 3; t++) {
     const candidate = stepFrom(anchor.x, anchor.z, tryDir);
