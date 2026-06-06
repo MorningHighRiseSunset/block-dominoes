@@ -3,7 +3,7 @@ import type { Pip, Player } from '../game/blockDominoes';
 import { DOMINO_LENGTH } from './boardGrid';
 import { dominoMaterials } from './materials';
 
-export const TILE_W = 0.5;
+export const TILE_W = 0.6;
 export const TILE_H = 0.08;
 /** Long edge of the domino tile. */
 export const TILE_D = DOMINO_LENGTH;
