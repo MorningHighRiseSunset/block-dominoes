@@ -289,7 +289,45 @@ export class BlockDominoScene {
     const handGroups = [...this.handMeshes.values()].filter(
       (g) => g.parent === this.handsRoot,
     );
+    
+    // Use a larger threshold for better hit detection
+    this.raycaster.params.Line.threshold = 0.5;
+    this.raycaster.params.Points.threshold = 0.5;
+    
     const hits = this.raycaster.intersectObjects(handGroups, true);
+    
+    // If no direct hits, try distance-based selection
+    if (hits.length === 0) {
+      // Project ray and find closest domino by distance to ray
+      let closestHandIndex: number | null = null;
+      let closestDist = Infinity;
+      
+      for (const [, mesh] of this.handMeshes) {
+        if (mesh.parent !== this.handsRoot) continue;
+        if (mesh.userData?.kind !== 'hand' || mesh.userData.player !== 0) continue;
+        
+        const worldPos = new THREE.Vector3();
+        mesh.getWorldPosition(worldPos);
+        
+        // Project world position to screen space
+        const screenPos = worldPos.clone().project(this.camera);
+        const screenX = (screenPos.x * 0.5 + 0.5) * rect.width;
+        const screenY = (-screenPos.y * 0.5 + 0.5) * rect.height;
+        
+        // Calculate distance from click to domino center on screen
+        const dist = Math.hypot(screenX - clientX, screenY - clientY);
+        
+        // Use a generous hit radius (in pixels)
+        if (dist < 60 && dist < closestDist) {
+          closestDist = dist;
+          closestHandIndex = mesh.userData.handIndex as number;
+        }
+      }
+      
+      return closestHandIndex;
+    }
+    
+    // Original hit detection for direct clicks
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;
       while (obj) {
