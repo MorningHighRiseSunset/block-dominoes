@@ -1,0 +1,21 @@
+{
+  "name": "block-dominoes-3d",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "play": "npm run build && vite preview"
+  },
+  "devDependencies": {
+    "@types/three": "^0.164.0",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11"
+  },
+  "dependencies": {
+    "three": "^0.164.1"
+  }
+}
