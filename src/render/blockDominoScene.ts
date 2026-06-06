@@ -16,7 +16,7 @@ import {
   updateDominoFace,
 } from './dominoMesh';
 import { makeWoodTexture } from './materials';
-import { buildPlacementSlots, findSlotAt, type PlacementSlot } from './placementSlots';
+import { buildPlacementSlots } from './placementSlots';
 
 const TABLE_SURFACE_Y = 0.04;
 const TILE_LIFT = 0.08;
@@ -33,13 +33,6 @@ interface DropAnim {
   duration: number;
 }
 
-interface DragState {
-  handIndex: number;
-  mesh: THREE.Group;
-  homeX: number;
-  homeY: number;
-  homeZ: number;
-}
 
 export class BlockDominoScene {
   readonly canvas: HTMLCanvasElement;
@@ -57,14 +50,9 @@ export class BlockDominoScene {
   private readonly pointer = new THREE.Vector2();
   private readonly clock = new THREE.Clock();
   private readonly dropAnims: DropAnim[] = [];
-  private readonly dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -(TABLE_SURFACE_Y + TILE_LIFT));
-  private readonly hitPoint = new THREE.Vector3();
   private placementListener: ((player: Player) => void) | null = null;
   private dropListener: ((move: BlockMove) => void) | null = null;
-  private drag: DragState | null = null;
-  private dragGhost: THREE.Group | null = null;
   private currentLegal: BlockMove[] = [];
-  private currentSlots: PlacementSlot[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
 
@@ -169,14 +157,9 @@ export class BlockDominoScene {
     this.syncedState = state;
     this.currentLegal = legal;
     this.interactive = interactive;
-    if (!this.drag) {
-      this.currentSlots = buildPlacementSlots(state, legal, null);
-    }
     this.rebuildChain(state);
     this.rebuildHands(state, legal, interactive);
-    if (!this.drag) {
-      this.updateCellHighlights(state, legal, null);
-    }
+    this.updateCellHighlights(state, legal, null);
   }
 
   private rebuildChain(state: BlockDominoesState) {
@@ -217,11 +200,10 @@ export class BlockDominoScene {
     interactive: boolean,
   ) {
     for (const g of this.handMeshes.values()) {
-      if (this.drag?.mesh === g) continue;
       this.handsRoot.remove(g);
       disposeGroup(g);
     }
-    if (!this.drag) this.handMeshes.clear();
+    this.handMeshes.clear();
 
     const legalIndices = new Set(
       interactive ? legal.map((m) => m.handIndex) : [],
@@ -236,7 +218,6 @@ export class BlockDominoScene {
       for (let i = 0; i < hand.length; i++) {
         const d = hand[i];
         const key = `${player}-${d.id}`;
-        if (this.drag && player === 0 && this.drag.handIndex === i) continue;
 
         const showFace = player === 0;
         const g = showFace
@@ -262,7 +243,7 @@ export class BlockDominoScene {
   private updateCellHighlights(
     state: BlockDominoesState,
     legal: BlockMove[],
-    handIndex: number | null,
+    _handIndex: number | null,
   ) {
     for (const mesh of this.cellHighlights.values()) {
       this.highlightsRoot.remove(mesh);
@@ -271,7 +252,7 @@ export class BlockDominoScene {
     }
     this.cellHighlights.clear();
 
-    const slots = buildPlacementSlots(state, legal, handIndex);
+    const slots = buildPlacementSlots(state, legal, null);
     const seen = new Set<string>();
 
     for (const slot of slots) {
@@ -279,10 +260,7 @@ export class BlockDominoScene {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const active = handIndex !== null;
-      const mat = active
-        ? DOMINO_MAT.placementHighlight.clone()
-        : DOMINO_MAT.slotHint.clone();
+      const mat = DOMINO_MAT.slotHint.clone();
       const alongX = Math.abs(Math.cos(slot.rotationY)) > 0.5;
       const w = alongX ? DOMINO_LENGTH : TILE_W;
       const d = alongX ? TILE_W : DOMINO_LENGTH;
@@ -300,16 +278,6 @@ export class BlockDominoScene {
     mesh.position.y = baseY + 0.35;
     this.dropAnims.push({ mesh, baseY, t: 0, duration: 0.28 });
     this.placementListener?.(player);
-  }
-
-  private raycastBoard(clientX: number, clientY: number): THREE.Vector3 | null {
-    const rect = this.canvas.getBoundingClientRect();
-    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    return this.raycaster.ray.intersectPlane(this.dragPlane, this.hitPoint)
-      ? this.hitPoint.clone()
-      : null;
   }
 
   private pickHand(clientX: number, clientY: number): number | null {
@@ -334,157 +302,29 @@ export class BlockDominoScene {
     return null;
   }
 
-  private startDrag(handIndex: number) {
+  private playTile(handIndex: number) {
     if (!this.syncedState) return;
-    const state = this.syncedState;
-    const hand = state.hands[0];
-    const d = hand[handIndex];
-    const key = `0-${d.id}`;
-    const mesh = this.handMeshes.get(key);
-    if (!mesh) return;
+    
+    // Get legal moves for this tile
+    const moves = this.currentLegal.filter((m) => m.handIndex === handIndex);
+    if (moves.length === 0) return;
 
-    const domino = hand[handIndex];
-    updateDominoFace(mesh, domino.low, domino.high);
-
-    this.drag = {
-      handIndex,
-      mesh,
-      homeX: mesh.position.x,
-      homeY: mesh.position.y,
-      homeZ: mesh.position.z,
-    };
-
-    this.currentSlots = buildPlacementSlots(state, this.currentLegal, handIndex);
-    this.updateCellHighlights(state, this.currentLegal, handIndex);
-
-    mesh.position.y = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5 + 0.15;
-    this.canvas.style.cursor = 'grabbing';
-  }
-
-  private updateDrag(clientX: number, clientY: number) {
-    if (!this.drag) return;
-    const pt = this.raycastBoard(clientX, clientY);
-    if (!pt) return;
-    this.drag.mesh.position.set(pt.x, TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5 + 0.15, pt.z);
-
-    const slot = findSlotAt(this.currentSlots, pt.x, pt.z, this.drag.handIndex, 1.1);
-    if (slot && !this.dragGhost && this.syncedState) {
-      const tile = this.syncedState.hands[0][this.drag.handIndex];
-      this.dragGhost = createDominoMesh(tile.low, tile.high, 0, false, {
-        highlight: false,
-        outline: false,
-      });
-      this.tintGhost(this.dragGhost);
-      this.highlightsRoot.add(this.dragGhost);
-    }
-    if (this.dragGhost && this.syncedState) {
-      if (slot) {
-        const tile = this.syncedState.hands[0][this.drag.handIndex];
-        const endPip = slot.move.end === 'left' ? this.syncedState.leftEnd! : this.syncedState.rightEnd!;
-        let leftPip = tile.low;
-        let rightPip = tile.high;
-        if (this.syncedState.chain.length > 0) {
-          if (slot.move.end === 'left') {
-            rightPip = tile.low === endPip ? tile.high : tile.low;
-            leftPip = endPip;
-          } else {
-            leftPip = tile.low === endPip ? tile.high : tile.low;
-            rightPip = endPip;
-          }
-        }
-        updateDominoFace(this.dragGhost, leftPip, rightPip);
-        this.dragGhost.visible = true;
-        this.dragGhost.position.set(
-          slot.x,
-          TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5,
-          slot.z,
-        );
-        this.dragGhost.rotation.set(0, slot.rotationY, 0);
-      } else {
-        this.dragGhost.visible = false;
-      }
-    }
-  }
-
-  private endDrag(clientX: number, clientY: number) {
-    if (!this.drag) return;
-
-    const { handIndex, mesh, homeX, homeY, homeZ } = this.drag;
-    const pt = this.raycastBoard(clientX, clientY);
-    const slot = pt
-      ? findSlotAt(this.currentSlots, pt.x, pt.z, handIndex)
-      : null;
-
-    if (slot) {
-      const d = this.syncedState!.hands[0][handIndex];
-      this.handsRoot.remove(mesh);
-      disposeGroup(mesh);
-      this.handMeshes.delete(`0-${d.id}`);
-      this.clearDragGhost();
-      this.drag = null;
-      this.canvas.style.cursor = 'default';
-      this.dropListener?.(slot.move);
-      return;
-    }
-
-    this.clearDragGhost();
-    mesh.position.set(homeX, homeY, homeZ);
-    this.drag = null;
-    this.canvas.style.cursor = 'default';
-    if (this.syncedState) {
-      this.updateCellHighlights(this.syncedState, this.currentLegal, null);
-    }
-  }
-
-  private clearDragGhost() {
-    if (this.dragGhost) {
-      this.highlightsRoot.remove(this.dragGhost);
-      disposeGroup(this.dragGhost);
-      this.dragGhost = null;
-    }
-  }
-
-  private tintGhost(ghost: THREE.Group) {
-    ghost.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = child.material.clone();
-        (child.material as THREE.Material).transparent = true;
-        (child.material as THREE.Material).opacity = 0.55;
-        if (child.material instanceof THREE.MeshStandardMaterial) {
-          child.material.emissive = new THREE.Color(0x38bdf8);
-          child.material.emissiveIntensity = 0.35;
-        }
-      }
-    });
+    // If multiple moves available, prefer right end for simplicity
+    const move = moves.find((m) => m.end === 'right') || moves[0];
+    
+    this.dropListener?.(move);
   }
 
   private bindEvents() {
     window.addEventListener('resize', () => this.resize());
 
-    this.canvas.addEventListener('pointerdown', (e) => {
-      if (!this.interactive || e.button !== 0 || this.drag) return;
+    this.canvas.addEventListener('click', (e) => {
+      if (!this.interactive) return;
       const handIndex = this.pickHand(e.clientX, e.clientY);
       if (handIndex === null) return;
       const canPlay = this.currentLegal.some((m) => m.handIndex === handIndex);
       if (!canPlay) return;
-      this.startDrag(handIndex);
-      (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
-    });
-
-    this.canvas.addEventListener('pointermove', (e) => {
-      if (!this.interactive || !this.drag) return;
-      this.updateDrag(e.clientX, e.clientY);
-    });
-
-    this.canvas.addEventListener('pointerup', (e) => {
-      if (this.drag) {
-        this.endDrag(e.clientX, e.clientY);
-      }
-      try {
-        (e.target as HTMLCanvasElement).releasePointerCapture(e.pointerId);
-      } catch {
-        /* already released */
-      }
+      this.playTile(handIndex);
     });
   }
 }

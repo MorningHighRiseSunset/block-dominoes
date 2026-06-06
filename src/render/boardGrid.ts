@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /** Domino length along the chain axis (world units). */
-export const DOMINO_LENGTH = 1.3;
+export const DOMINO_LENGTH = 1.0;
 
 export const WOOD_COLOR = 0x9a7048;
 export const FELT_COLOR = 0x2a4a68;
