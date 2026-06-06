@@ -109,8 +109,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       statusEl.textContent = 'Your turn — drag a tile onto the board';
       hintEl.textContent =
         state.chain.length === 0
-          ? 'Teal tiles are playable · drag the opener onto the highlighted squares (2 cells = 1 domino).'
-          : 'Teal = playable · gold squares = valid drop zones · drag a tile onto them.';
+          ? 'Teal tiles are playable · drag the opener onto the highlighted spot in the center.'
+          : 'Teal = playable · gold markers = valid drop zones · drag a tile onto them.';
     } else {
       statusEl.textContent = 'CPU is thinking…';
       hintEl.textContent = `${state.hands[1].length} tile(s) hidden.`;

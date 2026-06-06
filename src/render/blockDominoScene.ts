@@ -4,13 +4,8 @@ import {
   type BlockMove,
   type Player,
 } from '../game/blockDominoes';
-import {
-  buildChessBoard,
-  CELL,
-  GRID_COLS,
-  GRID_ROWS,
-  WOOD_COLOR,
-} from './boardGrid';
+import { buildPlaySurface, DOMINO_LENGTH, WOOD_COLOR } from './boardGrid';
+import { TILE_W } from './dominoMesh';
 import { layoutChain } from './chainLayout';
 import {
   createDominoBack,
@@ -26,11 +21,10 @@ import { buildPlacementSlots, findSlotAt, type PlacementSlot } from './placement
 const TABLE_SURFACE_Y = 0.04;
 const TILE_LIFT = 0.08;
 /** +Z = bottom of screen (your hand). −Z = top (CPU). */
-const PLAYER_HAND_Z = 4.85;
-const CPU_HAND_Z = -4.85;
-const CAMERA_FOV = 38;
-const CAMERA_DIST = 13;
-const LOOK_AT = new THREE.Vector3(0, 0, 0.15);
+const PLAYER_HAND_Z = 3.35;
+const CPU_HAND_Z = -3.35;
+const CAMERA_FOV = 40;
+const LOOK_AT = new THREE.Vector3(0, 0, 0.5);
 
 interface DropAnim {
   mesh: THREE.Group;
@@ -56,7 +50,6 @@ export class BlockDominoScene {
   private readonly chainRoot = new THREE.Group();
   private readonly handsRoot = new THREE.Group();
   private readonly highlightsRoot = new THREE.Group();
-  private readonly boardCells: THREE.Mesh[] = [];
   private readonly cellHighlights = new Map<string, THREE.Mesh>();
   private readonly handMeshes = new Map<string, THREE.Group>();
   private readonly chainMeshes: THREE.Group[] = [];
@@ -129,11 +122,7 @@ export class BlockDominoScene {
     table.receiveShadow = true;
     this.tableRoot.add(table);
 
-    const board = buildChessBoard(GRID_COLS, GRID_ROWS, CELL, TABLE_SURFACE_Y);
-    board.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.boardCells.push(child);
-    });
-    this.tableRoot.add(board);
+    this.tableRoot.add(buildPlaySurface(11.2, 6.4, TABLE_SURFACE_Y));
   }
 
   resize() {
@@ -145,7 +134,7 @@ export class BlockDominoScene {
   }
 
   private updateCamera() {
-    this.camera.position.set(0, CAMERA_DIST * 0.72, CAMERA_DIST * 0.58);
+    this.camera.position.set(0, 10.5, 7.2);
     this.camera.lookAt(LOOK_AT);
   }
 
@@ -199,11 +188,12 @@ export class BlockDominoScene {
 
     const n = state.chain.length;
     const placements = layoutChain(n);
-    const y = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
+    const yBase = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
 
     for (let i = 0; i < n; i++) {
       const tile = state.chain[i];
       const { x, z, rotationY } = placements[i];
+      const y = yBase + i * 0.003;
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);
@@ -254,9 +244,9 @@ export class BlockDominoScene {
           : createDominoBack(player);
         g.userData = { kind: 'hand', player, handIndex: i };
 
-        const handY = TABLE_SURFACE_Y + TILE_H * 0.5 + 0.04;
+        const handY = TABLE_SURFACE_Y + TILE_H * 0.5 + 0.32;
         g.position.set(startX + i * spread, handY, z);
-        g.rotation.set(player === 0 ? -0.48 : 0.48, 0, 0);
+        g.rotation.set(player === 0 ? -0.55 : 0.55, 0, 0);
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
         if (hl) {
@@ -293,10 +283,13 @@ export class BlockDominoScene {
       const mat = active
         ? DOMINO_MAT.placementHighlight.clone()
         : DOMINO_MAT.slotHint.clone();
-      const w = slot.placement.axis === 'x' ? CELL * 2 : CELL;
-      const d = slot.placement.axis === 'z' ? CELL * 2 : CELL;
-      const hi = new THREE.Mesh(new THREE.BoxGeometry(w * 0.94, 0.028, d * 0.94), mat);
-      hi.position.set(slot.x, TABLE_SURFACE_Y + 0.058, slot.z);
+      const alongX = Math.abs(Math.cos(slot.rotationY)) > 0.5;
+      const w = alongX ? DOMINO_LENGTH : TILE_W;
+      const d = alongX ? TILE_W : DOMINO_LENGTH;
+      const slotY = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
+      const hi = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, TILE_H * 0.4, d * 0.92), mat);
+      hi.position.set(slot.x, slotY, slot.z);
+      hi.rotation.y = slot.rotationY;
       this.highlightsRoot.add(hi);
       this.cellHighlights.set(key, hi);
     }

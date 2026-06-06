@@ -3,9 +3,9 @@ import type { Pip, Player } from '../game/blockDominoes';
 import { DOMINO_LENGTH } from './boardGrid';
 import { dominoMaterials } from './materials';
 
-export const TILE_W = 0.48;
+export const TILE_W = 0.38;
 export const TILE_H = 0.08;
-/** Long edge — exactly two chess cells. */
+/** Long edge of the domino tile. */
 export const TILE_D = DOMINO_LENGTH;
 
 const FACE_TEX_CACHE = new Map<string, THREE.CanvasTexture>();

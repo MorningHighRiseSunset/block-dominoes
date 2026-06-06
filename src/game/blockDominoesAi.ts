@@ -30,25 +30,40 @@ export function chooseAiMove(state: BlockDominoesState): BlockMove | null {
 
 function scoreMove(state: BlockDominoesState, move: BlockMove): number {
   const after = applyMove(state, move);
-  const myHand = after.hands[AI];
+  const domino = state.hands[AI][move.handIndex];
   let score = 0;
 
-  if (after.phase === 'gameOver' && after.winner === AI) return 10_000;
+  if (after.phase === 'gameOver' && after.winner === AI) return 100_000;
 
-  score -= handPipCount(myHand) * 12;
-  score -= myHand.length * 8;
+  const myHand = after.hands[AI];
+  score -= handPipCount(myHand) * 18;
+  score -= myHand.length * 12;
 
-  const domino = state.hands[AI][move.handIndex];
-  if (domino.low === domino.high) score += 6;
-  score += domino.low + domino.high;
+  // Unload heavy tiles and doubles while we can still play them.
+  score += (domino.low + domino.high) * 3;
+  if (domino.low === domino.high) score += 14;
 
-  const oppMoves =
-    after.phase === 'playing' && after.current === 0 ? getLegalMoves(after, 0).length : 0;
-  score += oppMoves === 0 ? 40 : -oppMoves * 5;
+  if (after.phase === 'playing' && after.current === 0) {
+    const oppMoves = getLegalMoves(after, 0);
+    if (oppMoves.length === 0) {
+      score += 90;
+      const afterPass = applyPass(after);
+      if (afterPass.phase === 'gameOver' && afterPass.winner === AI) {
+        score += 600;
+      }
+    } else {
+      score -= oppMoves.length * 10;
+    }
 
-  const ends = [after.leftEnd, after.rightEnd].filter((e) => e !== null) as number[];
-  const rareEnds = ends.filter((e) => countInHand(state.hands[0], e) === 0).length;
-  score += rareEnds * 10;
+    const ends = [after.leftEnd, after.rightEnd].filter((e) => e !== null) as number[];
+    for (const pip of ends) {
+      if (countInHand(state.hands[0], pip) === 0) score += 18;
+    }
+  }
+
+  // Prefer ends we still hold — keeps options open for later turns.
+  if (after.leftEnd !== null && countInHand(myHand, after.leftEnd) > 0) score += 4;
+  if (after.rightEnd !== null && countInHand(myHand, after.rightEnd) > 0) score += 4;
 
   return score;
 }

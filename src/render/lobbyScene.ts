@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Pip } from '../game/blockDominoes';
-import { buildChessBoard, WOOD_COLOR } from './boardGrid';
+import { buildPlaySurface, WOOD_COLOR } from './boardGrid';
 import { createDominoMesh } from './dominoMesh';
 import { makeWoodTexture } from './materials';
 
@@ -88,8 +88,7 @@ export class LobbyScene {
     table.receiveShadow = true;
     this.world.add(table);
 
-    const board = buildChessBoard(LOBBY_COLS, LOBBY_ROWS, LOBBY_CELL, -0.17, 0.05);
-    this.world.add(board);
+    this.world.add(buildPlaySurface(boardW - 0.4, boardD - 0.4, -0.17));
   }
 
   private buildDecorTiles() {

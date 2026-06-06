@@ -1,18 +1,15 @@
 import type { BlockDominoesState, BlockMove } from '../game/blockDominoes';
 import {
-  cellsForPlacement,
   extensionSlot,
   layoutChain,
   type ChainTilePlacement,
 } from './chainLayout';
-import { openingSlot } from './boardGrid';
 
 export interface PlacementSlot {
   move: BlockMove;
   x: number;
   z: number;
   rotationY: number;
-  cells: { col: number; row: number }[];
   placement: ChainTilePlacement;
 }
 
@@ -25,22 +22,17 @@ export function buildPlacementSlots(
   if (!filtered.length) return [];
 
   if (state.chain.length === 0) {
-    const open = openingSlot();
     const placement: ChainTilePlacement = {
-      x: open.x,
-      z: open.z,
-      rotationY: open.rotationY,
+      x: 0,
+      z: 0,
+      rotationY: Math.PI / 2,
       travelDir: 'east',
-      col: Math.floor(open.cells[0].col),
-      row: open.cells[0].row,
-      axis: 'x',
     };
     return filtered.map((move) => ({
       move,
-      x: open.x,
-      z: open.z,
-      rotationY: open.rotationY,
-      cells: open.cells,
+      x: placement.x,
+      z: placement.z,
+      rotationY: placement.rotationY,
       placement,
     }));
   }
@@ -50,13 +42,11 @@ export function buildPlacementSlots(
 
   for (const move of filtered) {
     const ext = extensionSlot(placements, move.end);
-    if (!ext) continue;
     slots.push({
       move,
       x: ext.x,
       z: ext.z,
       rotationY: ext.rotationY,
-      cells: cellsForPlacement(ext),
       placement: ext,
     });
   }
@@ -69,7 +59,7 @@ export function findSlotAt(
   x: number,
   z: number,
   handIndex: number,
-  maxDist = 0.85,
+  maxDist = 0.95,
 ): PlacementSlot | null {
   let best: PlacementSlot | null = null;
   let bestD = maxDist;

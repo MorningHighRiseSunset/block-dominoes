@@ -1,26 +1,23 @@
-/** Grid-snapped domino train — each tile occupies exactly two chess cells. */
+/** World-space domino train — tiles touch end-to-end, no grid snapping. */
 
-import {
-  cellsForSlot,
-  dominoSlotCenter,
-  GRID_COLS,
-  GRID_ROWS,
-} from './boardGrid';
+import { DOMINO_LENGTH } from './boardGrid';
+
+export const STEP = DOMINO_LENGTH;
 
 export type TravelDir = 'east' | 'west' | 'north' | 'south';
-export type SlotAxis = 'x' | 'z';
 
 export interface ChainTilePlacement {
   x: number;
   z: number;
   rotationY: number;
   travelDir: TravelDir;
-  col: number;
-  row: number;
-  axis: SlotAxis;
 }
 
-const MAX_RUN = 5;
+const PLAY_MIN_X = -5;
+const PLAY_MAX_X = 5;
+const PLAY_MIN_Z = -2.6;
+const PLAY_MAX_Z = 2.6;
+const MAX_RUN = 6;
 
 function rotationYForDir(d: TravelDir): number {
   switch (d) {
@@ -40,25 +37,6 @@ function turnRight(d: TravelDir): TravelDir {
   return order[(order.indexOf(d) + 1) % 4];
 }
 
-function inBounds(col: number, row: number, axis: SlotAxis): boolean {
-  if (col < 0 || row < 0) return false;
-  if (axis === 'x') return col + 1 < GRID_COLS && row < GRID_ROWS;
-  return col < GRID_COLS && row + 1 < GRID_ROWS;
-}
-
-function stepAlong(col: number, row: number, dir: TravelDir): { col: number; row: number } {
-  switch (dir) {
-    case 'east':
-      return { col: col + 2, row };
-    case 'west':
-      return { col: col - 2, row };
-    case 'south':
-      return { col, row: row + 2 };
-    case 'north':
-      return { col, row: row - 2 };
-  }
-}
-
 function oppositeDir(d: TravelDir): TravelDir {
   switch (d) {
     case 'east':
@@ -72,62 +50,75 @@ function oppositeDir(d: TravelDir): TravelDir {
   }
 }
 
-/** Corner step when the train turns right on the grid. */
-function turnSlot(
-  col: number,
-  row: number,
-  _axis: SlotAxis,
-  fromDir: TravelDir,
-): { col: number; row: number; axis: SlotAxis; dir: TravelDir } {
-  const dir = turnRight(fromDir);
-  if (fromDir === 'east') return { col: col + 1, row: row + 1, axis: 'z', dir };
-  if (fromDir === 'south') return { col: col - 1, row: row + 1, axis: 'x', dir };
-  if (fromDir === 'west') return { col: col - 1, row: row - 1, axis: 'z', dir };
-  return { col: col + 1, row: row - 1, axis: 'x', dir };
+function stepFrom(x: number, z: number, dir: TravelDir): { x: number; z: number } {
+  switch (dir) {
+    case 'east':
+      return { x: x + STEP, z };
+    case 'west':
+      return { x: x - STEP, z };
+    case 'south':
+      return { x, z: z + STEP };
+    case 'north':
+      return { x, z: z - STEP };
+  }
 }
 
-function toPlacement(
-  col: number,
-  row: number,
-  axis: SlotAxis,
-  travelDir: TravelDir,
-): ChainTilePlacement {
-  const { x, z } = dominoSlotCenter(col, row, axis);
-  return { x, z, rotationY: rotationYForDir(travelDir), travelDir, col, row, axis };
+function wouldFit(x: number, z: number, dir: TravelDir): boolean {
+  const half = STEP * 0.52;
+  switch (dir) {
+    case 'east':
+      return x + half <= PLAY_MAX_X;
+    case 'west':
+      return x - half >= PLAY_MIN_X;
+    case 'south':
+      return z + half <= PLAY_MAX_Z;
+    case 'north':
+      return z - half >= PLAY_MIN_Z;
+  }
+}
+
+function nextStep(
+  x: number,
+  z: number,
+  dir: TravelDir,
+  runLen: number,
+): { x: number; z: number; dir: TravelDir; runLen: number } {
+  const fwd = stepFrom(x, z, dir);
+  const needTurn = runLen >= MAX_RUN - 1 || !wouldFit(fwd.x, fwd.z, dir);
+
+  if (!needTurn) {
+    return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
+  }
+
+  let tryDir = turnRight(dir);
+  for (let t = 0; t < 4; t++) {
+    const candidate = stepFrom(x, z, tryDir);
+    if (wouldFit(candidate.x, candidate.z, tryDir)) {
+      return { x: candidate.x, z: candidate.z, dir: tryDir, runLen: 1 };
+    }
+    tryDir = turnRight(tryDir);
+  }
+
+  return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
 }
 
 export function layoutChain(chainLength: number): ChainTilePlacement[] {
   if (chainLength === 0) return [];
 
-  const startCol = Math.floor(GRID_COLS / 2) - 1;
-  const startRow = Math.floor(GRID_ROWS / 2);
-
   const out: ChainTilePlacement[] = [];
-  let col = startCol;
-  let row = startRow;
-  let axis: SlotAxis = 'x';
+  let x = 0;
+  let z = 0;
   let dir: TravelDir = 'east';
   let runLen = 0;
 
   for (let i = 0; i < chainLength; i++) {
-    out.push(toPlacement(col, row, axis, dir));
+    out.push({ x, z, rotationY: rotationYForDir(dir), travelDir: dir });
     if (i === chainLength - 1) break;
-
-    const fwd = stepAlong(col, row, dir);
-    const needTurn = runLen >= MAX_RUN - 1 || !inBounds(fwd.col, fwd.row, axis);
-
-    if (needTurn) {
-      const t = turnSlot(col, row, axis, dir);
-      col = t.col;
-      row = t.row;
-      axis = t.axis;
-      dir = t.dir;
-      runLen = 1;
-    } else {
-      col = fwd.col;
-      row = fwd.row;
-      runLen++;
-    }
+    const next = nextStep(x, z, dir, runLen);
+    x = next.x;
+    z = next.z;
+    dir = next.dir;
+    runLen = next.runLen;
   }
 
   return out;
@@ -136,31 +127,27 @@ export function layoutChain(chainLength: number): ChainTilePlacement[] {
 export function extensionSlot(
   placements: ChainTilePlacement[],
   end: 'left' | 'right',
-): ChainTilePlacement | null {
-  if (!placements.length) return null;
+): ChainTilePlacement {
+  if (!placements.length) {
+    return { x: 0, z: 0, rotationY: rotationYForDir('east'), travelDir: 'east' };
+  }
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
   const dir = end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir;
-  const next = stepAlong(anchor.col, anchor.row, dir);
+  const fwd = stepFrom(anchor.x, anchor.z, dir);
 
-  if (!inBounds(next.col, next.row, anchor.axis)) {
-    const turned = turnSlot(anchor.col, anchor.row, anchor.axis, end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir);
-    if (!inBounds(turned.col, turned.row, turned.axis)) return null;
-    return toPlacement(turned.col, turned.row, turned.axis, turned.dir);
+  if (wouldFit(fwd.x, fwd.z, dir)) {
+    return { x: fwd.x, z: fwd.z, rotationY: rotationYForDir(dir), travelDir: dir };
   }
 
-  return toPlacement(next.col, next.row, anchor.axis, dir);
-}
+  let tryDir = turnRight(dir);
+  for (let t = 0; t < 3; t++) {
+    const candidate = stepFrom(anchor.x, anchor.z, tryDir);
+    if (wouldFit(candidate.x, candidate.z, tryDir)) {
+      return { x: candidate.x, z: candidate.z, rotationY: rotationYForDir(tryDir), travelDir: tryDir };
+    }
+    tryDir = turnRight(tryDir);
+  }
 
-export function cellsForPlacement(p: ChainTilePlacement): { col: number; row: number }[] {
-  return cellsForSlot(p.col, p.row, p.axis);
-}
-
-/** @deprecated Use extensionSlot for grid-aligned ends. */
-export function endMarkerOffset(
-  placements: ChainTilePlacement[],
-  end: 'left' | 'right',
-): { x: number; z: number } {
-  const slot = extensionSlot(placements, end);
-  return slot ? { x: slot.x, z: slot.z } : { x: 0, z: 0 };
+  return { x: fwd.x, z: fwd.z, rotationY: rotationYForDir(dir), travelDir: dir };
 }
