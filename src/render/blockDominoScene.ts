@@ -55,6 +55,11 @@ export class BlockDominoScene {
   private currentLegal: BlockMove[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
+  private isDragging = false;
+  private lastX = 0;
+  private dragStartX = 0;
+  private cameraOffsetX = 0;
+  private readonly maxPanX = 4;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -100,6 +105,10 @@ export class BlockDominoScene {
     this.resize();
   }
 
+  private isMobile(): boolean {
+    return this.canvas.clientWidth < 768 || this.canvas.clientHeight < 768;
+  }
+
   private buildTable() {
     const wood = makeWoodTexture();
     const table = new THREE.Mesh(
@@ -119,11 +128,37 @@ export class BlockDominoScene {
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this.updateCameraForScreenSize(w, h);
   }
 
   private updateCamera() {
     this.camera.position.set(0, 10.5, 7.2);
     this.camera.lookAt(LOOK_AT);
+  }
+
+  private updateCameraForScreenSize(width: number, height: number) {
+    const isMobile = width < 768 || height < 768;
+    const isPortrait = height > width;
+
+    let baseX = 0;
+    let baseY = 10.5;
+    let baseZ = 7.2;
+
+    if (isMobile) {
+      if (isPortrait) {
+        // Portrait mobile: move camera closer and higher for better view
+        baseY = 12;
+        baseZ = 6;
+      } else {
+        // Landscape mobile: slightly adjust for better hand visibility
+        baseY = 11;
+        baseZ = 6.5;
+      }
+    }
+
+    // Apply pan offset
+    this.camera.position.set(baseX + this.cameraOffsetX, baseY, baseZ);
+    this.camera.lookAt(LOOK_AT.x + this.cameraOffsetX * 0.3, LOOK_AT.y, LOOK_AT.z);
   }
 
   setPlacementListener(fn: ((player: Player) => void) | null) {
@@ -227,7 +262,9 @@ export class BlockDominoScene {
 
         const handY = TABLE_SURFACE_Y + TILE_H * 0.5 + 0.32;
         g.position.set(startX + i * spread, handY, z);
-        g.rotation.set(player === 0 ? -0.55 : 0.55, 0, 0);
+        // Reduce tilt on mobile for better clickability
+        const tiltAngle = this.isMobile() && player === 0 ? -0.25 : (player === 0 ? -0.55 : 0.55);
+        g.rotation.set(tiltAngle, 0, 0);
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
         if (hl) {
@@ -323,7 +360,9 @@ export class BlockDominoScene {
       const dist = Math.hypot(screenX - clientX, screenY - clientY);
       
       // Use very generous hit radius (in pixels) to account for rotation
-      if (dist < 120 && dist < closestDist) {
+      // Larger radius on mobile for easier touch targeting
+      const hitRadius = this.isMobile() ? 160 : 120;
+      if (dist < hitRadius && dist < closestDist) {
         closestDist = dist;
         closestHandIndex = mesh.userData.handIndex as number;
       }
@@ -348,13 +387,83 @@ export class BlockDominoScene {
   private bindEvents() {
     window.addEventListener('resize', () => this.resize());
 
-    this.canvas.addEventListener('click', (e) => {
+    const handleInteraction = (clientX: number, clientY: number) => {
       if (!this.interactive) return;
-      const handIndex = this.pickHand(e.clientX, e.clientY);
+      const handIndex = this.pickHand(clientX, clientY);
       if (handIndex === null) return;
       const canPlay = this.currentLegal.some((m) => m.handIndex === handIndex);
       if (!canPlay) return;
       this.playTile(handIndex);
+    };
+
+    // Drag handling for camera panning
+    const handleDragStart = (clientX: number) => {
+      this.isDragging = true;
+      this.lastX = clientX;
+      this.dragStartX = clientX;
+    };
+
+    const handleDragMove = (clientX: number) => {
+      if (!this.isDragging) return;
+      const deltaX = clientX - this.lastX;
+      this.lastX = clientX;
+
+      // Adjust pan sensitivity based on screen width
+      const sensitivity = this.isMobile() ? 0.008 : 0.005;
+      this.cameraOffsetX += deltaX * sensitivity;
+
+      // Clamp the offset
+      this.cameraOffsetX = Math.max(-this.maxPanX, Math.min(this.maxPanX, this.cameraOffsetX));
+
+      // Update camera position
+      this.updateCameraForScreenSize(this.canvas.clientWidth, this.canvas.clientHeight);
+    };
+
+    const handleDragEnd = (clientX: number, clientY: number) => {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+
+      // If drag distance was small, treat it as a click
+      const dragDistance = Math.abs(clientX - this.dragStartX);
+      if (dragDistance < 10) {
+        handleInteraction(clientX, clientY);
+      }
+    };
+
+    // Mouse events
+    this.canvas.addEventListener('mousedown', (e) => {
+      handleDragStart(e.clientX);
     });
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      handleDragMove(e.clientX);
+    });
+
+    this.canvas.addEventListener('mouseup', (e) => {
+      handleDragEnd(e.clientX, e.clientY);
+    });
+
+    this.canvas.addEventListener('mouseleave', () => {
+      this.isDragging = false;
+    });
+
+    // Touch events
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleDragStart(touch.clientX);
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handleDragMove(touch.clientX);
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      handleDragEnd(touch.clientX, touch.clientY);
+    }, { passive: false });
   }
 }
