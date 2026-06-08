@@ -55,11 +55,8 @@ export class BlockDominoScene {
   private currentLegal: BlockMove[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
-  private isDragging = false;
-  private lastX = 0;
-  private dragStartX = 0;
-  private cameraOffsetX = 0;
-  private readonly maxPanX = 4;
+  private targetCameraOffsetX = 0;
+  private currentCameraOffsetX = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -156,9 +153,9 @@ export class BlockDominoScene {
       }
     }
 
-    // Apply pan offset
-    this.camera.position.set(baseX + this.cameraOffsetX, baseY, baseZ);
-    this.camera.lookAt(LOOK_AT.x + this.cameraOffsetX * 0.3, LOOK_AT.y, LOOK_AT.z);
+    // Apply automatic pan offset
+    this.camera.position.set(baseX + this.currentCameraOffsetX, baseY, baseZ);
+    this.camera.lookAt(LOOK_AT.x + this.currentCameraOffsetX * 0.3, LOOK_AT.y, LOOK_AT.z);
   }
 
   setPlacementListener(fn: ((player: Player) => void) | null) {
@@ -170,8 +167,19 @@ export class BlockDominoScene {
   }
 
   render() {
-    this.updateDropAnims(this.clock.getDelta());
+    const dt = this.clock.getDelta();
+    this.updateDropAnims(dt);
+    this.updateCameraPosition(dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private updateCameraPosition(dt: number) {
+    // Smoothly interpolate current offset to target offset
+    const lerpFactor = 3.0; // Adjust for faster/slower camera movement
+    this.currentCameraOffsetX += (this.targetCameraOffsetX - this.currentCameraOffsetX) * lerpFactor * dt;
+
+    // Update camera position with new offset
+    this.updateCameraForScreenSize(this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   private updateDropAnims(dt: number) {
@@ -195,6 +203,26 @@ export class BlockDominoScene {
     this.rebuildChain(state);
     this.rebuildHands(state, legal, interactive);
     this.updateCellHighlights(state, legal, null);
+    this.updateTargetCameraOffset(state);
+  }
+
+  private updateTargetCameraOffset(state: BlockDominoesState) {
+    if (state.chain.length === 0) {
+      this.targetCameraOffsetX = 0;
+      return;
+    }
+
+    // Calculate the center of the chain
+    const placements = layoutChain(state.chain.length);
+    let sumX = 0;
+    for (const p of placements) {
+      sumX += p.x;
+    }
+    const centerX = sumX / placements.length;
+
+    // Set target offset to follow the chain center, but limit the range
+    const maxOffset = 3;
+    this.targetCameraOffsetX = Math.max(-maxOffset, Math.min(maxOffset, centerX * 0.5));
   }
 
   private rebuildChain(state: BlockDominoesState) {
@@ -396,74 +424,14 @@ export class BlockDominoScene {
       this.playTile(handIndex);
     };
 
-    // Drag handling for camera panning
-    const handleDragStart = (clientX: number) => {
-      this.isDragging = true;
-      this.lastX = clientX;
-      this.dragStartX = clientX;
-    };
-
-    const handleDragMove = (clientX: number) => {
-      if (!this.isDragging) return;
-      const deltaX = clientX - this.lastX;
-      this.lastX = clientX;
-
-      // Adjust pan sensitivity based on screen width
-      const sensitivity = this.isMobile() ? 0.008 : 0.005;
-      this.cameraOffsetX += deltaX * sensitivity;
-
-      // Clamp the offset
-      this.cameraOffsetX = Math.max(-this.maxPanX, Math.min(this.maxPanX, this.cameraOffsetX));
-
-      // Update camera position
-      this.updateCameraForScreenSize(this.canvas.clientWidth, this.canvas.clientHeight);
-    };
-
-    const handleDragEnd = (clientX: number, clientY: number) => {
-      if (!this.isDragging) return;
-      this.isDragging = false;
-
-      // If drag distance was small, treat it as a click
-      const dragDistance = Math.abs(clientX - this.dragStartX);
-      if (dragDistance < 10) {
-        handleInteraction(clientX, clientY);
-      }
-    };
-
-    // Mouse events
-    this.canvas.addEventListener('mousedown', (e) => {
-      handleDragStart(e.clientX);
+    this.canvas.addEventListener('click', (e) => {
+      handleInteraction(e.clientX, e.clientY);
     });
-
-    this.canvas.addEventListener('mousemove', (e) => {
-      handleDragMove(e.clientX);
-    });
-
-    this.canvas.addEventListener('mouseup', (e) => {
-      handleDragEnd(e.clientX, e.clientY);
-    });
-
-    this.canvas.addEventListener('mouseleave', () => {
-      this.isDragging = false;
-    });
-
-    // Touch events
-    this.canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      handleDragStart(touch.clientX);
-    }, { passive: false });
-
-    this.canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      handleDragMove(touch.clientX);
-    }, { passive: false });
 
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
       const touch = e.changedTouches[0];
-      handleDragEnd(touch.clientX, touch.clientY);
+      handleInteraction(touch.clientX, touch.clientY);
     }, { passive: false });
   }
 }
