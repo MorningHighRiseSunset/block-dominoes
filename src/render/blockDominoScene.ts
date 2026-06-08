@@ -55,8 +55,6 @@ export class BlockDominoScene {
   private currentLegal: BlockMove[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
-  private targetCameraOffsetX = 0;
-  private currentCameraOffsetX = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -137,25 +135,25 @@ export class BlockDominoScene {
     const isMobile = width < 768 || height < 768;
     const isPortrait = height > width;
 
-    let baseX = 0;
-    let baseY = 10.5;
-    let baseZ = 7.2;
+    // Position camera to see full board width (14 units)
+    // With FOV 40, at Z=14 we can see ~10 units height, which covers the board depth of 8
+    let baseY = 14;
+    let baseZ = 14;
 
     if (isMobile) {
       if (isPortrait) {
-        // Portrait mobile: move camera closer and higher for better view
-        baseY = 12;
-        baseZ = 6;
+        // Portrait mobile: move camera higher to see full width in portrait
+        baseY = 16;
+        baseZ = 12;
       } else {
-        // Landscape mobile: slightly adjust for better hand visibility
-        baseY = 11;
-        baseZ = 6.5;
+        // Landscape mobile: similar to desktop but slightly adjusted
+        baseY = 14;
+        baseZ = 13;
       }
     }
 
-    // Apply automatic pan offset
-    this.camera.position.set(baseX + this.currentCameraOffsetX, baseY, baseZ);
-    this.camera.lookAt(LOOK_AT.x + this.currentCameraOffsetX * 0.3, LOOK_AT.y, LOOK_AT.z);
+    this.camera.position.set(0, baseY, baseZ);
+    this.camera.lookAt(LOOK_AT);
   }
 
   setPlacementListener(fn: ((player: Player) => void) | null) {
@@ -169,17 +167,7 @@ export class BlockDominoScene {
   render() {
     const dt = this.clock.getDelta();
     this.updateDropAnims(dt);
-    this.updateCameraPosition(dt);
     this.renderer.render(this.scene, this.camera);
-  }
-
-  private updateCameraPosition(dt: number) {
-    // Smoothly interpolate current offset to target offset
-    const lerpFactor = 3.0; // Adjust for faster/slower camera movement
-    this.currentCameraOffsetX += (this.targetCameraOffsetX - this.currentCameraOffsetX) * lerpFactor * dt;
-
-    // Update camera position with new offset
-    this.updateCameraForScreenSize(this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   private updateDropAnims(dt: number) {
@@ -203,26 +191,6 @@ export class BlockDominoScene {
     this.rebuildChain(state);
     this.rebuildHands(state, legal, interactive);
     this.updateCellHighlights(state, legal, null);
-    this.updateTargetCameraOffset(state);
-  }
-
-  private updateTargetCameraOffset(state: BlockDominoesState) {
-    if (state.chain.length === 0) {
-      this.targetCameraOffsetX = 0;
-      return;
-    }
-
-    // Calculate the center of the chain
-    const placements = layoutChain(state.chain.length);
-    let sumX = 0;
-    for (const p of placements) {
-      sumX += p.x;
-    }
-    const centerX = sumX / placements.length;
-
-    // Set target offset to follow the chain center, but limit the range
-    const maxOffset = 3;
-    this.targetCameraOffsetX = Math.max(-maxOffset, Math.min(maxOffset, centerX * 0.5));
   }
 
   private rebuildChain(state: BlockDominoesState) {
