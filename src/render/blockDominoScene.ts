@@ -55,6 +55,8 @@ export class BlockDominoScene {
   private currentLegal: BlockMove[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
+  private targetCameraX = 0;
+  private currentCameraX = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -152,8 +154,9 @@ export class BlockDominoScene {
       }
     }
 
-    this.camera.position.set(0, baseY, baseZ);
-    this.camera.lookAt(LOOK_AT);
+    // Apply horizontal pan (translation only, no tilt)
+    this.camera.position.set(this.currentCameraX, baseY, baseZ);
+    this.camera.lookAt(this.currentCameraX, LOOK_AT.y, LOOK_AT.z);
   }
 
   setPlacementListener(fn: ((player: Player) => void) | null) {
@@ -167,7 +170,15 @@ export class BlockDominoScene {
   render() {
     const dt = this.clock.getDelta();
     this.updateDropAnims(dt);
+    this.updateCameraPosition(dt);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private updateCameraPosition(dt: number) {
+    // Smoothly interpolate current X to target X (pure pan, no tilt)
+    const lerpFactor = 3.0;
+    this.currentCameraX += (this.targetCameraX - this.currentCameraX) * lerpFactor * dt;
+    this.updateCameraForScreenSize(this.canvas.clientWidth, this.canvas.clientHeight);
   }
 
   private updateDropAnims(dt: number) {
@@ -191,6 +202,26 @@ export class BlockDominoScene {
     this.rebuildChain(state);
     this.rebuildHands(state, legal, interactive);
     this.updateCellHighlights(state, legal, null);
+    this.updateTargetCameraX(state);
+  }
+
+  private updateTargetCameraX(state: BlockDominoesState) {
+    if (state.chain.length === 0) {
+      this.targetCameraX = 0;
+      return;
+    }
+
+    // Calculate the center of the chain
+    const placements = layoutChain(state.chain.length);
+    let sumX = 0;
+    for (const p of placements) {
+      sumX += p.x;
+    }
+    const centerX = sumX / placements.length;
+
+    // Set target X to follow chain center, but limit the range
+    const maxOffset = 3;
+    this.targetCameraX = Math.max(-maxOffset, Math.min(maxOffset, centerX * 0.5));
   }
 
   private rebuildChain(state: BlockDominoesState) {
