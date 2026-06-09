@@ -23,7 +23,7 @@ const TILE_LIFT = 0.08;
 /** +Z = bottom of screen (your hand). −Z = top (CPU). */
 const PLAYER_HAND_Z = 3.35;
 const CPU_HAND_Z = -3.35;
-const CAMERA_FOV = 40;
+const CAMERA_FOV = 45;
 const LOOK_AT = new THREE.Vector3(0, 0, 0.5);
 
 interface DropAnim {
@@ -137,20 +137,20 @@ export class BlockDominoScene {
     const isMobile = width < 768 || height < 768;
     const isPortrait = height > width;
 
-    // Position camera to see full board width (14 units)
-    // With FOV 40, at Z=14 we can see ~10 units height, which covers the board depth of 8
-    let baseY = 14;
-    let baseZ = 14;
+    // Position camera closer for better clickability while still seeing board
+    // With FOV 40, at Z=10 we can see ~7 units height, which covers the board depth of 8 with some margin
+    let baseY = 11;
+    let baseZ = 10;
 
     if (isMobile) {
       if (isPortrait) {
         // Portrait mobile: move camera higher to see full width in portrait
-        baseY = 16;
-        baseZ = 12;
+        baseY = 13;
+        baseZ = 9;
       } else {
         // Landscape mobile: similar to desktop but slightly adjusted
-        baseY = 14;
-        baseZ = 13;
+        baseY = 11;
+        baseZ = 9.5;
       }
     }
 
@@ -289,8 +289,8 @@ export class BlockDominoScene {
 
         const handY = TABLE_SURFACE_Y + TILE_H * 0.5 + 0.32;
         g.position.set(startX + i * spread, handY, z);
-        // Reduce tilt on mobile for better clickability
-        const tiltAngle = this.isMobile() && player === 0 ? -0.25 : (player === 0 ? -0.55 : 0.55);
+        // Reduce tilt for better raycasting and clickability
+        const tiltAngle = this.isMobile() && player === 0 ? -0.15 : (player === 0 ? -0.35 : 0.35);
         g.rotation.set(tiltAngle, 0, 0);
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
@@ -353,10 +353,10 @@ export class BlockDominoScene {
     const handGroups = [...this.handMeshes.values()].filter(
       (g) => g.parent === this.handsRoot,
     );
-    
+
     // Try raycasting first with all objects in the group
     const hits = this.raycaster.intersectObjects(handGroups, true);
-    
+
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;
       while (obj) {
@@ -366,35 +366,35 @@ export class BlockDominoScene {
         obj = obj.parent;
       }
     }
-    
+
     // If no direct hits, try distance-based selection as fallback with larger radius
     let closestHandIndex: number | null = null;
     let closestDist = Infinity;
-    
+
     for (const [, mesh] of this.handMeshes) {
       if (mesh.parent !== this.handsRoot) continue;
       if (mesh.userData?.kind !== 'hand' || mesh.userData.player !== 0) continue;
-      
+
       const worldPos = new THREE.Vector3();
       mesh.getWorldPosition(worldPos);
-      
+
       // Project world position to screen space
       const screenPos = worldPos.clone().project(this.camera);
       const screenX = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
       const screenY = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
-      
+
       // Calculate distance from click to domino center on screen
       const dist = Math.hypot(screenX - clientX, screenY - clientY);
-      
+
       // Use very generous hit radius (in pixels) to account for rotation
       // Larger radius on mobile for easier touch targeting
-      const hitRadius = this.isMobile() ? 160 : 120;
+      const hitRadius = this.isMobile() ? 200 : 150;
       if (dist < hitRadius && dist < closestDist) {
         closestDist = dist;
         closestHandIndex = mesh.userData.handIndex as number;
       }
     }
-    
+
     return closestHandIndex;
   }
 
