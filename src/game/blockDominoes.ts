@@ -103,22 +103,41 @@ export function dealHands(deck: Domino[], playerCount: PlayerCount): Domino[][] 
 }
 
 function findStarter(hands: Domino[][]): { player: Player; domino: Domino } {
-  let best: { player: Player; domino: Domino; score: number; isDouble: boolean } | null = null;
+  // Traditional domino starting rules:
+  // 1. Highest double starts (6-6, then 5-5, then 4-4, etc.)
+  // 2. If no doubles, highest pip sum starts
+  let bestDouble: { player: Player; domino: Domino; pip: Pip } | null = null;
+  let bestNonDouble: { player: Player; domino: Domino; sum: number } | null = null;
 
   for (let p = 0; p < hands.length; p++) {
     for (const d of hands[p]) {
-      const isDouble = d.low === d.high;
-      const score = isDouble ? d.low * 10 + 100 : d.low + d.high;
-      if (
-        !best ||
-        (isDouble && !best.isDouble) ||
-        (isDouble === best.isDouble && score > best.score)
-      ) {
-        best = { player: p, domino: d, score, isDouble };
+      if (d.low === d.high) {
+        // It's a double
+        if (!bestDouble || d.low > bestDouble.pip) {
+          bestDouble = { player: p, domino: d, pip: d.low };
+        }
+      } else {
+        // Non-double
+        const sum = d.low + d.high;
+        if (!bestNonDouble || sum > bestNonDouble.sum) {
+          bestNonDouble = { player: p, domino: d, sum };
+        }
       }
     }
   }
-  return { player: best!.player, domino: best!.domino };
+
+  // Prefer doubles if any exist
+  if (bestDouble) {
+    return { player: bestDouble.player, domino: bestDouble.domino };
+  }
+
+  // Fall back to highest sum non-double
+  if (bestNonDouble) {
+    return { player: bestNonDouble.player, domino: bestNonDouble.domino };
+  }
+
+  // Should never happen with a valid deck
+  throw new Error('No valid starter found');
 }
 
 function blockedWinner(hands: Domino[][]): Player {
