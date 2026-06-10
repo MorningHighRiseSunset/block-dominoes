@@ -1,6 +1,8 @@
 /** World-space domino train — tiles touch end-to-end, no grid snapping. */
 
 import { DOMINO_LENGTH } from './boardGrid';
+import { TILE_W } from './dominoMesh';
+import type { PlayedTile } from '../game/blockDominoes';
 
 export const STEP = DOMINO_LENGTH;
 
@@ -11,6 +13,7 @@ export interface ChainTilePlacement {
   z: number;
   rotationY: number;
   travelDir: TravelDir;
+  isDouble: boolean;
 }
 
 const PLAY_MIN_X = -5;
@@ -90,9 +93,26 @@ function nextStep(
     return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
   }
 
+  // When turning, account for domino width to ensure tiles touch at corners
+  const halfWidth = TILE_W * 0.5;
   let tryDir = turnRight(dir);
   for (let t = 0; t < 4; t++) {
-    const candidate = stepFrom(x, z, tryDir);
+    // Calculate offset for corner-to-corner contact
+    let offsetX = 0;
+    let offsetZ = 0;
+    
+    // If turning from vertical to horizontal or vice versa, offset by half width
+    const isVerticalTurn = (dir === 'north' || dir === 'south') && (tryDir === 'east' || tryDir === 'west');
+    const isHorizontalTurn = (dir === 'east' || dir === 'west') && (tryDir === 'north' || tryDir === 'south');
+    
+    if (isVerticalTurn || isHorizontalTurn) {
+      if (tryDir === 'east') offsetX = halfWidth;
+      else if (tryDir === 'west') offsetX = -halfWidth;
+      else if (tryDir === 'north') offsetZ = -halfWidth;
+      else if (tryDir === 'south') offsetZ = halfWidth;
+    }
+    
+    const candidate = stepFrom(x + offsetX, z + offsetZ, tryDir);
     if (wouldFit(candidate.x, candidate.z, tryDir)) {
       return { x: candidate.x, z: candidate.z, dir: tryDir, runLen: 1 };
     }
@@ -102,18 +122,27 @@ function nextStep(
   return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
 }
 
-export function layoutChain(chainLength: number): ChainTilePlacement[] {
-  if (chainLength === 0) return [];
+export function layoutChain(chain: PlayedTile[]): ChainTilePlacement[] {
+  if (chain.length === 0) return [];
 
   const out: ChainTilePlacement[] = [];
   let x = 0;
   let z = 0;
-  let dir: TravelDir = 'east';
+  let dir: TravelDir = 'south';
   let runLen = 0;
 
-  for (let i = 0; i < chainLength; i++) {
-    out.push({ x, z, rotationY: rotationYForDir(dir), travelDir: dir });
-    if (i === chainLength - 1) break;
+  for (let i = 0; i < chain.length; i++) {
+    const tile = chain[i];
+    const isDouble = tile.isDouble;
+    
+    // For doubles, rotate perpendicular to the chain direction
+    let rotationY = rotationYForDir(dir);
+    if (isDouble) {
+      rotationY += Math.PI / 2; // Rotate 90 degrees for perpendicular placement
+    }
+    
+    out.push({ x, z, rotationY, travelDir: dir, isDouble });
+    if (i === chain.length - 1) break;
     const next = nextStep(x, z, dir, runLen);
     x = next.x;
     z = next.z;
@@ -127,9 +156,11 @@ export function layoutChain(chainLength: number): ChainTilePlacement[] {
 export function extensionSlot(
   placements: ChainTilePlacement[],
   end: 'left' | 'right',
+  isDouble: boolean = false,
 ): ChainTilePlacement {
   if (!placements.length) {
-    return { x: 0, z: 0, rotationY: rotationYForDir('east'), travelDir: 'east' };
+    const rotationY = isDouble ? rotationYForDir('south') + Math.PI / 2 : rotationYForDir('south');
+    return { x: 0, z: 0, rotationY, travelDir: 'south', isDouble };
   }
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
@@ -137,18 +168,36 @@ export function extensionSlot(
   const fwd = stepFrom(anchor.x, anchor.z, dir);
 
   if (wouldFit(fwd.x, fwd.z, dir)) {
-    return { x: fwd.x, z: fwd.z, rotationY: rotationYForDir(dir), travelDir: dir };
+    const rotationY = isDouble ? rotationYForDir(dir) + Math.PI / 2 : rotationYForDir(dir);
+    return { x: fwd.x, z: fwd.z, rotationY, travelDir: dir, isDouble };
   }
 
-  // When turning, need to account for domino width to ensure touching
+  // When turning, use the same offset logic as nextStep to ensure touching
+  const halfWidth = TILE_W * 0.5;
   let tryDir = turnRight(dir);
   for (let t = 0; t < 3; t++) {
-    const candidate = stepFrom(anchor.x, anchor.z, tryDir);
+    // Calculate offset for corner-to-corner contact
+    let offsetX = 0;
+    let offsetZ = 0;
+    
+    const isVerticalTurn = (dir === 'north' || dir === 'south') && (tryDir === 'east' || tryDir === 'west');
+    const isHorizontalTurn = (dir === 'east' || dir === 'west') && (tryDir === 'north' || tryDir === 'south');
+    
+    if (isVerticalTurn || isHorizontalTurn) {
+      if (tryDir === 'east') offsetX = halfWidth;
+      else if (tryDir === 'west') offsetX = -halfWidth;
+      else if (tryDir === 'north') offsetZ = -halfWidth;
+      else if (tryDir === 'south') offsetZ = halfWidth;
+    }
+    
+    const candidate = stepFrom(anchor.x + offsetX, anchor.z + offsetZ, tryDir);
     if (wouldFit(candidate.x, candidate.z, tryDir)) {
-      return { x: candidate.x, z: candidate.z, rotationY: rotationYForDir(tryDir), travelDir: tryDir };
+      const rotationY = isDouble ? rotationYForDir(tryDir) + Math.PI / 2 : rotationYForDir(tryDir);
+      return { x: candidate.x, z: candidate.z, rotationY, travelDir: tryDir, isDouble };
     }
     tryDir = turnRight(tryDir);
   }
 
-  return { x: fwd.x, z: fwd.z, rotationY: rotationYForDir(dir), travelDir: dir };
+  const rotationY = isDouble ? rotationYForDir(dir) + Math.PI / 2 : rotationYForDir(dir);
+  return { x: fwd.x, z: fwd.z, rotationY, travelDir: dir, isDouble };
 }

@@ -57,6 +57,7 @@ export class BlockDominoScene {
   private syncedState: BlockDominoesState | null = null;
   private targetCameraX = 0;
   private currentCameraX = 0;
+  private selectedHandIndex: number | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -201,7 +202,7 @@ export class BlockDominoScene {
     this.interactive = interactive;
     this.rebuildChain(state);
     this.rebuildHands(state, legal, interactive);
-    this.updateCellHighlights(state, legal, null);
+    this.updateCellHighlights(state, legal, this.selectedHandIndex);
     this.updateTargetCameraX(state);
   }
 
@@ -212,7 +213,7 @@ export class BlockDominoScene {
     }
 
     // Calculate the center of the chain
-    const placements = layoutChain(state.chain.length);
+    const placements = layoutChain(state.chain);
     let sumX = 0;
     for (const p of placements) {
       sumX += p.x;
@@ -232,7 +233,7 @@ export class BlockDominoScene {
     }
 
     const n = state.chain.length;
-    const placements = layoutChain(n);
+    const placements = layoutChain(state.chain);
     const yBase = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
 
     for (let i = 0; i < n; i++) {
@@ -295,7 +296,20 @@ export class BlockDominoScene {
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
         if (hl) {
-          hl.visible = interactive && player === 0 && legalIndices.has(i);
+          const isSelected = interactive && player === 0 && this.selectedHandIndex === i;
+          const isPlayable = interactive && player === 0 && legalIndices.has(i);
+          hl.visible = isSelected || isPlayable;
+          // Change color for selected domino
+          if (isSelected) {
+            (hl.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8); // Blue for selected
+          } else {
+            (hl.material as THREE.MeshBasicMaterial).color.setHex(0x2dd4bf); // Teal for playable
+          }
+        }
+
+        const outline = g.userData.outline as THREE.LineSegments | undefined;
+        if (outline) {
+          outline.visible = interactive && player === 0 && this.selectedHandIndex === i;
         }
 
         this.handsRoot.add(g);
@@ -398,17 +412,60 @@ export class BlockDominoScene {
     return closestHandIndex;
   }
 
-  private playTile(handIndex: number) {
+  private selectTile(handIndex: number) {
     if (!this.syncedState) return;
     
-    // Get legal moves for this tile
-    const moves = this.currentLegal.filter((m) => m.handIndex === handIndex);
-    if (moves.length === 0) return;
+    // Check if this tile is playable
+    const canPlay = this.currentLegal.some((m) => m.handIndex === handIndex);
+    if (!canPlay) return;
 
-    // If multiple moves available, prefer right end for simplicity
-    const move = moves.find((m) => m.end === 'right') || moves[0];
+    // Toggle selection
+    if (this.selectedHandIndex === handIndex) {
+      this.selectedHandIndex = null;
+    } else {
+      this.selectedHandIndex = handIndex;
+    }
     
+    // Rebuild to update highlights
+    this.rebuildHands(this.syncedState, this.currentLegal, this.interactive);
+    this.updateCellHighlights(this.syncedState, this.currentLegal, this.selectedHandIndex);
+  }
+
+  private playTile(handIndex: number, end: 'left' | 'right') {
+    if (!this.syncedState) return;
+    
+    // Find the specific move
+    const move = this.currentLegal.find((m) => m.handIndex === handIndex && m.end === end);
+    if (!move) return;
+    
+    // Clear selection and play
+    this.selectedHandIndex = null;
     this.dropListener?.(move);
+  }
+
+  private pickPlacementSlot(clientX: number, clientY: number): { handIndex: number; end: 'left' | 'right' } | null {
+    if (this.selectedHandIndex === null) return null;
+    
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    // Raycast against placement slot highlights
+    const slotMeshes = Array.from(this.cellHighlights.values());
+    const hits = this.raycaster.intersectObjects(slotMeshes, false);
+
+    if (hits.length > 0) {
+      // Find which slot was clicked
+      for (const [key, mesh] of this.cellHighlights) {
+        if (mesh === hits[0].object) {
+          const [handIndex, end] = key.split(':');
+          return { handIndex: parseInt(handIndex), end: end as 'left' | 'right' };
+        }
+      }
+    }
+
+    return null;
   }
 
   private bindEvents() {
@@ -416,11 +473,29 @@ export class BlockDominoScene {
 
     const handleInteraction = (clientX: number, clientY: number) => {
       if (!this.interactive) return;
+      
+      // First check if clicking on a placement slot (only when a domino is selected)
+      if (this.selectedHandIndex !== null) {
+        const slot = this.pickPlacementSlot(clientX, clientY);
+        if (slot) {
+          this.playTile(slot.handIndex, slot.end);
+          return;
+        }
+      }
+      
+      // Otherwise, check if clicking on a hand domino
       const handIndex = this.pickHand(clientX, clientY);
-      if (handIndex === null) return;
-      const canPlay = this.currentLegal.some((m) => m.handIndex === handIndex);
-      if (!canPlay) return;
-      this.playTile(handIndex);
+      if (handIndex !== null) {
+        this.selectTile(handIndex);
+        return;
+      }
+      
+      // Clicked elsewhere - deselect
+      if (this.selectedHandIndex !== null) {
+        this.selectedHandIndex = null;
+        this.rebuildHands(this.syncedState!, this.currentLegal, this.interactive);
+        this.updateCellHighlights(this.syncedState!, this.currentLegal, null);
+      }
     };
 
     this.canvas.addEventListener('click', (e) => {

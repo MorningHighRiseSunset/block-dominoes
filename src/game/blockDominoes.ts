@@ -17,6 +17,7 @@ export interface PlayedTile {
   domino: Domino;
   leftPip: Pip;
   rightPip: Pip;
+  isDouble: boolean;
 }
 
 export interface BlockMove {
@@ -140,6 +141,29 @@ function findStarter(hands: Domino[][]): { player: Player; domino: Domino } {
   throw new Error('No valid starter found');
 }
 
+export function findStarterWithPlayerAnswer(
+  hands: Domino[][],
+  playerHasDouble: { player: 0; double: Pip } | null,
+): { player: Player; domino: Domino } {
+  // If player claims to have a specific double, verify and use that
+  if (playerHasDouble) {
+    const { player, double } = playerHasDouble;
+    const hand = hands[player];
+    const claimedDomino = hand.find((d) => d.low === double && d.high === double);
+    
+    if (claimedDomino) {
+      // Player actually has it, they start
+      return { player, domino: claimedDomino };
+    }
+    
+    // Player was wrong or lying, fall back to normal rules
+    console.warn(`Player claimed to have double-${double} but doesn't. Using standard rules.`);
+  }
+  
+  // Fall back to standard findStarter
+  return findStarter(hands);
+}
+
 function blockedWinner(hands: Domino[][]): Player {
   let winner = 0;
   let bestPips = handPipCount(hands[0]);
@@ -160,6 +184,29 @@ export function newGame(playerCount: PlayerCount = 2): BlockDominoesState {
   const deck = shuffle(makeDeck());
   const hands = dealHands(deck, playerCount);
   const { player: starter } = findStarter(hands);
+
+  return {
+    playerCount,
+    hands,
+    chain: [],
+    leftEnd: null,
+    rightEnd: null,
+    current: starter,
+    phase: 'playing',
+    winner: null,
+    gameOverReason: null,
+    passesInRow: 0,
+    lastMove: null,
+  };
+}
+
+export function newGameWithSetup(
+  playerCount: PlayerCount = 2,
+  playerHasDouble: { player: 0; double: Pip } | null = null,
+): BlockDominoesState {
+  const deck = shuffle(makeDeck());
+  const hands = dealHands(deck, playerCount);
+  const { player: starter } = findStarterWithPlayerAnswer(hands, playerHasDouble);
 
   return {
     playerCount,
@@ -275,7 +322,7 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
   const hands = state.hands.map((h, i) => (i === player ? hand : [...h]));
 
   if (state.chain.length === 0) {
-    const played: PlayedTile = { domino, leftPip: domino.low, rightPip: domino.high };
+    const played: PlayedTile = { domino, leftPip: domino.low, rightPip: domino.high, isDouble: domino.low === domino.high };
     const chain = [played];
     const gameOver = hand.length === 0;
 
@@ -296,7 +343,7 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
 
   const endPip = move.end === 'left' ? state.leftEnd! : state.rightEnd!;
   const oriented = orientForEnd(domino, endPip, move.end)!;
-  const played: PlayedTile = { domino, ...oriented };
+  const played: PlayedTile = { domino, ...oriented, isDouble: domino.low === domino.high };
 
   let chain: PlayedTile[];
   let leftEnd: Pip;

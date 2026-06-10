@@ -22,11 +22,18 @@ export function buildPlacementSlots(
   if (!filtered.length) return [];
 
   if (state.chain.length === 0) {
+    // First tile - check if it's a double
+    const handIndex = filtered[0].handIndex;
+    const domino = state.hands[0][handIndex];
+    const isDouble = domino.low === domino.high;
+    const rotationY = isDouble ? Math.PI / 2 : 0; // Doubles placed perpendicular
+    
     const placement: ChainTilePlacement = {
       x: 0,
       z: 0,
-      rotationY: Math.PI / 2,
-      travelDir: 'east',
+      rotationY,
+      travelDir: 'south',
+      isDouble,
     };
     return filtered.map((move) => ({
       move,
@@ -37,11 +44,14 @@ export function buildPlacementSlots(
     }));
   }
 
-  const placements = layoutChain(state.chain.length);
+  const placements = layoutChain(state.chain);
   const slots: PlacementSlot[] = [];
 
   for (const move of filtered) {
-    const ext = extensionSlot(placements, move.end);
+    const handIndex = move.handIndex;
+    const domino = state.hands[0][handIndex];
+    const isDouble = domino.low === domino.high;
+    const ext = extensionSlot(placements, move.end, isDouble);
     slots.push({
       move,
       x: ext.x,

@@ -6,9 +6,11 @@ import {
   handPipCount,
   mustPass,
   newGame,
+  newGameWithSetup,
   pipLabel,
   type BlockDominoesState,
   type BlockMove,
+  type Pip,
 } from './game/blockDominoes';
 import { runAiTurn } from './game/blockDominoesAi';
 import { playPlaceSound, unlockAudio } from './audio/sounds';
@@ -31,6 +33,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const instructionsModal = document.getElementById('instructions')!;
   const btnCloseInstr = document.getElementById('btn-close-instr')!;
   const btnInstrDone = document.getElementById('btn-instr-done')!;
+  const setupModal = document.getElementById('setup-modal')!;
+  const btnBig6 = document.getElementById('btn-big6')!;
+  const btnBig5 = document.getElementById('btn-big5')!;
+  const btnBig4 = document.getElementById('btn-big4')!;
+  const btnNoDouble = document.getElementById('btn-nodouble')!;
 
   function openInstructions() {
     instructionsModal.classList.remove('hidden');
@@ -40,6 +47,26 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     instructionsModal.classList.add('hidden');
   }
 
+  function openSetupModal() {
+    setupModal.classList.remove('hidden');
+  }
+
+  function closeSetupModal() {
+    setupModal.classList.add('hidden');
+  }
+
+  function startGameWithSetup(playerHasDouble: { player: 0; double: Pip } | null) {
+    closeSetupModal();
+    state = newGameWithSetup(2, playerHasDouble);
+    overlay.classList.add('hidden');
+    btnNew.classList.add('hidden');
+    inputLocked = false;
+    pendingAi = false;
+    passScheduled = false;
+    updateHud();
+    if (state.current === 1) scheduleAi();
+  }
+
   btnInstructions.addEventListener('click', openInstructions);
   btnCloseInstr.addEventListener('click', closeInstructions);
   btnInstrDone.addEventListener('click', closeInstructions);
@@ -47,6 +74,12 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     if (e.target === instructionsModal) closeInstructions();
   });
   btnBackLobby.addEventListener('click', onBackToLobby);
+
+  // Setup modal button handlers
+  btnBig6.addEventListener('click', () => startGameWithSetup({ player: 0, double: 6 as Pip }));
+  btnBig5.addEventListener('click', () => startGameWithSetup({ player: 0, double: 5 as Pip }));
+  btnBig4.addEventListener('click', () => startGameWithSetup({ player: 0, double: 4 as Pip }));
+  btnNoDouble.addEventListener('click', () => startGameWithSetup(null));
 
   const scene = new BlockDominoScene(canvas);
   scene.setPlacementListener((player) => {
@@ -106,11 +139,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
         schedulePass();
         return;
       }
-      statusEl.textContent = 'Your turn — drag a tile onto the board';
+      statusEl.textContent = 'Your turn — select a tile, then click where to place it';
       hintEl.textContent =
         state.chain.length === 0
-          ? 'Teal tiles are playable · drag the opener onto the highlighted spot in the center.'
-          : 'Teal = playable · gold markers = valid drop zones · drag a tile onto them.';
+          ? 'Click a teal tile to select it, then click the highlighted spot to place.'
+          : 'Click a teal tile to select it, then click a gold marker to choose placement.';
     } else {
       statusEl.textContent = 'CPU is thinking…';
       hintEl.textContent = `${state.hands[1].length} tile(s) hidden.`;
@@ -211,14 +244,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   btnNew.addEventListener('click', startNewGame);
 
   function startNewGame() {
-    state = newGame();
-    overlay.classList.add('hidden');
-    btnNew.classList.add('hidden');
-    inputLocked = false;
-    pendingAi = false;
-    passScheduled = false;
-    updateHud();
-    if (state.current === 1) scheduleAi();
+    // Show setup modal for traditional Big 6/4/5 question
+    openSetupModal();
   }
 
   function loop() {

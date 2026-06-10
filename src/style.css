@@ -802,6 +802,45 @@ body,
   margin-top: 8px;
 }
 
+.setup-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.setup-options button {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.setup-options .btn-primary {
+  background: linear-gradient(135deg, var(--you) 0%, #4299e1 100%);
+  color: white;
+}
+
+.setup-options .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--glow-secondary);
+}
+
+.setup-options .btn-secondary {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.setup-options .btn-secondary:hover {
+  background: rgba(148, 163, 184, 0.25);
+  color: var(--text);
+}
+
 .modal-close {
   position: absolute;
   top: 16px;

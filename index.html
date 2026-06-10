@@ -143,6 +143,20 @@
         </div>
       </div>
 
+      <div id="setup-modal" class="modal hidden" role="dialog" aria-labelledby="setup-title" aria-modal="true">
+        <div class="modal-panel">
+          <h2 id="setup-title">Game Setup</h2>
+          <p class="modal-lead">Traditional domino setup: Do you have the highest doubles?</p>
+          <p>Check your hand and answer honestly:</p>
+          <div class="setup-options">
+            <button id="btn-big6" type="button" class="btn-primary">I have double-6 (Big 6)</button>
+            <button id="btn-big5" type="button" class="btn-primary">I have double-5 (Big 5)</button>
+            <button id="btn-big4" type="button" class="btn-primary">I have double-4 (Big 4)</button>
+            <button id="btn-nodouble" type="button" class="btn-secondary">I don't have any of these</button>
+          </div>
+        </div>
+      </div>
+
       <div id="instructions" class="modal hidden" role="dialog" aria-labelledby="instr-title" aria-modal="true">
         <div class="modal-panel modal-wide">
           <button id="btn-close-instr" type="button" class="modal-close" aria-label="Close">×</button>
@@ -163,7 +177,7 @@
           </section>
 
           <section>
-            <h3>Setup</h3>
+            <h3>Setup (Traditional Rules)</h3>
             <ul>
               <li>The player with the <strong>highest double</strong> leads (or the highest tile if no one has a double).</li>
               <li>Your hand is face-up in front of you; the CPU’s tiles stay hidden.</li>
@@ -171,11 +185,21 @@
           </section>
 
           <section>
+            <h3>Traditional Domino Rules</h3>
+            <ul>
+              <li><strong>Big 6/5/4:</strong> At game start, you'll be asked if you have double-6, double-5, or double-4.</li>
+              <li><strong>Doubles:</strong> Double tiles are placed perpendicular (crosswise) to the chain.</li>
+              <li><strong>First tile:</strong> The opening tile is placed vertically.</li>
+            </ul>
+          </section>
+
+          <section>
             <h3>Your turn</h3>
             <ul>
-              <li><strong>Click</strong> a teal-highlighted tile from your hand at the bottom of the table.</li>
-              <li>If it can play on multiple ends, it will automatically choose the best spot.</li>
-              <li>Gold markers show valid placement zones on the board.</li>
+              <li><strong>Click</strong> a teal-highlighted tile from your hand to select it (turns blue when selected).</li>
+              <li><strong>Click</strong> a gold marker on the board to place the selected tile.</li>
+              <li>If a tile can play on multiple ends, you choose which end by clicking the corresponding marker.</li>
+              <li>Click elsewhere to deselect a tile.</li>
               <li>If you cannot play, you <strong>pass</strong> automatically.</li>
             </ul>
           </section>
