@@ -44,11 +44,22 @@ export const DOMINO_MAT = {
 
 DOMINO_MAT.cpu.color.setHex(0xe8e0d4);
 
+const WOOD_SIDE_COLOR = 0x6b4423;
+const woodSideMat = new THREE.MeshStandardMaterial({
+  color: WOOD_SIDE_COLOR,
+  roughness: 0.72,
+  metalness: 0.02,
+});
+
+function dominoBodyMaterials(topMat: THREE.Material): THREE.Material[] {
+  return [woodSideMat, woodSideMat, topMat, woodSideMat, woodSideMat, woodSideMat];
+}
+
 export function createDominoBack(_player: Player): THREE.Group {
   const g = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D),
-    DOMINO_MAT.back,
+    dominoBodyMaterials(DOMINO_MAT.back),
   );
   body.castShadow = true;
   g.add(body);
@@ -65,7 +76,10 @@ export function createDominoMesh(
   const g = new THREE.Group();
   const bodyMat = player === 0 ? DOMINO_MAT.human : DOMINO_MAT.cpu;
 
-  const body = new THREE.Mesh(new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D), bodyMat);
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D),
+    dominoBodyMaterials(bodyMat),
+  );
   body.castShadow = forHand;
   body.receiveShadow = !forHand;
   g.add(body);
@@ -83,7 +97,17 @@ export function createDominoMesh(
   face.renderOrder = 1;
   g.add(face);
 
-  if (options?.outline !== false) {
+  if (!forHand) {
+    const woodRim = new THREE.LineSegments(
+      new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE_W * 1.03, TILE_H * 1.2, TILE_D * 1.03)),
+      new THREE.LineBasicMaterial({ color: WOOD_SIDE_COLOR }),
+    );
+    woodRim.position.y = TILE_H * 0.02;
+    woodRim.name = 'woodRim';
+    g.add(woodRim);
+  }
+
+  if (options?.outline !== false && forHand) {
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE_W * 1.02, TILE_H * 1.12, TILE_D * 1.02)),
       new THREE.LineBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.9 }),
@@ -108,6 +132,12 @@ export function createDominoMesh(
   return g;
 }
 
+/** PNG data URL for HTML/UI domino previews (shares cached face textures with 3D tiles). */
+export function dominoFaceDataUrl(leftPip: Pip, rightPip: Pip): string {
+  const tex = getFaceTexture(leftPip, rightPip);
+  return (tex.image as HTMLCanvasElement).toDataURL();
+}
+
 export function updateDominoFace(g: THREE.Group, leftPip: Pip, rightPip: Pip) {
   const face = g.getObjectByName('face') as THREE.Mesh | undefined;
   if (!face) return;
@@ -129,10 +159,25 @@ function getFaceTexture(left: Pip, right: Pip): THREE.CanvasTexture {
   canvas.height = h;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#f4ece0';
+  // Base color
+  ctx.fillStyle = '#d4c4a8';
   ctx.fillRect(0, 0, w, h);
 
-  ctx.strokeStyle = '#b5a898';
+  // Add inner shadow for depth
+  const gradient = ctx.createLinearGradient(0, 0, w, h);
+  gradient.addColorStop(0, 'rgba(0,0,0,0.15)');
+  gradient.addColorStop(0.5, 'rgba(0,0,0,0)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0.15)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
+
+  // Border — match side wood
+  ctx.strokeStyle = '#6b4423';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, w - 4, h - 4);
+
+  // Divider line
+  ctx.strokeStyle = '#6b4423';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(4, h / 2);
@@ -163,13 +208,23 @@ function drawPipHalf(
   for (const [ox, oy] of positions) {
     const px = x + w * (0.5 + ox * 0.34);
     const py = y + h * (0.5 + oy * 0.34);
+
+    // Shadow
+    ctx.beginPath();
+    ctx.arc(px + 1, py + 1, r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    // Main pip
     ctx.beginPath();
     ctx.arc(px, py, r, 0, Math.PI * 2);
-    ctx.fillStyle = '#141820';
+    ctx.fillStyle = '#1a1a2e';
     ctx.fill();
+
+    // Highlight
     ctx.beginPath();
-    ctx.arc(px - r * 0.15, py - r * 0.15, r * 0.25, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.arc(px - r * 0.2, py - r * 0.2, r * 0.3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.fill();
   }
 }

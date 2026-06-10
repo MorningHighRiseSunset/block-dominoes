@@ -2,11 +2,11 @@ import * as THREE from 'three';
 
 export const dominoMaterials = {
   face: new THREE.MeshPhysicalMaterial({
-    color: 0xf0e6d6,
-    roughness: 0.38,
-    metalness: 0.01,
-    clearcoat: 0.35,
-    clearcoatRoughness: 0.28,
+    color: 0xd4c4a8,
+    roughness: 0.42,
+    metalness: 0.02,
+    clearcoat: 0.45,
+    clearcoatRoughness: 0.32,
   }),
   back: new THREE.MeshPhysicalMaterial({
     color: 0x4a1520,
@@ -24,7 +24,7 @@ export const dominoMaterials = {
     polygonOffsetUnits: -1,
   }),
   divider: new THREE.MeshStandardMaterial({
-    color: 0xc9bfb0,
+    color: 0x8b7355,
     roughness: 0.6,
   }),
 };

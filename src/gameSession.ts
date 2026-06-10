@@ -6,15 +6,24 @@ import {
   handPipCount,
   mustPass,
   newGame,
-  newGameWithSetup,
   pipLabel,
+  findStarter,
+  findStarterWithPlayerAnswer,
+  dealHands,
+  makeDeck,
+  shuffle,
+  dominoLabel,
+  setSnakeTurn,
   type BlockDominoesState,
   type BlockMove,
   type Pip,
+  type Domino,
+  type SnakeTurn,
 } from './game/blockDominoes';
 import { runAiTurn } from './game/blockDominoesAi';
 import { playPlaceSound, unlockAudio } from './audio/sounds';
 import { BlockDominoScene } from './render/blockDominoScene';
+import { dominoFaceDataUrl } from './render/dominoMesh';
 
 export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => void) {
   const statusEl = document.getElementById('status')!;
@@ -34,10 +43,44 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const btnCloseInstr = document.getElementById('btn-close-instr')!;
   const btnInstrDone = document.getElementById('btn-instr-done')!;
   const setupModal = document.getElementById('setup-modal')!;
+  const setupHandTiles = document.getElementById('setup-hand-tiles')!;
   const btnBig6 = document.getElementById('btn-big6')!;
   const btnBig5 = document.getElementById('btn-big5')!;
   const btnBig4 = document.getElementById('btn-big4')!;
   const btnNoDouble = document.getElementById('btn-nodouble')!;
+  const gameToast = document.getElementById('game-toast')!;
+  const btnTurnCw = document.getElementById('btn-turn-cw') as HTMLButtonElement;
+  const btnTurnCcw = document.getElementById('btn-turn-ccw') as HTMLButtonElement;
+
+  let toastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function showToast(message: string, durationMs = 3000) {
+    if (toastTimer) clearTimeout(toastTimer);
+    gameToast.textContent = message;
+    gameToast.classList.remove('hidden');
+    toastTimer = setTimeout(() => {
+      gameToast.classList.add('hidden');
+      toastTimer = null;
+    }, durationMs);
+  }
+
+  function updateTurnButtons(turn: SnakeTurn) {
+    const yours = state.current === 0 && state.phase === 'playing';
+    btnTurnCw.classList.toggle('active', turn === 'clockwise');
+    btnTurnCcw.classList.toggle('active', turn === 'counterclockwise');
+    btnTurnCw.disabled = !yours;
+    btnTurnCcw.disabled = !yours;
+  }
+
+  function applySnakeTurn(turn: SnakeTurn) {
+    if (state.phase !== 'playing' || state.current !== 0) return;
+    state = setSnakeTurn(state, turn);
+    updateTurnButtons(turn);
+    updateHud();
+  }
+
+  btnTurnCw.addEventListener('click', () => applySnakeTurn('clockwise'));
+  btnTurnCcw.addEventListener('click', () => applySnakeTurn('counterclockwise'));
 
   function openInstructions() {
     instructionsModal.classList.remove('hidden');
@@ -47,7 +90,24 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     instructionsModal.classList.add('hidden');
   }
 
+  function renderSetupHand(hand: Domino[]) {
+    setupHandTiles.replaceChildren();
+    const sorted = [...hand].sort((a, b) => b.high - a.high || b.low - a.low);
+    for (const d of sorted) {
+      const tile = document.createElement('div');
+      tile.className = 'setup-domino';
+      const img = document.createElement('img');
+      img.src = dominoFaceDataUrl(d.low, d.high);
+      img.alt = dominoLabel(d);
+      img.draggable = false;
+      tile.appendChild(img);
+      setupHandTiles.appendChild(tile);
+    }
+  }
+
   function openSetupModal() {
+    const hand = previewHands?.[0] ?? state.hands[0];
+    renderSetupHand(hand);
     setupModal.classList.remove('hidden');
   }
 
@@ -57,7 +117,24 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
   function startGameWithSetup(playerHasDouble: { player: 0; double: Pip } | null) {
     closeSetupModal();
-    state = newGameWithSetup(2, playerHasDouble);
+    // Use the preview hands if available, otherwise create new ones
+    const hands = previewHands || dealHands(shuffle(makeDeck()), 2);
+    const { player: starter } = findStarterWithPlayerAnswer(hands, playerHasDouble);
+    state = {
+      playerCount: 2,
+      hands,
+      chain: [],
+      leftEnd: null,
+      rightEnd: null,
+      current: starter,
+      phase: 'playing',
+      winner: null,
+      gameOverReason: null,
+      passesInRow: 0,
+      lastMove: null,
+      snakeTurn: 'clockwise',
+    };
+    previewHands = null; // Clear the preview hands
     overlay.classList.add('hidden');
     btnNew.classList.add('hidden');
     inputLocked = false;
@@ -99,6 +176,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   let passScheduled = false;
   let loopRunning = false;
   let paused = true;
+  let previewHands: Domino[][] | null = null;
 
   function updateHud() {
     const youPips = handPipCount(state.hands[0]);
@@ -133,22 +211,23 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
     if (state.current === 0) {
       if (mustPass(state, 0)) {
-        statusEl.textContent = 'No playable tile — passing…';
+        statusEl.textContent = 'Your turn';
         hintEl.textContent = 'Block rules: no draw from the boneyard.';
         scene.sync(state, [], false);
-        schedulePass();
+        schedulePass('You have no matching tile — passing.');
         return;
       }
-      statusEl.textContent = 'Your turn — select a tile, then click where to place it';
+      statusEl.textContent = 'Your turn — pick a tile, then choose where to play it';
       hintEl.textContent =
         state.chain.length === 0
-          ? 'Click a teal tile to select it, then click the highlighted spot to place.'
-          : 'Click a teal tile to select it, then click a gold marker to choose placement.';
+          ? 'Select your opening tile, then click the highlighted spot on the table.'
+          : 'Gold ghost = left end · Blue-tint ghost = right end. Click the preview to place there.';
     } else {
       statusEl.textContent = 'CPU is thinking…';
       hintEl.textContent = `${state.hands[1].length} tile(s) hidden.`;
     }
 
+    updateTurnButtons(state.snakeTurn);
     scene.sync(
       state,
       state.current === 0 ? legal : [],
@@ -157,18 +236,20 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   }
 
   function showGameOverOverlay() {
-    const won = state.winner === 0;
-    overlayTitle.textContent = won ? 'You win!' : 'CPU wins';
-    if (state.gameOverReason === 'empty') {
-      overlayMsg.textContent = won
-        ? 'You played your last tile.'
-        : 'The CPU emptied its hand.';
-    } else {
-      overlayMsg.textContent = won
-        ? `Game blocked. Your hand: ${handPipCount(state.hands[0])} pips. CPU: ${handPipCount(state.hands[1])}.`
-        : `Game blocked. CPU had fewer pips (${handPipCount(state.hands[1])} vs your ${handPipCount(state.hands[0])}).`;
-    }
-    overlay.classList.remove('hidden');
+    setTimeout(() => {
+      const won = state.winner === 0;
+      overlayTitle.textContent = won ? 'You win!' : 'CPU wins';
+      if (state.gameOverReason === 'empty') {
+        overlayMsg.textContent = won
+          ? 'You played your last tile.'
+          : 'The CPU emptied its hand.';
+      } else {
+        overlayMsg.textContent = won
+          ? `Game blocked. Your hand: ${handPipCount(state.hands[0])} pips. CPU: ${handPipCount(state.hands[1])}.`
+          : `Game blocked. CPU had fewer pips (${handPipCount(state.hands[1])} vs your ${handPipCount(state.hands[0])}).`;
+      }
+      overlay.classList.remove('hidden');
+    }, 4500);
   }
 
   function applyHumanMove(move: BlockMove) {
@@ -186,10 +267,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     scheduleAi();
   }
 
-  function schedulePass() {
+  function schedulePass(message: string) {
     if (passScheduled) return;
     passScheduled = true;
     inputLocked = true;
+    showToast(message, 3000);
     setTimeout(() => {
       passScheduled = false;
       state = applyPass(state);
@@ -201,11 +283,13 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       }
       updateHud();
       if (state.current === 1) scheduleAi();
-    }, 500);
+    }, 3000);
   }
 
   function scheduleAi() {
     if (pendingAi) return;
+    if (state.current !== 1) return; // Only schedule if it's actually AI's turn
+    if (state.phase !== 'playing') return; // Only schedule if game is still playing
     pendingAi = true;
     setTimeout(runAiTurnLoop, 450);
   }
@@ -219,7 +303,13 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     }
 
     inputLocked = true;
+    const passesBefore = state.passesInRow;
+    const chainBefore = state.chain.length;
     state = runAiTurn(state);
+
+    if (state.passesInRow > passesBefore && state.chain.length === chainBefore) {
+      showToast('CPU has no matching tile — passing.');
+    }
 
     if (state.phase === 'gameOver') {
       updateHud();
@@ -244,7 +334,27 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   btnNew.addEventListener('click', startNewGame);
 
   function startNewGame() {
-    // Show setup modal for traditional Big 6/4/5 question
+    // Create preview hands so player can see their dominoes before answering
+    const deck = shuffle(makeDeck());
+    previewHands = dealHands(deck, 2);
+    const { player: starter } = findStarter(previewHands);
+    state = {
+      playerCount: 2,
+      hands: previewHands,
+      chain: [],
+      leftEnd: null,
+      rightEnd: null,
+      current: starter,
+      phase: 'playing',
+      winner: null,
+      gameOverReason: null,
+      passesInRow: 0,
+      lastMove: null,
+      snakeTurn: 'clockwise',
+    };
+    // Sync the scene to show the player's hand
+    updateHud();
+    // Show setup modal immediately (it's now positioned at top and semi-transparent)
     openSetupModal();
   }
 

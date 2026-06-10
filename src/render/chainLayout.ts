@@ -1,12 +1,12 @@
-/** World-space domino train — tiles touch end-to-end, no grid snapping. */
+/** World-space domino train — grid-aligned, tiles touch with no overlap. */
 
 import { DOMINO_LENGTH } from './boardGrid';
 import { TILE_W } from './dominoMesh';
-import type { PlayedTile } from '../game/blockDominoes';
+import type { PlayedTile, SnakeTurn, TravelDir } from '../game/blockDominoes';
 
 export const STEP = DOMINO_LENGTH;
 
-export type TravelDir = 'east' | 'west' | 'north' | 'south';
+export type { TravelDir, SnakeTurn };
 
 export interface ChainTilePlacement {
   x: number;
@@ -16,11 +16,15 @@ export interface ChainTilePlacement {
   isDouble: boolean;
 }
 
-const PLAY_MIN_X = -5;
-const PLAY_MAX_X = 5;
-const PLAY_MIN_Z = -2.6;
-const PLAY_MAX_Z = 2.6;
-const MAX_RUN = 6;
+/** Default growth heads away from the player hand (+Z). */
+export const INITIAL_TRAVEL_DIR: TravelDir = 'north';
+
+const PLAY_MIN_X = -8;
+const PLAY_MAX_X = 8;
+const PLAY_MIN_Z = -5;
+/** Keep the chain off the player rack (+Z is toward the human hand). */
+const PLAY_MAX_Z = 2.2;
+const MAX_RUN = 8;
 
 function rotationYForDir(d: TravelDir): number {
   switch (d) {
@@ -40,6 +44,11 @@ function turnRight(d: TravelDir): TravelDir {
   return order[(order.indexOf(d) + 1) % 4];
 }
 
+function turnLeft(d: TravelDir): TravelDir {
+  const order: TravelDir[] = ['east', 'south', 'west', 'north'];
+  return order[(order.indexOf(d) + 3) % 4];
+}
+
 function oppositeDir(d: TravelDir): TravelDir {
   switch (d) {
     case 'east':
@@ -53,31 +62,94 @@ function oppositeDir(d: TravelDir): TravelDir {
   }
 }
 
-function stepFrom(x: number, z: number, dir: TravelDir): { x: number; z: number } {
+function stepFrom(x: number, z: number, dir: TravelDir, dist: number): { x: number; z: number } {
   switch (dir) {
     case 'east':
-      return { x: x + STEP, z };
+      return { x: x + dist, z };
     case 'west':
-      return { x: x - STEP, z };
+      return { x: x - dist, z };
     case 'south':
-      return { x, z: z + STEP };
+      return { x, z: z + dist };
     case 'north':
-      return { x, z: z - STEP };
+      return { x, z: z - dist };
   }
 }
 
-function wouldFit(x: number, z: number, dir: TravelDir): boolean {
-  const half = STEP * 0.52;
+function axisForDir(dir: TravelDir): 'x' | 'z' {
+  return dir === 'east' || dir === 'west' ? 'x' : 'z';
+}
+
+export function halfExtentOnAxis(rotationY: number, axis: 'x' | 'z'): number {
+  const hx = TILE_W * 0.5;
+  const hz = DOMINO_LENGTH * 0.5;
+  const cos = Math.cos(rotationY);
+  const sin = Math.sin(rotationY);
+  const extX = Math.abs(hx * cos + hz * sin);
+  const extZ = Math.abs(-hx * sin + hz * cos);
+  return axis === 'x' ? extX : extZ;
+}
+
+export function halfExtentAlongDir(rotationY: number, dir: TravelDir): number {
+  return halfExtentOnAxis(rotationY, axisForDir(dir));
+}
+
+export function rotationForTile(travelDir: TravelDir, isDouble: boolean): number {
+  let rotationY = rotationYForDir(travelDir);
+  if (isDouble) rotationY += Math.PI / 2;
+  return rotationY;
+}
+
+function wouldFit(x: number, z: number, dir: TravelDir, halfStep: number): boolean {
+  const margin = halfStep + 0.02;
   switch (dir) {
     case 'east':
-      return x + half <= PLAY_MAX_X;
+      return x + margin <= PLAY_MAX_X;
     case 'west':
-      return x - half >= PLAY_MIN_X;
+      return x - margin >= PLAY_MIN_X;
     case 'south':
-      return z + half <= PLAY_MAX_Z;
+      return z + margin <= PLAY_MAX_Z;
     case 'north':
-      return z - half >= PLAY_MIN_Z;
+      return z - margin >= PLAY_MIN_Z;
   }
+}
+
+function pickTurn(from: TravelDir, snakeTurn: SnakeTurn): TravelDir {
+  return snakeTurn === 'clockwise' ? turnRight(from) : turnLeft(from);
+}
+
+/** Minimum center-to-center distance so tile faces touch along the chain axis. */
+function centerDistance(
+  fromRot: number,
+  _fromDouble: boolean,
+  toRot: number,
+  _toDouble: boolean,
+  dir: TravelDir,
+): number {
+  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir);
+}
+
+function tileAabb(placement: ChainTilePlacement): { hw: number; hd: number } {
+  const fp = tileFootprint(placement.rotationY);
+  return { hw: fp.w * 0.5, hd: fp.d * 0.5 };
+}
+
+function overlapsAny(
+  x: number,
+  z: number,
+  rotationY: number,
+  existing: ChainTilePlacement[],
+): boolean {
+  const fp = tileFootprint(rotationY);
+  const hw = fp.w * 0.5;
+  const hd = fp.d * 0.5;
+
+  for (const p of existing) {
+    const o = tileAabb(p);
+    if (Math.abs(x - p.x) < hw + o.hw - 0.02 && Math.abs(z - p.z) < hd + o.hd - 0.02) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function nextStep(
@@ -85,69 +157,111 @@ function nextStep(
   z: number,
   dir: TravelDir,
   runLen: number,
+  fromRot: number,
+  fromDouble: boolean,
+  toRot: number,
+  toDouble: boolean,
+  snakeTurn: SnakeTurn,
+  existing: ChainTilePlacement[],
 ): { x: number; z: number; dir: TravelDir; runLen: number } {
-  const fwd = stepFrom(x, z, dir);
-  const needTurn = runLen >= MAX_RUN - 1 || !wouldFit(fwd.x, fwd.z, dir);
+  const dist = centerDistance(fromRot, fromDouble, toRot, toDouble, dir);
+  const fwd = stepFrom(x, z, dir, dist);
+  const needTurn =
+    runLen >= MAX_RUN - 1 ||
+    !wouldFit(fwd.x, fwd.z, dir, halfExtentAlongDir(toRot, dir)) ||
+    overlapsAny(fwd.x, fwd.z, toRot, existing);
 
   if (!needTurn) {
     return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
   }
 
-  // When turning, account for domino width to ensure tiles touch at corners
   const halfWidth = TILE_W * 0.5;
-  let tryDir = turnRight(dir);
+  let tryDir = pickTurn(dir, snakeTurn);
   for (let t = 0; t < 4; t++) {
-    // Calculate offset for corner-to-corner contact
     let offsetX = 0;
     let offsetZ = 0;
-    
-    // If turning from vertical to horizontal or vice versa, offset by half width
-    const isVerticalTurn = (dir === 'north' || dir === 'south') && (tryDir === 'east' || tryDir === 'west');
-    const isHorizontalTurn = (dir === 'east' || dir === 'west') && (tryDir === 'north' || tryDir === 'south');
-    
-    if (isVerticalTurn || isHorizontalTurn) {
+
+    if (dir === 'north' || dir === 'south') {
       if (tryDir === 'east') offsetX = halfWidth;
       else if (tryDir === 'west') offsetX = -halfWidth;
       else if (tryDir === 'north') offsetZ = -halfWidth;
       else if (tryDir === 'south') offsetZ = halfWidth;
+    } else {
+      if (tryDir === 'north') offsetZ = -halfWidth;
+      else if (tryDir === 'south') offsetZ = halfWidth;
+      else if (tryDir === 'east') offsetX = halfWidth;
+      else if (tryDir === 'west') offsetX = -halfWidth;
     }
-    
-    const candidate = stepFrom(x + offsetX, z + offsetZ, tryDir);
-    if (wouldFit(candidate.x, candidate.z, tryDir)) {
+
+    const tryRot = rotationForTile(tryDir, toDouble);
+    const turnDist = centerDistance(fromRot, fromDouble, tryRot, toDouble, tryDir);
+    const candidate = stepFrom(x + offsetX, z + offsetZ, tryDir, turnDist);
+    if (
+      wouldFit(candidate.x, candidate.z, tryDir, halfExtentAlongDir(tryRot, tryDir)) &&
+      !overlapsAny(candidate.x, candidate.z, tryRot, existing)
+    ) {
       return { x: candidate.x, z: candidate.z, dir: tryDir, runLen: 1 };
     }
-    tryDir = turnRight(tryDir);
+    tryDir = pickTurn(tryDir, snakeTurn);
   }
 
   return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
 }
 
-export function layoutChain(chain: PlayedTile[]): ChainTilePlacement[] {
+/** Use stored positions when available so tiles never jump after a left-end play. */
+export function layoutChain(
+  chain: PlayedTile[],
+  snakeTurn: SnakeTurn = 'clockwise',
+): ChainTilePlacement[] {
+  if (chain.length > 0 && chain.every((t) => t.layout)) {
+    return chain.map((tile) => ({
+      x: tile.layout!.x,
+      z: tile.layout!.z,
+      rotationY: tile.layout!.rotationY,
+      travelDir: tile.layout!.travelDir,
+      isDouble: tile.isDouble,
+    }));
+  }
+
+  return layoutChainAuto(chain, snakeTurn);
+}
+
+export function layoutChainAuto(
+  chain: PlayedTile[],
+  snakeTurn: SnakeTurn,
+): ChainTilePlacement[] {
   if (chain.length === 0) return [];
 
   const out: ChainTilePlacement[] = [];
   let x = 0;
   let z = 0;
-  let dir: TravelDir = 'south';
+  let dir: TravelDir = INITIAL_TRAVEL_DIR;
   let runLen = 0;
 
   for (let i = 0; i < chain.length; i++) {
     const tile = chain[i];
-    const isDouble = tile.isDouble;
-    
-    // For doubles, rotate perpendicular to the chain direction
-    let rotationY = rotationYForDir(dir);
-    if (isDouble) {
-      rotationY += Math.PI / 2; // Rotate 90 degrees for perpendicular placement
-    }
-    
-    out.push({ x, z, rotationY, travelDir: dir, isDouble });
+    const rotationY = rotationForTile(dir, tile.isDouble);
+    out.push({ x, z, rotationY, travelDir: dir, isDouble: tile.isDouble });
     if (i === chain.length - 1) break;
-    const next = nextStep(x, z, dir, runLen);
-    x = next.x;
-    z = next.z;
-    dir = next.dir;
-    runLen = next.runLen;
+
+    const next = chain[i + 1];
+    const nextRot = rotationForTile(dir, next.isDouble);
+    const step = nextStep(
+      x,
+      z,
+      dir,
+      runLen,
+      rotationY,
+      tile.isDouble,
+      nextRot,
+      next.isDouble,
+      snakeTurn,
+      out,
+    );
+    x = step.x;
+    z = step.z;
+    dir = step.dir;
+    runLen = step.runLen;
   }
 
   return out;
@@ -156,48 +270,92 @@ export function layoutChain(chain: PlayedTile[]): ChainTilePlacement[] {
 export function extensionSlot(
   placements: ChainTilePlacement[],
   end: 'left' | 'right',
-  isDouble: boolean = false,
+  isDouble: boolean,
+  snakeTurn: SnakeTurn = 'clockwise',
 ): ChainTilePlacement {
   if (!placements.length) {
-    const rotationY = isDouble ? rotationYForDir('south') + Math.PI / 2 : rotationYForDir('south');
-    return { x: 0, z: 0, rotationY, travelDir: 'south', isDouble };
+    const travelDir = INITIAL_TRAVEL_DIR;
+    return {
+      x: 0,
+      z: 0,
+      rotationY: rotationForTile(travelDir, isDouble),
+      travelDir,
+      isDouble,
+    };
   }
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
   const dir = end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir;
-  const fwd = stepFrom(anchor.x, anchor.z, dir);
+  const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble);
+  const newRot = rotationForTile(dir, isDouble);
+  const dist = centerDistance(anchorRot, anchor.isDouble, newRot, isDouble, dir);
+  const fwd = stepFrom(anchor.x, anchor.z, dir, dist);
 
-  if (wouldFit(fwd.x, fwd.z, dir)) {
-    const rotationY = isDouble ? rotationYForDir(dir) + Math.PI / 2 : rotationYForDir(dir);
-    return { x: fwd.x, z: fwd.z, rotationY, travelDir: dir, isDouble };
+  if (
+    wouldFit(fwd.x, fwd.z, dir, halfExtentAlongDir(newRot, dir)) &&
+    !overlapsAny(fwd.x, fwd.z, newRot, placements)
+  ) {
+    const travelDir = end === 'left' ? anchor.travelDir : dir;
+    return {
+      x: fwd.x,
+      z: fwd.z,
+      rotationY: newRot,
+      travelDir,
+      isDouble,
+    };
   }
 
-  // When turning, use the same offset logic as nextStep to ensure touching
   const halfWidth = TILE_W * 0.5;
-  let tryDir = turnRight(dir);
+  let tryDir = pickTurn(dir, snakeTurn);
   for (let t = 0; t < 3; t++) {
-    // Calculate offset for corner-to-corner contact
     let offsetX = 0;
     let offsetZ = 0;
-    
-    const isVerticalTurn = (dir === 'north' || dir === 'south') && (tryDir === 'east' || tryDir === 'west');
-    const isHorizontalTurn = (dir === 'east' || dir === 'west') && (tryDir === 'north' || tryDir === 'south');
-    
-    if (isVerticalTurn || isHorizontalTurn) {
+
+    if (dir === 'north' || dir === 'south') {
       if (tryDir === 'east') offsetX = halfWidth;
       else if (tryDir === 'west') offsetX = -halfWidth;
       else if (tryDir === 'north') offsetZ = -halfWidth;
       else if (tryDir === 'south') offsetZ = halfWidth;
+    } else {
+      if (tryDir === 'north') offsetZ = -halfWidth;
+      else if (tryDir === 'south') offsetZ = halfWidth;
+      else if (tryDir === 'east') offsetX = halfWidth;
+      else if (tryDir === 'west') offsetX = -halfWidth;
     }
-    
-    const candidate = stepFrom(anchor.x + offsetX, anchor.z + offsetZ, tryDir);
-    if (wouldFit(candidate.x, candidate.z, tryDir)) {
-      const rotationY = isDouble ? rotationYForDir(tryDir) + Math.PI / 2 : rotationYForDir(tryDir);
-      return { x: candidate.x, z: candidate.z, rotationY, travelDir: tryDir, isDouble };
+
+    const tryRot = rotationForTile(tryDir, isDouble);
+    const turnDist = centerDistance(anchorRot, anchor.isDouble, tryRot, isDouble, tryDir);
+    const candidate = stepFrom(anchor.x + offsetX, anchor.z + offsetZ, tryDir, turnDist);
+    if (
+      wouldFit(candidate.x, candidate.z, tryDir, halfExtentAlongDir(tryRot, tryDir)) &&
+      !overlapsAny(candidate.x, candidate.z, tryRot, placements)
+    ) {
+      const travelDir = end === 'left' ? anchor.travelDir : tryDir;
+      return {
+        x: candidate.x,
+        z: candidate.z,
+        rotationY: tryRot,
+        travelDir,
+        isDouble,
+      };
     }
-    tryDir = turnRight(tryDir);
+    tryDir = pickTurn(tryDir, snakeTurn);
   }
 
-  const rotationY = isDouble ? rotationYForDir(dir) + Math.PI / 2 : rotationYForDir(dir);
-  return { x: fwd.x, z: fwd.z, rotationY, travelDir: dir, isDouble };
+  const travelDir = end === 'left' ? anchor.travelDir : dir;
+  return {
+    x: fwd.x,
+    z: fwd.z,
+    rotationY: newRot,
+    travelDir,
+    isDouble,
+  };
+}
+
+/** Footprint width (X) and depth (Z) for a highlight/box from rotationY. */
+export function tileFootprint(rotationY: number): { w: number; d: number } {
+  const alongX = Math.abs(Math.sin(rotationY)) > 0.5;
+  return alongX
+    ? { w: DOMINO_LENGTH, d: TILE_W }
+    : { w: TILE_W, d: DOMINO_LENGTH };
 }

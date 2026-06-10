@@ -4,14 +4,13 @@ import {
   type BlockMove,
   type Player,
 } from '../game/blockDominoes';
-import { buildPlaySurface, DOMINO_LENGTH, WOOD_COLOR } from './boardGrid';
-import { TILE_W } from './dominoMesh';
+import { buildPlaySurface, WOOD_COLOR } from './boardGrid';
+import { TILE_W, TILE_D } from './dominoMesh';
 import { layoutChain } from './chainLayout';
 import {
   createDominoBack,
   createDominoMesh,
   disposeGroup,
-  DOMINO_MAT,
   TILE_H,
   updateDominoFace,
 } from './dominoMesh';
@@ -20,11 +19,21 @@ import { buildPlacementSlots } from './placementSlots';
 
 const TABLE_SURFACE_Y = 0.04;
 const TILE_LIFT = 0.08;
-/** +Z = bottom of screen (your hand). −Z = top (CPU). */
-const PLAYER_HAND_Z = 3.35;
-const CPU_HAND_Z = -3.35;
+const TABLE_DEPTH = 12;
+const FELT_DEPTH = 10.4;
+/** Wood rail beyond the felt — player rack sits here (+Z = bottom of screen). */
+const PLAYER_HAND_Z = FELT_DEPTH / 2 + (TABLE_DEPTH - FELT_DEPTH) / 4;
+const CPU_HAND_Z = -PLAYER_HAND_Z;
+const HAND_SURFACE_Y = TABLE_SURFACE_Y + 0.04;
 const CAMERA_FOV = 45;
 const LOOK_AT = new THREE.Vector3(0, 0, 0.5);
+
+interface ScreenRect {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
 
 interface DropAnim {
   mesh: THREE.Group;
@@ -43,13 +52,14 @@ export class BlockDominoScene {
   private readonly chainRoot = new THREE.Group();
   private readonly handsRoot = new THREE.Group();
   private readonly highlightsRoot = new THREE.Group();
-  private readonly cellHighlights = new Map<string, THREE.Mesh>();
+  private readonly cellHighlights = new Map<string, THREE.Group>();
   private readonly handMeshes = new Map<string, THREE.Group>();
   private readonly chainMeshes: THREE.Group[] = [];
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly clock = new THREE.Clock();
   private readonly dropAnims: DropAnim[] = [];
+  private readonly playerRack = new THREE.Group();
   private placementListener: ((player: Player) => void) | null = null;
   private dropListener: ((move: BlockMove) => void) | null = null;
   private currentLegal: BlockMove[] = [];
@@ -58,6 +68,9 @@ export class BlockDominoScene {
   private targetCameraX = 0;
   private currentCameraX = 0;
   private selectedHandIndex: number | null = null;
+  private isDragging = false;
+  private dragHandIndex: number | null = null;
+  private dragMesh: THREE.Group | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -103,21 +116,36 @@ export class BlockDominoScene {
     this.resize();
   }
 
-  private isMobile(): boolean {
-    return this.canvas.clientWidth < 768 || this.canvas.clientHeight < 768;
-  }
-
   private buildTable() {
     const wood = makeWoodTexture();
     const table = new THREE.Mesh(
-      new THREE.BoxGeometry(14, 0.28, 8),
+      new THREE.BoxGeometry(20, 0.28, 12),
       new THREE.MeshStandardMaterial({ map: wood, color: WOOD_COLOR, roughness: 0.62 }),
     );
     table.position.y = -0.14;
     table.receiveShadow = true;
     this.tableRoot.add(table);
 
-    this.tableRoot.add(buildPlaySurface(11.2, 6.4, TABLE_SURFACE_Y));
+    this.tableRoot.add(buildPlaySurface(17.2, FELT_DEPTH, TABLE_SURFACE_Y));
+    this.buildRacks();
+  }
+
+  private buildRacks() {
+    const wood = makeWoodTexture();
+    const rackMat = new THREE.MeshStandardMaterial({
+      map: wood,
+      color: WOOD_COLOR,
+      roughness: 0.65,
+    });
+
+    for (const z of [PLAYER_HAND_Z, CPU_HAND_Z]) {
+      const rack = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.05, 0.9), rackMat);
+      rack.position.set(0, HAND_SURFACE_Y - 0.025, z);
+      rack.receiveShadow = true;
+      this.playerRack.add(rack);
+    }
+
+    this.tableRoot.add(this.playerRack);
   }
 
   resize() {
@@ -138,20 +166,20 @@ export class BlockDominoScene {
     const isMobile = width < 768 || height < 768;
     const isPortrait = height > width;
 
-    // Position camera closer for better clickability while still seeing board
-    // With FOV 40, at Z=10 we can see ~7 units height, which covers the board depth of 8 with some margin
-    let baseY = 11;
-    let baseZ = 10;
+    // Position camera to see the larger board (17.2 x 10.4)
+    // With FOV 45, at Z=14 we can see ~11.5 units height, which covers the board depth of 10.4 with margin
+    let baseY = 15;
+    let baseZ = 14;
 
     if (isMobile) {
       if (isPortrait) {
         // Portrait mobile: move camera higher to see full width in portrait
-        baseY = 13;
-        baseZ = 9;
+        baseY = 18;
+        baseZ = 12;
       } else {
         // Landscape mobile: similar to desktop but slightly adjusted
-        baseY = 11;
-        baseZ = 9.5;
+        baseY = 15;
+        baseZ = 13;
       }
     }
 
@@ -213,7 +241,7 @@ export class BlockDominoScene {
     }
 
     // Calculate the center of the chain
-    const placements = layoutChain(state.chain);
+    const placements = layoutChain(state.chain, state.snakeTurn);
     let sumX = 0;
     for (const p of placements) {
       sumX += p.x;
@@ -233,13 +261,13 @@ export class BlockDominoScene {
     }
 
     const n = state.chain.length;
-    const placements = layoutChain(state.chain);
+    const placements = layoutChain(state.chain, state.snakeTurn);
     const yBase = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
 
     for (let i = 0; i < n; i++) {
       const tile = state.chain[i];
       const { x, z, rotationY } = placements[i];
-      const y = yBase + i * 0.003;
+      const y = yBase;
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);
@@ -275,7 +303,7 @@ export class BlockDominoScene {
     for (const player of [0, 1] as Player[]) {
       const hand = state.hands[player];
       const z = player === 0 ? PLAYER_HAND_Z : CPU_HAND_Z;
-      const spread = Math.min(0.56, 5.2 / Math.max(hand.length, 1));
+      const spread = Math.min(1.02, 6.6 / Math.max(hand.length, 1));
       const startX = -((hand.length - 1) * spread) / 2;
 
       for (let i = 0; i < hand.length; i++) {
@@ -288,11 +316,26 @@ export class BlockDominoScene {
           : createDominoBack(player);
         g.userData = { kind: 'hand', player, handIndex: i };
 
-        const handY = TABLE_SURFACE_Y + TILE_H * 0.5 + 0.32;
+        const handY = HAND_SURFACE_Y + TILE_H * 0.5;
         g.position.set(startX + i * spread, handY, z);
-        // Reduce tilt for better raycasting and clickability
-        const tiltAngle = this.isMobile() && player === 0 ? -0.15 : (player === 0 ? -0.35 : 0.35);
-        g.rotation.set(tiltAngle, 0, 0);
+        // Lay flat on the rack with long edge along the row
+        g.rotation.set(0, Math.PI / 2, 0);
+
+        g.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.name !== 'handHit') {
+            child.raycast = () => {};
+          }
+        });
+
+        const hitPad = new THREE.Mesh(
+          new THREE.PlaneGeometry(TILE_D * 1.04, TILE_W * 1.12),
+          new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide }),
+        );
+        hitPad.rotation.x = -Math.PI / 2;
+        hitPad.position.y = TILE_H * 0.5 + 0.004;
+        hitPad.name = 'handHit';
+        hitPad.userData = { kind: 'hand', player, handIndex: i };
+        g.add(hitPad);
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
         if (hl) {
@@ -321,16 +364,15 @@ export class BlockDominoScene {
   private updateCellHighlights(
     state: BlockDominoesState,
     legal: BlockMove[],
-    _handIndex: number | null,
+    handIndex: number | null,
   ) {
-    for (const mesh of this.cellHighlights.values()) {
-      this.highlightsRoot.remove(mesh);
-      mesh.geometry.dispose();
-      (mesh.material as THREE.Material).dispose();
+    for (const ghost of this.cellHighlights.values()) {
+      this.highlightsRoot.remove(ghost);
+      disposeGroup(ghost);
     }
     this.cellHighlights.clear();
 
-    const slots = buildPlacementSlots(state, legal, null);
+    const slots = buildPlacementSlots(state, legal, handIndex);
     const seen = new Set<string>();
 
     for (const slot of slots) {
@@ -338,16 +380,48 @@ export class BlockDominoScene {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const mat = DOMINO_MAT.slotHint.clone();
-      const alongX = Math.abs(Math.cos(slot.rotationY)) > 0.5;
-      const w = alongX ? DOMINO_LENGTH : TILE_W;
-      const d = alongX ? TILE_W : DOMINO_LENGTH;
+      const domino = state.hands[0][slot.move.handIndex];
+      const ghost = createDominoMesh(domino.low, domino.high, 0, false, {
+        highlight: false,
+        outline: false,
+      });
+      ghost.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          const originalMat = child.material;
+          let mat: THREE.Material;
+
+          if (Array.isArray(originalMat)) {
+            mat = originalMat[0].clone();
+          } else if (originalMat && typeof originalMat.clone === 'function') {
+            mat = originalMat.clone();
+          } else {
+            return;
+          }
+
+          mat.transparent = true;
+          mat.opacity = 0.58;
+          mat.depthWrite = false;
+          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
+            mat.color.multiplyScalar(slot.move.end === 'left' ? 1.0 : 1.0);
+            if (slot.move.end === 'left') {
+              mat.color.setHex(0xf5d78e);
+            } else {
+              mat.color.setHex(0x9dd4f5);
+            }
+          }
+          child.material = mat;
+        }
+      });
       const slotY = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
-      const hi = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, TILE_H * 0.4, d * 0.92), mat);
-      hi.position.set(slot.x, slotY, slot.z);
-      hi.rotation.y = slot.rotationY;
-      this.highlightsRoot.add(hi);
-      this.cellHighlights.set(key, hi);
+      ghost.position.set(slot.x, slotY, slot.z);
+      ghost.rotation.y = slot.rotationY;
+      ghost.userData = {
+        kind: 'slot',
+        handIndex: slot.move.handIndex,
+        end: slot.move.end,
+      };
+      this.highlightsRoot.add(ghost);
+      this.cellHighlights.set(key, ghost);
     }
   }
 
@@ -358,58 +432,93 @@ export class BlockDominoScene {
     this.placementListener?.(player);
   }
 
-  private pickHand(clientX: number, clientY: number): number | null {
+  private projectHandTileBounds(mesh: THREE.Group, rect: DOMRect): ScreenRect | null {
+    const face = mesh.getObjectByName('face') as THREE.Mesh | undefined;
+    if (!face) return null;
+
+    face.updateWorldMatrix(true, false);
+    const box = new THREE.Box3().setFromObject(face);
+    if (box.isEmpty()) return null;
+
+    const corners = [
+      new THREE.Vector3(box.min.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.min.z),
+      new THREE.Vector3(box.min.x, box.max.y, box.max.z),
+      new THREE.Vector3(box.max.x, box.max.y, box.max.z),
+    ];
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const corner of corners) {
+      const projected = corner.clone().project(this.camera);
+      const sx = (projected.x * 0.5 + 0.5) * rect.width + rect.left;
+      const sy = (-projected.y * 0.5 + 0.5) * rect.height + rect.top;
+      minX = Math.min(minX, sx);
+      maxX = Math.max(maxX, sx);
+      minY = Math.min(minY, sy);
+      maxY = Math.max(maxY, sy);
+    }
+
+    const pad = 6;
+    return {
+      minX: minX - pad,
+      maxX: maxX + pad,
+      minY: minY - pad,
+      maxY: maxY + pad,
+    };
+  }
+
+  private positionDragMesh(clientX: number, clientY: number) {
+    if (!this.dragMesh) return;
+
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
-    const handGroups = [...this.handMeshes.values()].filter(
-      (g) => g.parent === this.handsRoot,
+    const plane = new THREE.Plane(
+      new THREE.Vector3(0, 1, 0),
+      -(TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5),
     );
-
-    // Try raycasting first with all objects in the group
-    const hits = this.raycaster.intersectObjects(handGroups, true);
-
-    for (const hit of hits) {
-      let obj: THREE.Object3D | null = hit.object;
-      while (obj) {
-        if (obj.userData?.kind === 'hand' && obj.userData.player === 0) {
-          return obj.userData.handIndex as number;
-        }
-        obj = obj.parent;
-      }
+    const intersection = new THREE.Vector3();
+    if (this.raycaster.ray.intersectPlane(plane, intersection)) {
+      this.dragMesh.position.copy(intersection);
+      this.dragMesh.rotation.set(0, Math.PI / 2, 0);
     }
+  }
 
-    // If no direct hits, try distance-based selection as fallback with larger radius
-    let closestHandIndex: number | null = null;
-    let closestDist = Infinity;
+  private pickHand(clientX: number, clientY: number): number | null {
+    const rect = this.canvas.getBoundingClientRect();
+
+    // Match clicks to the pip face as it appears on screen
+    let bestIndex: number | null = null;
+    let bestArea = Infinity;
 
     for (const [, mesh] of this.handMeshes) {
       if (mesh.parent !== this.handsRoot) continue;
-      if (mesh.userData?.kind !== 'hand' || mesh.userData.player !== 0) continue;
+      if (mesh.userData?.player !== 0) continue;
 
-      const worldPos = new THREE.Vector3();
-      mesh.getWorldPosition(worldPos);
+      const bounds = this.projectHandTileBounds(mesh, rect);
+      if (!bounds) continue;
 
-      // Project world position to screen space
-      const screenPos = worldPos.clone().project(this.camera);
-      const screenX = (screenPos.x * 0.5 + 0.5) * rect.width + rect.left;
-      const screenY = (-screenPos.y * 0.5 + 0.5) * rect.height + rect.top;
-
-      // Calculate distance from click to domino center on screen
-      const dist = Math.hypot(screenX - clientX, screenY - clientY);
-
-      // Use very generous hit radius (in pixels) to account for rotation
-      // Larger radius on mobile for easier touch targeting
-      const hitRadius = this.isMobile() ? 200 : 150;
-      if (dist < hitRadius && dist < closestDist) {
-        closestDist = dist;
-        closestHandIndex = mesh.userData.handIndex as number;
+      if (
+        clientX >= bounds.minX &&
+        clientX <= bounds.maxX &&
+        clientY >= bounds.minY &&
+        clientY <= bounds.maxY
+      ) {
+        const area = (bounds.maxX - bounds.minX) * (bounds.maxY - bounds.minY);
+        if (area < bestArea) {
+          bestArea = area;
+          bestIndex = mesh.userData.handIndex as number;
+        }
       }
     }
 
-    return closestHandIndex;
+    return bestIndex;
   }
 
   private selectTile(handIndex: number) {
@@ -444,24 +553,24 @@ export class BlockDominoScene {
   }
 
   private pickPlacementSlot(clientX: number, clientY: number): { handIndex: number; end: 'left' | 'right' } | null {
-    if (this.selectedHandIndex === null) return null;
-    
+    if (this.selectedHandIndex === null || !this.syncedState) return null;
+
     const rect = this.canvas.getBoundingClientRect();
     this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
 
-    // Raycast against placement slot highlights
-    const slotMeshes = Array.from(this.cellHighlights.values());
-    const hits = this.raycaster.intersectObjects(slotMeshes, false);
+    const slotGroups = Array.from(this.cellHighlights.values());
+    const hits = this.raycaster.intersectObjects(slotGroups, true);
 
-    if (hits.length > 0) {
-      // Find which slot was clicked
-      for (const [key, mesh] of this.cellHighlights) {
-        if (mesh === hits[0].object) {
-          const [handIndex, end] = key.split(':');
-          return { handIndex: parseInt(handIndex), end: end as 'left' | 'right' };
+    for (const hit of hits) {
+      let obj: THREE.Object3D | null = hit.object;
+      while (obj) {
+        const ud = obj.userData;
+        if (ud?.kind === 'slot' && ud.handIndex === this.selectedHandIndex) {
+          return { handIndex: ud.handIndex as number, end: ud.end as 'left' | 'right' };
         }
+        obj = obj.parent;
       }
     }
 
@@ -471,9 +580,9 @@ export class BlockDominoScene {
   private bindEvents() {
     window.addEventListener('resize', () => this.resize());
 
-    const handleInteraction = (clientX: number, clientY: number) => {
+    const handlePointerDown = (clientX: number, clientY: number) => {
       if (!this.interactive) return;
-      
+
       // First check if clicking on a placement slot (only when a domino is selected)
       if (this.selectedHandIndex !== null) {
         const slot = this.pickPlacementSlot(clientX, clientY);
@@ -482,14 +591,51 @@ export class BlockDominoScene {
           return;
         }
       }
-      
-      // Otherwise, check if clicking on a hand domino
+
+      // Check if clicking on a hand domino
       const handIndex = this.pickHand(clientX, clientY);
       if (handIndex !== null) {
-        this.selectTile(handIndex);
+        // Check if this tile is playable
+        const canPlay = this.currentLegal.some((m) => m.handIndex === handIndex);
+        if (canPlay) {
+          this.isDragging = true;
+          this.dragHandIndex = handIndex;
+          this.selectedHandIndex = handIndex;
+          this.rebuildHands(this.syncedState!, this.currentLegal, this.interactive);
+          this.updateCellHighlights(this.syncedState!, this.currentLegal, this.selectedHandIndex);
+
+          // Create drag mesh (ghost domino)
+          if (this.syncedState && this.dragHandIndex !== null) {
+            const domino = this.syncedState.hands[0][this.dragHandIndex];
+            this.dragMesh = createDominoMesh(domino.low, domino.high, 0, false);
+            this.dragMesh.rotation.set(0, Math.PI / 2, 0);
+            this.dragMesh.traverse((child) => {
+              if (child instanceof THREE.Mesh) {
+                const originalMat = child.material;
+                if (Array.isArray(originalMat)) {
+                  child.material = originalMat.map(m => {
+                    const cloned = m.clone();
+                    cloned.transparent = true;
+                    cloned.opacity = 0.6;
+                    return cloned;
+                  });
+                } else if (originalMat && typeof originalMat.clone === 'function') {
+                  const cloned = originalMat.clone();
+                  cloned.transparent = true;
+                  cloned.opacity = 0.6;
+                  child.material = cloned;
+                }
+              }
+            });
+            this.scene.add(this.dragMesh);
+            this.positionDragMesh(clientX, clientY);
+          }
+        } else {
+          this.selectTile(handIndex);
+        }
         return;
       }
-      
+
       // Clicked elsewhere - deselect
       if (this.selectedHandIndex !== null) {
         this.selectedHandIndex = null;
@@ -498,14 +644,60 @@ export class BlockDominoScene {
       }
     };
 
-    this.canvas.addEventListener('click', (e) => {
-      handleInteraction(e.clientX, e.clientY);
+    const handlePointerMove = (clientX: number, clientY: number) => {
+      if (!this.isDragging || this.dragHandIndex === null) return;
+      this.positionDragMesh(clientX, clientY);
+    };
+
+    const handlePointerUp = (clientX: number, clientY: number) => {
+      if (!this.isDragging || this.dragHandIndex === null) return;
+
+      // Check if dropped on a placement slot
+      const slot = this.pickPlacementSlot(clientX, clientY);
+      if (slot && slot.handIndex === this.dragHandIndex) {
+        this.playTile(slot.handIndex, slot.end);
+      }
+
+      // Clean up drag state
+      this.isDragging = false;
+      this.dragHandIndex = null;
+      if (this.dragMesh) {
+        this.scene.remove(this.dragMesh);
+        disposeGroup(this.dragMesh);
+        this.dragMesh = null;
+      }
+    };
+
+    // Mouse events
+    this.canvas.addEventListener('mousedown', (e) => {
+      handlePointerDown(e.clientX, e.clientY);
     });
+
+    this.canvas.addEventListener('mousemove', (e) => {
+      handlePointerMove(e.clientX, e.clientY);
+    });
+
+    this.canvas.addEventListener('mouseup', (e) => {
+      handlePointerUp(e.clientX, e.clientY);
+    });
+
+    // Touch events
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handlePointerDown(touch.clientX, touch.clientY);
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handlePointerMove(touch.clientX, touch.clientY);
+    }, { passive: false });
 
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
       const touch = e.changedTouches[0];
-      handleInteraction(touch.clientX, touch.clientY);
+      handlePointerUp(touch.clientX, touch.clientY);
     }, { passive: false });
   }
 }

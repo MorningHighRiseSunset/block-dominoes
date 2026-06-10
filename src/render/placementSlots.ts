@@ -1,7 +1,9 @@
 import type { BlockDominoesState, BlockMove } from '../game/blockDominoes';
 import {
   extensionSlot,
+  INITIAL_TRAVEL_DIR,
   layoutChain,
+  rotationForTile,
   type ChainTilePlacement,
 } from './chainLayout';
 
@@ -22,17 +24,15 @@ export function buildPlacementSlots(
   if (!filtered.length) return [];
 
   if (state.chain.length === 0) {
-    // First tile - check if it's a double
-    const handIndex = filtered[0].handIndex;
-    const domino = state.hands[0][handIndex];
+    const idx = filtered[0].handIndex;
+    const domino = state.hands[0][idx];
     const isDouble = domino.low === domino.high;
-    const rotationY = isDouble ? Math.PI / 2 : 0; // Doubles placed perpendicular
-    
+    const travelDir = INITIAL_TRAVEL_DIR;
     const placement: ChainTilePlacement = {
       x: 0,
       z: 0,
-      rotationY,
-      travelDir: 'south',
+      rotationY: rotationForTile(travelDir, isDouble),
+      travelDir,
       isDouble,
     };
     return filtered.map((move) => ({
@@ -44,14 +44,13 @@ export function buildPlacementSlots(
     }));
   }
 
-  const placements = layoutChain(state.chain);
+  const placements = layoutChain(state.chain, state.snakeTurn);
   const slots: PlacementSlot[] = [];
 
   for (const move of filtered) {
-    const handIndex = move.handIndex;
-    const domino = state.hands[0][handIndex];
+    const domino = state.hands[0][move.handIndex];
     const isDouble = domino.low === domino.high;
-    const ext = extensionSlot(placements, move.end, isDouble);
+    const ext = extensionSlot(placements, move.end, isDouble, state.snakeTurn);
     slots.push({
       move,
       x: ext.x,

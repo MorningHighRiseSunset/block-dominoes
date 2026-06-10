@@ -122,6 +122,8 @@
         </button>
       </header>
 
+      <div id="game-toast" class="game-toast hidden" role="status" aria-live="polite"></div>
+
       <footer class="bottom-bar">
         <p id="status" class="turn-text" role="status">Starting…</p>
         <div id="ends" class="ends-chip">
@@ -130,24 +132,34 @@
           <span class="sep">Right</span>
           <strong id="end-right">—</strong>
         </div>
+        <div class="chain-turn-controls" id="chain-turn-controls">
+          <span class="chain-turn-label">Chain turns</span>
+          <button type="button" id="btn-turn-cw" class="turn-btn active" title="Turn clockwise at table edge">↻</button>
+          <button type="button" id="btn-turn-ccw" class="turn-btn" title="Turn counter-clockwise at table edge">↺</button>
+        </div>
         <p id="hint" class="hint-text"></p>
       </footer>
 
       <button id="btn-new" type="button" class="btn-primary hidden">New game</button>
 
-      <div id="overlay" class="modal hidden" role="dialog" aria-modal="true">
-        <div class="modal-panel">
+      <div id="overlay" class="modal game-over-banner hidden" role="dialog" aria-modal="true">
+        <div class="modal-panel game-over-panel">
           <h2 id="overlay-title">Game over</h2>
           <p id="overlay-msg"></p>
+          <p class="game-over-hint">The board stays visible so you can review the final layout.</p>
           <button id="btn-continue" type="button" class="btn-primary">Play again</button>
         </div>
       </div>
 
       <div id="setup-modal" class="modal hidden" role="dialog" aria-labelledby="setup-title" aria-modal="true">
-        <div class="modal-panel">
+        <div class="modal-panel setup-modal-panel">
           <h2 id="setup-title">Game Setup</h2>
-          <p class="modal-lead">Traditional domino setup: Do you have the highest doubles?</p>
-          <p>Check your hand and answer honestly:</p>
+          <p class="modal-lead">Traditional domino setup: Which double would you like to start with?</p>
+          <div id="setup-hand-tray" class="setup-hand-tray" aria-label="Your hand">
+            <p class="setup-hand-label">Your hand</p>
+            <div id="setup-hand-tiles" class="setup-hand-tiles"></div>
+          </div>
+          <p>Select the highest double you have:</p>
           <div class="setup-options">
             <button id="btn-big6" type="button" class="btn-primary">I have double-6 (Big 6)</button>
             <button id="btn-big5" type="button" class="btn-primary">I have double-5 (Big 5)</button>

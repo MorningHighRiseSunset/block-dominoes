@@ -1,9 +1,25 @@
+import {
+  extensionSlot,
+  INITIAL_TRAVEL_DIR,
+  layoutChain,
+  rotationForTile,
+} from '../render/chainLayout';
+
 export type Pip = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 /** Seat index (0 … playerCount − 1). */
 export type Player = number;
 export type PlayerCount = 2 | 3 | 4;
 export type Phase = 'playing' | 'gameOver';
 export type ChainEnd = 'left' | 'right';
+export type TravelDir = 'east' | 'west' | 'north' | 'south';
+export type SnakeTurn = 'clockwise' | 'counterclockwise';
+
+export interface TileLayout {
+  x: number;
+  z: number;
+  rotationY: number;
+  travelDir: TravelDir;
+}
 
 const DECK_SIZE = 28;
 
@@ -18,6 +34,7 @@ export interface PlayedTile {
   leftPip: Pip;
   rightPip: Pip;
   isDouble: boolean;
+  layout?: TileLayout;
 }
 
 export interface BlockMove {
@@ -37,6 +54,8 @@ export interface BlockDominoesState {
   gameOverReason: 'empty' | 'blocked' | null;
   passesInRow: number;
   lastMove: { player: Player; dominoId: number; end: ChainEnd } | null;
+  /** Which way the chain turns when it hits the table edge. */
+  snakeTurn: SnakeTurn;
 }
 
 /** Tiles dealt to each player at the start of a hand (block dominoes, double-six). */
@@ -66,7 +85,7 @@ export function handPipCount(hand: Domino[]): number {
   return hand.reduce((sum, d) => sum + d.low + d.high, 0);
 }
 
-function makeDeck(): Domino[] {
+export function makeDeck(): Domino[] {
   const deck: Domino[] = [];
   let id = 0;
   for (let a = 0; a <= 6; a++) {
@@ -78,7 +97,7 @@ function makeDeck(): Domino[] {
   return deck;
 }
 
-function shuffle<T>(arr: T[]): T[] {
+export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -103,7 +122,7 @@ export function dealHands(deck: Domino[], playerCount: PlayerCount): Domino[][] 
   return hands;
 }
 
-function findStarter(hands: Domino[][]): { player: Player; domino: Domino } {
+export function findStarter(hands: Domino[][]): { player: Player; domino: Domino } {
   // Traditional domino starting rules:
   // 1. Highest double starts (6-6, then 5-5, then 4-4, etc.)
   // 2. If no doubles, highest pip sum starts
@@ -197,6 +216,7 @@ export function newGame(playerCount: PlayerCount = 2): BlockDominoesState {
     gameOverReason: null,
     passesInRow: 0,
     lastMove: null,
+    snakeTurn: 'clockwise',
   };
 }
 
@@ -220,6 +240,7 @@ export function newGameWithSetup(
     gameOverReason: null,
     passesInRow: 0,
     lastMove: null,
+    snakeTurn: 'clockwise',
   };
 }
 
@@ -311,6 +332,37 @@ export function applyPass(state: BlockDominoesState): BlockDominoesState {
   };
 }
 
+export function setSnakeTurn(state: BlockDominoesState, turn: SnakeTurn): BlockDominoesState {
+  if (state.phase !== 'playing') return state;
+  return { ...state, snakeTurn: turn };
+}
+
+function computeTileLayout(
+  state: BlockDominoesState,
+  move: BlockMove,
+  isDouble: boolean,
+): TileLayout {
+  if (state.chain.length === 0) {
+    const travelDir = INITIAL_TRAVEL_DIR;
+    return {
+      x: 0,
+      z: 0,
+      rotationY: rotationForTile(travelDir, isDouble),
+      travelDir,
+    };
+  }
+
+  const placements = layoutChain(state.chain, state.snakeTurn);
+  const ext = extensionSlot(placements, move.end, isDouble, state.snakeTurn);
+  const travelDir = move.end === 'left' ? placements[0].travelDir : ext.travelDir;
+  return {
+    x: ext.x,
+    z: ext.z,
+    rotationY: ext.rotationY,
+    travelDir,
+  };
+}
+
 export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDominoesState {
   const player = state.current;
   if (!isLegalMove(state, move, player)) return state;
@@ -322,7 +374,14 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
   const hands = state.hands.map((h, i) => (i === player ? hand : [...h]));
 
   if (state.chain.length === 0) {
-    const played: PlayedTile = { domino, leftPip: domino.low, rightPip: domino.high, isDouble: domino.low === domino.high };
+    const isDouble = domino.low === domino.high;
+    const played: PlayedTile = {
+      domino,
+      leftPip: domino.low,
+      rightPip: domino.high,
+      isDouble,
+      layout: computeTileLayout(state, move, isDouble),
+    };
     const chain = [played];
     const gameOver = hand.length === 0;
 
@@ -343,7 +402,13 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
 
   const endPip = move.end === 'left' ? state.leftEnd! : state.rightEnd!;
   const oriented = orientForEnd(domino, endPip, move.end)!;
-  const played: PlayedTile = { domino, ...oriented, isDouble: domino.low === domino.high };
+  const isDouble = domino.low === domino.high;
+  const played: PlayedTile = {
+    domino,
+    ...oriented,
+    isDouble,
+    layout: computeTileLayout(state, move, isDouble),
+  };
 
   let chain: PlayedTile[];
   let leftEnd: Pip;
