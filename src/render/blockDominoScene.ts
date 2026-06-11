@@ -87,16 +87,16 @@ export class BlockDominoScene {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a2433);
-    this.scene.fog = new THREE.FogExp2(0x1a2433, 0.022);
+    this.scene.background = new THREE.Color(0x2a1810);
+    this.scene.fog = new THREE.FogExp2(0x2a1810, 0.022);
 
     this.camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 80);
     this.updateCamera();
 
-    this.scene.add(new THREE.HemisphereLight(0xe8eef8, 0x4a5568, 0.55));
-    this.scene.add(new THREE.AmbientLight(0xf0f4fa, 0.36));
+    this.scene.add(new THREE.HemisphereLight(0xffeedd, 0x8b7355, 0.55));
+    this.scene.add(new THREE.AmbientLight(0xfff0e0, 0.36));
 
-    const key = new THREE.DirectionalLight(0xfff8ee, 1.1);
+    const key = new THREE.DirectionalLight(0xffe8cc, 1.1);
     key.position.set(2, 12, 8);
     key.castShadow = true;
     key.shadow.mapSize.set(1024, 1024);
@@ -380,38 +380,19 @@ export class BlockDominoScene {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const domino = state.hands[0][slot.move.handIndex];
-      const ghost = createDominoMesh(domino.low, domino.high, 0, false, {
-        highlight: false,
-        outline: false,
-      });
-      ghost.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          const originalMat = child.material;
-          let mat: THREE.Material;
-
-          if (Array.isArray(originalMat)) {
-            mat = originalMat[0].clone();
-          } else if (originalMat && typeof originalMat.clone === 'function') {
-            mat = originalMat.clone();
-          } else {
-            return;
-          }
-
-          mat.transparent = true;
-          mat.opacity = 0.58;
-          mat.depthWrite = false;
-          if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshBasicMaterial) {
-            mat.color.multiplyScalar(slot.move.end === 'left' ? 1.0 : 1.0);
-            if (slot.move.end === 'left') {
-              mat.color.setHex(0xf5d78e);
-            } else {
-              mat.color.setHex(0x9dd4f5);
-            }
-          }
-          child.material = mat;
-        }
-      });
+      // Create a simple blue box instead of a full domino with pips
+      const ghost = new THREE.Group();
+      const box = new THREE.Mesh(
+        new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D),
+        new THREE.MeshBasicMaterial({
+          color: 0x38bdf8,
+          transparent: true,
+          opacity: 0.5,
+          depthWrite: false,
+        }),
+      );
+      ghost.add(box);
+      
       const slotY = TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5;
       ghost.position.set(slot.x, slotY, slot.z);
       ghost.rotation.y = slot.rotationY;

@@ -142,13 +142,13 @@ export function makeWoodTexture(): THREE.CanvasTexture {
   canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  ctx.fillStyle = '#2a1810';
+  ctx.fillStyle = '#3d2817';
   ctx.fillRect(0, 0, size, size);
 
   for (let i = 0; i < 48; i++) {
     const y = (i / 48) * size;
-    const shade = 35 + Math.random() * 40;
-    ctx.fillStyle = `rgb(${shade + 40},${shade + 18},${shade})`;
+    const shade = 45 + Math.random() * 35;
+    ctx.fillStyle = `rgb(${shade + 50},${shade + 30},${shade + 10})`;
     ctx.fillRect(0, y, size, size / 48 + 1);
   }
 

@@ -261,15 +261,17 @@ function orientForEnd(d: Domino, end: Pip, side: ChainEnd): { leftPip: Pip; righ
   if (d.low === end && d.high === end) {
     return { leftPip: d.low, rightPip: d.high };
   }
+  // When placing at left end: rightPip should match the current leftEnd (they touch), leftPip becomes new exposed end
+  // When placing at right end: leftPip should match the current rightEnd (they touch), rightPip becomes new exposed end
   if (d.low === end) {
     return side === 'left'
-      ? { leftPip: d.high, rightPip: d.low }
-      : { leftPip: d.low, rightPip: d.high };
+      ? { leftPip: d.high, rightPip: d.low }  // rightPip (low) matches, leftPip (high) exposed
+      : { leftPip: d.low, rightPip: d.high }; // leftPip (low) matches, rightPip (high) exposed
   }
   if (d.high === end) {
     return side === 'left'
-      ? { leftPip: d.low, rightPip: d.high }
-      : { leftPip: d.high, rightPip: d.low };
+      ? { leftPip: d.low, rightPip: d.high }  // rightPip (high) matches, leftPip (low) exposed
+      : { leftPip: d.high, rightPip: d.low }; // leftPip (high) matches, rightPip (low) exposed
   }
   return null;
 }

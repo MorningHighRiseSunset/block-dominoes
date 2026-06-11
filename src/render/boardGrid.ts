@@ -5,14 +5,14 @@ export const DOMINO_LENGTH = 1.0;
 /** Domino width (short edge). */
 export const TILE_W = 0.6;
 
-export const WOOD_COLOR = 0x9a7048;
-export const FELT_COLOR = 0x2a4a68;
-export const FELT_LIGHT = 0x3a6a8a;
-export const FELT_DARK = 0x244058;
+export const WOOD_COLOR = 0x6b4423;
+export const FELT_COLOR = 0x4a1520;
+export const FELT_LIGHT = 0xd4c4a8;
+export const FELT_DARK = 0x8b7355;
 
-export const FELT_CSS = '#2a4a68';
-export const WOOD_CSS = '#9a7048';
-export const BOARD_BG_CSS = '#1a2433';
+export const FELT_CSS = '#4a1520';
+export const WOOD_CSS = '#6b4423';
+export const BOARD_BG_CSS = '#2a1810';
 
 /** One checker rectangle = one domino footprint (width × length). */
 export const CHECKER_CELL_W = TILE_W;
@@ -31,7 +31,7 @@ function makeCheckerTexture(): THREE.CanvasTexture {
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const light = (row + col) % 2 === 0;
-      ctx.fillStyle = light ? '#3a6a8a' : '#244058';
+      ctx.fillStyle = light ? '#d4c4a8' : '#8b7355';
       ctx.fillRect(col * cellPxW, row * cellPxL, cellPxW, cellPxL);
     }
   }
