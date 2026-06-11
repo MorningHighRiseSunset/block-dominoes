@@ -184,8 +184,8 @@ function getFaceTexture(left: Pip, right: Pip): THREE.CanvasTexture {
   ctx.lineTo(w - 4, h / 2);
   ctx.stroke();
 
-  drawPipHalf(ctx, right, 0, 0, w, h / 2);
-  drawPipHalf(ctx, left, 0, h / 2, w, h / 2);
+  drawPipHalf(ctx, left, 0, 0, w, h / 2);
+  drawPipHalf(ctx, right, 0, h / 2, w, h / 2);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

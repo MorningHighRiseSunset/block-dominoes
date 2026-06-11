@@ -112,7 +112,17 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
   function openSetupModal() {
     const hand = previewHands?.[0] ?? state.hands[0];
+    const cpuHand = previewHands?.[1] ?? (state.hands.length > 1 ? state.hands[1] : []);
     renderSetupHand(hand);
+
+    // Hide all double buttons by default first
+    btnBig6.classList.add('hidden');
+    btnBig5.classList.add('hidden');
+    btnBig4.classList.add('hidden');
+    btnBig3.classList.add('hidden');
+    btnBig2.classList.add('hidden');
+    btnBig1.classList.add('hidden');
+    btnBig0.classList.add('hidden');
 
     // Check which doubles the player has
     const hasDouble6 = hand.some(d => d.low === 6 && d.high === 6);
@@ -124,24 +134,37 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     const hasDouble0 = hand.some(d => d.low === 0 && d.high === 0);
     const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4 || hasDouble3 || hasDouble2 || hasDouble1 || hasDouble0;
 
+    // Find CPU's highest double
+    let cpuHighestDouble: Pip | null = null;
+    for (let p = 6; p >= 0; p--) {
+      if (cpuHand.some(d => d.low === (p as Pip) && d.high === (p as Pip))) {
+        cpuHighestDouble = p as Pip;
+        break;
+      }
+    }
+
     // Update modal text based on what the player has
     const setupLead = document.querySelector('#setup-modal .modal-lead') as HTMLElement;
     if (hasAnyDouble) {
       setupLead.textContent = 'Traditional domino setup: Which double would you like to start with?';
       setupInstruction.classList.remove('hidden');
     } else {
-      setupLead.textContent = 'You have no big doubles. The game will start normally.';
+      if (cpuHighestDouble !== null) {
+        setupLead.textContent = `CPU has Big ${cpuHighestDouble}. You have no big doubles. The game will start normally.`;
+      } else {
+        setupLead.textContent = 'You have no big doubles. The game will start normally.';
+      }
       setupInstruction.classList.add('hidden');
     }
 
-    // Show/hide buttons based on what the player has
-    btnBig6.classList.toggle('hidden', !hasDouble6);
-    btnBig5.classList.toggle('hidden', !hasDouble5);
-    btnBig4.classList.toggle('hidden', !hasDouble4);
-    btnBig3.classList.toggle('hidden', !hasDouble3);
-    btnBig2.classList.toggle('hidden', !hasDouble2);
-    btnBig1.classList.toggle('hidden', !hasDouble1);
-    btnBig0.classList.toggle('hidden', !hasDouble0);
+    // Show buttons only for doubles the player actually has
+    if (hasDouble6) btnBig6.classList.remove('hidden');
+    if (hasDouble5) btnBig5.classList.remove('hidden');
+    if (hasDouble4) btnBig4.classList.remove('hidden');
+    if (hasDouble3) btnBig3.classList.remove('hidden');
+    if (hasDouble2) btnBig2.classList.remove('hidden');
+    if (hasDouble1) btnBig1.classList.remove('hidden');
+    if (hasDouble0) btnBig0.classList.remove('hidden');
 
     // If player has no doubles, hide all double buttons and only show "no double"
     if (!hasAnyDouble) {
@@ -163,8 +186,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
   function startGameWithSetup(playerHasDouble: { player: 0; double: Pip } | null) {
     closeSetupModal();
-    // Use the preview hands if available, otherwise create new ones
-    const hands = previewHands || dealHands(shuffle(makeDeck()), 2);
+    // Always use the preview hands that were shown in the modal
+    if (!previewHands) {
+      previewHands = dealHands(shuffle(makeDeck()), 2);
+    }
+    const hands = previewHands;
     const { player: starter } = findStarterWithPlayerAnswer(hands, playerHasDouble);
     state = {
       playerCount: 2,
@@ -339,8 +365,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
   function scheduleAi() {
     if (pendingAi) return;
-    if (state.current !== 1) return; // Only schedule if it's actually AI's turn
-    if (state.phase !== 'playing') return; // Only schedule if game is still playing
+    if (state.current !== 1) return;
+    if (state.phase !== 'playing') return;
     pendingAi = true;
     setTimeout(runAiTurnLoop, 450);
   }
@@ -360,6 +386,16 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
     if (state.passesInRow > passesBefore && state.chain.length === chainBefore) {
       showToast('CPU has no matching tile — passing.');
+    } else if (state.chain.length > chainBefore) {
+      // CPU played a tile
+      const lastMove = state.lastMove;
+      if (lastMove) {
+        const playedDomino = state.chain.find(t => t.domino.id === lastMove.dominoId);
+        if (playedDomino) {
+          const label = dominoLabel(playedDomino.domino);
+          showToast(`CPU played ${label}.`);
+        }
+      }
     }
 
     if (state.phase === 'gameOver') {
