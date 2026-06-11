@@ -1182,6 +1182,60 @@ body,
     font-size: 0.85rem;
   }
 
+  #setup-modal {
+    padding-top: 60px;
+  }
+
+  #setup-modal .modal-panel {
+    padding: 16px 20px;
+    max-width: 300px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+
+  #setup-modal h2 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  #setup-modal .modal-lead {
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+  }
+
+  #setup-instruction {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .setup-hand-tray {
+    margin: 8px 0 4px;
+    padding: 6px 8px;
+  }
+
+  .setup-hand-label {
+    font-size: 0.65rem;
+    margin-bottom: 6px;
+  }
+
+  .setup-hand-tiles {
+    gap: 4px;
+  }
+
+  .setup-domino img {
+    width: 28px;
+  }
+
+  .setup-options {
+    margin: 10px 0 8px;
+    gap: 6px;
+  }
+
+  .setup-options button {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+  }
+
   #btn-new {
     bottom: 90px;
   }
