@@ -354,7 +354,7 @@ function computeTileLayout(
 
   const placements = layoutChain(state.chain, state.snakeTurn);
   const ext = extensionSlot(placements, move.end, isDouble, state.snakeTurn);
-  const travelDir = move.end === 'left' ? placements[0].travelDir : ext.travelDir;
+  const travelDir = ext.travelDir;
   return {
     x: ext.x,
     z: ext.z,

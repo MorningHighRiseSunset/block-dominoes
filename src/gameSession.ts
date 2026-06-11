@@ -48,6 +48,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const btnBig6 = document.getElementById('btn-big6')!;
   const btnBig5 = document.getElementById('btn-big5')!;
   const btnBig4 = document.getElementById('btn-big4')!;
+  const btnBig3 = document.getElementById('btn-big3')!;
+  const btnBig2 = document.getElementById('btn-big2')!;
+  const btnBig1 = document.getElementById('btn-big1')!;
+  const btnBig0 = document.getElementById('btn-big0')!;
   const btnNoDouble = document.getElementById('btn-nodouble')!;
   const gameToast = document.getElementById('game-toast')!;
   const btnTurnCw = document.getElementById('btn-turn-cw') as HTMLButtonElement;
@@ -114,7 +118,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     const hasDouble6 = hand.some(d => d.low === 6 && d.high === 6);
     const hasDouble5 = hand.some(d => d.low === 5 && d.high === 5);
     const hasDouble4 = hand.some(d => d.low === 4 && d.high === 4);
-    const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4;
+    const hasDouble3 = hand.some(d => d.low === 3 && d.high === 3);
+    const hasDouble2 = hand.some(d => d.low === 2 && d.high === 2);
+    const hasDouble1 = hand.some(d => d.low === 1 && d.high === 1);
+    const hasDouble0 = hand.some(d => d.low === 0 && d.high === 0);
+    const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4 || hasDouble3 || hasDouble2 || hasDouble1 || hasDouble0;
 
     // Update modal text based on what the player has
     const setupLead = document.querySelector('#setup-modal .modal-lead') as HTMLElement;
@@ -130,6 +138,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     btnBig6.classList.toggle('hidden', !hasDouble6);
     btnBig5.classList.toggle('hidden', !hasDouble5);
     btnBig4.classList.toggle('hidden', !hasDouble4);
+    btnBig3.classList.toggle('hidden', !hasDouble3);
+    btnBig2.classList.toggle('hidden', !hasDouble2);
+    btnBig1.classList.toggle('hidden', !hasDouble1);
+    btnBig0.classList.toggle('hidden', !hasDouble0);
 
     // If player has no doubles, hide all double buttons and only show "no double"
     if (!hasAnyDouble) {
@@ -190,6 +202,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   btnBig6.addEventListener('click', () => startGameWithSetup({ player: 0, double: 6 as Pip }));
   btnBig5.addEventListener('click', () => startGameWithSetup({ player: 0, double: 5 as Pip }));
   btnBig4.addEventListener('click', () => startGameWithSetup({ player: 0, double: 4 as Pip }));
+  btnBig3.addEventListener('click', () => startGameWithSetup({ player: 0, double: 3 as Pip }));
+  btnBig2.addEventListener('click', () => startGameWithSetup({ player: 0, double: 2 as Pip }));
+  btnBig1.addEventListener('click', () => startGameWithSetup({ player: 0, double: 1 as Pip }));
+  btnBig0.addEventListener('click', () => startGameWithSetup({ player: 0, double: 0 as Pip }));
   btnNoDouble.addEventListener('click', () => startGameWithSetup(null));
 
   const scene = new BlockDominoScene(canvas);
@@ -283,6 +299,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
           : `Game blocked. CPU had fewer pips (${handPipCount(state.hands[1])} vs your ${handPipCount(state.hands[0])}).`;
       }
       overlay.classList.remove('hidden');
+      btnNew.classList.add('hidden'); // Hide the "New game" button when overlay is shown
     }, 4500);
   }
 
@@ -386,6 +403,9 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       lastMove: null,
       snakeTurn: 'clockwise',
     };
+    // Clear the overlay and button states
+    overlay.classList.add('hidden');
+    btnNew.classList.add('hidden');
     // Sync the scene to show the player's hand
     updateHud();
     // Show setup modal immediately (it's now positioned at top and semi-transparent)

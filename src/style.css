@@ -736,7 +736,7 @@ body,
 
 #btn-new {
   position: fixed;
-  bottom: 100px;
+  bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 11;
@@ -1237,6 +1237,6 @@ body,
   }
 
   #btn-new {
-    bottom: 90px;
+    bottom: 110px;
   }
 }

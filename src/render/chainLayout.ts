@@ -100,7 +100,7 @@ export function rotationForTile(travelDir: TravelDir, isDouble: boolean): number
 }
 
 function wouldFit(x: number, z: number, dir: TravelDir, halfStep: number): boolean {
-  const margin = halfStep + 0.02;
+  const margin = halfStep;
   switch (dir) {
     case 'east':
       return x + margin <= PLAY_MAX_X;
@@ -125,7 +125,8 @@ function centerDistance(
   _toDouble: boolean,
   dir: TravelDir,
 ): number {
-  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir);
+  // Add small epsilon to prevent overlaps while keeping tiles close
+  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir) + 0.02;
 }
 
 function tileAabb(placement: ChainTilePlacement): { hw: number; hd: number } {
@@ -145,7 +146,7 @@ function overlapsAny(
 
   for (const p of existing) {
     const o = tileAabb(p);
-    if (Math.abs(x - p.x) < hw + o.hw - 0.02 && Math.abs(z - p.z) < hd + o.hd - 0.02) {
+    if (Math.abs(x - p.x) < hw + o.hw && Math.abs(z - p.z) < hd + o.hd) {
       return true;
     }
   }
@@ -295,7 +296,7 @@ export function extensionSlot(
     wouldFit(fwd.x, fwd.z, dir, halfExtentAlongDir(newRot, dir)) &&
     !overlapsAny(fwd.x, fwd.z, newRot, placements)
   ) {
-    const travelDir = end === 'left' ? anchor.travelDir : dir;
+    const travelDir = dir;
     return {
       x: fwd.x,
       z: fwd.z,
@@ -330,7 +331,7 @@ export function extensionSlot(
       wouldFit(candidate.x, candidate.z, tryDir, halfExtentAlongDir(tryRot, tryDir)) &&
       !overlapsAny(candidate.x, candidate.z, tryRot, placements)
     ) {
-      const travelDir = end === 'left' ? anchor.travelDir : tryDir;
+      const travelDir = tryDir;
       return {
         x: candidate.x,
         z: candidate.z,
@@ -342,7 +343,7 @@ export function extensionSlot(
     tryDir = pickTurn(tryDir, snakeTurn);
   }
 
-  const travelDir = end === 'left' ? anchor.travelDir : dir;
+  const travelDir = dir;
   return {
     x: fwd.x,
     z: fwd.z,
