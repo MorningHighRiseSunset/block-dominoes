@@ -44,6 +44,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const btnInstrDone = document.getElementById('btn-instr-done')!;
   const setupModal = document.getElementById('setup-modal')!;
   const setupHandTiles = document.getElementById('setup-hand-tiles')!;
+  const setupInstruction = document.getElementById('setup-instruction')!;
   const btnBig6 = document.getElementById('btn-big6')!;
   const btnBig5 = document.getElementById('btn-big5')!;
   const btnBig4 = document.getElementById('btn-big4')!;
@@ -108,6 +109,39 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   function openSetupModal() {
     const hand = previewHands?.[0] ?? state.hands[0];
     renderSetupHand(hand);
+
+    // Check which doubles the player has
+    const hasDouble6 = hand.some(d => d.low === 6 && d.high === 6);
+    const hasDouble5 = hand.some(d => d.low === 5 && d.high === 5);
+    const hasDouble4 = hand.some(d => d.low === 4 && d.high === 4);
+    const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4;
+
+    // Update modal text based on what the player has
+    const setupLead = document.querySelector('#setup-modal .modal-lead') as HTMLElement;
+    if (hasAnyDouble) {
+      setupLead.textContent = 'Traditional domino setup: Which double would you like to start with?';
+      setupInstruction.classList.remove('hidden');
+    } else {
+      setupLead.textContent = 'You have no big doubles. The game will start normally.';
+      setupInstruction.classList.add('hidden');
+    }
+
+    // Show/hide buttons based on what the player has
+    btnBig6.classList.toggle('hidden', !hasDouble6);
+    btnBig5.classList.toggle('hidden', !hasDouble5);
+    btnBig4.classList.toggle('hidden', !hasDouble4);
+
+    // If player has no doubles, hide all double buttons and only show "no double"
+    if (!hasAnyDouble) {
+      btnNoDouble.classList.remove('btn-secondary');
+      btnNoDouble.classList.add('btn-primary');
+      btnNoDouble.textContent = 'Begin game';
+    } else {
+      btnNoDouble.classList.remove('btn-primary');
+      btnNoDouble.classList.add('btn-secondary');
+      btnNoDouble.textContent = "I don't have any of these";
+    }
+
     setupModal.classList.remove('hidden');
   }
 
