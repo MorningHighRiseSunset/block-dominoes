@@ -272,9 +272,9 @@ export class BlockDominoScene {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);
         g.rotation.set(0, rotationY, 0);
-        updateDominoFace(g, tile.rightPip, tile.leftPip);
+        updateDominoFace(g, tile.leftPip, tile.rightPip);
       } else {
-        const g = createDominoMesh(tile.rightPip, tile.leftPip, 0, false);
+        const g = createDominoMesh(tile.leftPip, tile.rightPip, 0, false);
         g.position.set(x, y, z);
         g.rotation.set(0, rotationY, 0);
         this.chainRoot.add(g);
