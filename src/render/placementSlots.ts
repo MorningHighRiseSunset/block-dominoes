@@ -31,7 +31,7 @@ export function buildPlacementSlots(
     const placement: ChainTilePlacement = {
       x: 0,
       z: 0,
-      rotationY: rotationForTile(travelDir, isDouble),
+      rotationY: rotationForTile(travelDir, isDouble, true),
       travelDir,
       isDouble,
     };

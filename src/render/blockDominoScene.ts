@@ -274,9 +274,6 @@ export class BlockDominoScene {
       const renderLeft = tile.rightPip;
       const renderRight = tile.leftPip;
       
-      // Log for debugging
-      console.log(`Tile ${i}: domino ${tile.domino.low}/${tile.domino.high}, oriented as ${tile.leftPip}/${tile.rightPip}, rendering as ${renderLeft}/${renderRight}, rotation ${rotationY}`);
-      
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);

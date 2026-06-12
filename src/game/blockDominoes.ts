@@ -321,10 +321,6 @@ export function getLegalMoves(state: BlockDominoesState, player: Player): BlockM
     }
   }
 
-  console.log('Legal moves for player', player, ':', moves.map(m => ({ domino: hand[m.handIndex].low + '/' + hand[m.handIndex].high, end: m.end })));
-  console.log('Chain ends:', state.leftEnd, state.rightEnd);
-  console.log('Chain:', state.chain.map(t => t.domino.low + '/' + t.domino.high + ' (' + t.leftPip + '/' + t.rightPip + ')'));
-
   return moves;
 }
 
@@ -334,12 +330,10 @@ export function mustPass(state: BlockDominoesState, player: Player): boolean {
 
 export function applyPass(state: BlockDominoesState): BlockDominoesState {
   const player = state.current;
-  console.log('applyPass: player', player, 'passesInRow', state.passesInRow);
   if (!mustPass(state, player)) return state;
 
   const passesInRow = state.passesInRow + 1;
   if (passesInRow >= state.playerCount) {
-    console.log('applyPass: game blocked, determining winner');
     return {
       ...state,
       phase: 'gameOver',
@@ -350,7 +344,6 @@ export function applyPass(state: BlockDominoesState): BlockDominoesState {
     };
   }
 
-  console.log('applyPass: switching to player', nextPlayer(state, player));
   return {
     ...state,
     current: nextPlayer(state, player),
@@ -415,7 +408,6 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     // Muggins scoring: if ends sum to multiple of 5, award points
     const endSum = domino.low + domino.high;
     const points = endSum % 5 === 0 ? endSum : 0;
-    console.log('First domino Muggins: domino', domino.low, '/', domino.high, 'endSum', endSum, 'points', points);
     const scores = [...state.scores];
     scores[player] += points;
 
@@ -466,7 +458,6 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
   // Muggins scoring: if ends sum to multiple of 5, award points
   const endSum = leftEnd + rightEnd;
   const points = endSum % 5 === 0 ? endSum : 0;
-  console.log('Subsequent domino Muggins: domino', domino.low, '/', domino.high, 'ends', leftEnd, rightEnd, 'endSum', endSum, 'points', points);
   const scores = [...state.scores];
   scores[player] += points;
 
