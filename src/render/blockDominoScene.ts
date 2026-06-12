@@ -268,13 +268,19 @@ export class BlockDominoScene {
       const tile = state.chain[i];
       const { x, z, rotationY } = placements[i];
       const y = yBase;
+      // Determine if the domino needs to be visually flipped based on orientation
+      // leftPip/rightPip indicate which pip is at which end of the chain
+      // If leftPip != domino.low, the domino needs to be flipped
+      const needsFlip = tile.leftPip !== tile.domino.low;
+      const renderLeft = needsFlip ? tile.domino.high : tile.domino.low;
+      const renderRight = needsFlip ? tile.domino.low : tile.domino.high;
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);
         g.rotation.set(0, rotationY, 0);
-        updateDominoFace(g, tile.rightPip, tile.leftPip);
+        updateDominoFace(g, renderLeft, renderRight);
       } else {
-        const g = createDominoMesh(tile.rightPip, tile.leftPip, 0, false);
+        const g = createDominoMesh(renderLeft, renderRight, 0, false);
         g.position.set(x, y, z);
         g.rotation.set(0, rotationY, 0);
         this.chainRoot.add(g);
