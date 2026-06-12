@@ -298,8 +298,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       statusEl.textContent = 'Your turn — pick a tile, then choose where to play it';
       hintEl.textContent =
         state.chain.length === 0
-          ? 'Select your opening tile, then click the highlighted spot on the table.'
-          : 'Gold ghost = left end · Blue-tint ghost = right end. Click the preview to place there.';
+          ? 'Select your opening tile, then drag it to the highlighted spot on the table.'
+          : 'Drag matching tiles to the table to play them.';
     } else {
       statusEl.textContent = 'CPU is thinking…';
       hintEl.textContent = `${state.hands[1].length} tile(s) hidden.`;
@@ -336,8 +336,6 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     if (inputLocked || state.current !== 0 || state.phase !== 'playing') return;
     if (!isLegalMove(state, move, 0)) return;
     inputLocked = true;
-    const domino = state.hands[0][move.handIndex];
-    console.log(`Player move: ${domino.low}/${domino.high} to ${move.end}`);
     state = applyMove(state, move);
     if (state.phase === 'gameOver') {
       updateHud();
@@ -395,7 +393,6 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
         const playedDomino = state.chain.find(t => t.domino.id === lastMove.dominoId);
         if (playedDomino) {
           const label = dominoLabel(playedDomino.domino);
-          console.log(`CPU move: ${playedDomino.domino.low}/${playedDomino.domino.high} to ${lastMove.end}`);
           showToast(`CPU played ${label}.`);
         }
       }

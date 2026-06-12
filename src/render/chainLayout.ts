@@ -182,13 +182,18 @@ export function extensionSlot(
   }
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
-  const dir = end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir;
+  
+  // For right placement: extend in the same direction as the anchor's travel
+  // For left placement: always extend in the opposite direction of INITIAL_TRAVEL_DIR (west)
+  // This ensures consistent left-side growth regardless of the anchor's travelDir
+  const dir = end === 'left' ? oppositeDir(INITIAL_TRAVEL_DIR) : anchor.travelDir;
+  
   const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble, false);
   const newRot = rotationForTile(dir, isDouble, false);
   const dist = centerDistance(anchorRot, newRot, dir);
   const fwd = stepFrom(anchor.x, anchor.z, dir, dist);
 
-  // Truly linear layout - always place in the forward direction
+  // The travel direction for the new tile should be the direction it extends
   const travelDir = dir;
   return {
     x: fwd.x,
