@@ -6,6 +6,12 @@ import type { PlayedTile, SnakeTurn, TravelDir } from '../game/blockDominoes';
 
 export const STEP = DOMINO_LENGTH;
 
+/** Board dimensions (must match buildPlaySurface call in blockDominoScene.ts) */
+const BOARD_WIDTH = 17.2;
+const BOARD_DEPTH = 10.4;
+/** Margin from board edge to keep tiles visible */
+const BOARD_MARGIN = 0.5;
+
 export type { TravelDir, SnakeTurn };
 
 export interface ChainTilePlacement {
@@ -30,6 +36,41 @@ function oppositeDir(d: TravelDir): TravelDir {
     case 'north':
       return 'south';
   }
+}
+
+function turnClockwise(dir: TravelDir): TravelDir {
+  switch (dir) {
+    case 'east':
+      return 'south';
+    case 'south':
+      return 'west';
+    case 'west':
+      return 'north';
+    case 'north':
+      return 'east';
+  }
+}
+
+function turnCounterclockwise(dir: TravelDir): TravelDir {
+  switch (dir) {
+    case 'east':
+      return 'north';
+    case 'north':
+      return 'west';
+    case 'west':
+      return 'south';
+    case 'south':
+      return 'east';
+  }
+}
+
+function isOutOfBounds(x: number, z: number): boolean {
+  return (
+    x < -BOARD_WIDTH / 2 + BOARD_MARGIN ||
+    x > BOARD_WIDTH / 2 - BOARD_MARGIN ||
+    z < -BOARD_DEPTH / 2 + BOARD_MARGIN ||
+    z > BOARD_DEPTH / 2 - BOARD_MARGIN
+  );
 }
 
 function stepFrom(x: number, z: number, dir: TravelDir, dist: number): { x: number; z: number } {
@@ -95,13 +136,22 @@ function nextStep(
   _fromDouble: boolean,
   toRot: number,
   _toDouble: boolean,
-  _snakeTurn: SnakeTurn,
+  snakeTurn: SnakeTurn,
   _existing: ChainTilePlacement[],
 ): { x: number; z: number; dir: TravelDir; runLen: number } {
-  // Truly linear layout - never turn, always extend in the same direction
   const dist = centerDistance(fromRot, toRot, dir);
-  const fwd = stepFrom(x, z, dir, dist);
-  return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
+  let fwd = stepFrom(x, z, dir, dist);
+  let newDir = dir;
+
+  // Check if the next position would be out of bounds
+  if (isOutOfBounds(fwd.x, fwd.z)) {
+    // Turn based on snakeTurn setting
+    newDir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
+    // Recalculate position with new direction
+    fwd = stepFrom(x, z, newDir, dist);
+  }
+
+  return { x: fwd.x, z: fwd.z, dir: newDir, runLen: runLen + 1 };
 }
 
 /** Use stored positions when available so tiles never jump after a left-end play. */
@@ -168,7 +218,7 @@ export function extensionSlot(
   placements: ChainTilePlacement[],
   end: 'left' | 'right',
   isDouble: boolean,
-  _snakeTurn: SnakeTurn = 'clockwise',
+  snakeTurn: SnakeTurn = 'clockwise',
 ): ChainTilePlacement {
   if (!placements.length) {
     const travelDir = INITIAL_TRAVEL_DIR;
@@ -186,12 +236,18 @@ export function extensionSlot(
   // For right placement: extend in the same direction as the anchor's travel
   // For left placement: always extend in the opposite direction of INITIAL_TRAVEL_DIR (west)
   // This ensures consistent left-side growth regardless of the anchor's travelDir
-  const dir = end === 'left' ? oppositeDir(INITIAL_TRAVEL_DIR) : anchor.travelDir;
+  let dir = end === 'left' ? oppositeDir(INITIAL_TRAVEL_DIR) : anchor.travelDir;
   
   const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble, false);
   const newRot = rotationForTile(dir, isDouble, false);
   const dist = centerDistance(anchorRot, newRot, dir);
-  const fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+  let fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+
+  // Check if the next position would be out of bounds and turn if needed
+  if (isOutOfBounds(fwd.x, fwd.z)) {
+    dir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
+    fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+  }
 
   // The travel direction for the new tile should be the direction it extends
   const travelDir = dir;

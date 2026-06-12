@@ -190,6 +190,8 @@ function blockedWinner(hands: Domino[][], scores: number[]): Player {
   let bestScore = scores[0];
   let bestPips = handPipCount(hands[0]);
   let bestTiles = hands[0].length;
+  let isDraw = true;
+  
   for (let p = 1; p < hands.length; p++) {
     const score = scores[p];
     const pips = handPipCount(hands[p]);
@@ -200,8 +202,15 @@ function blockedWinner(hands: Domino[][], scores: number[]): Player {
       bestPips = pips;
       bestTiles = tiles;
       winner = p;
+      isDraw = false;
+    } else if (score < bestScore || (score === bestScore && pips > bestPips) || (score === bestScore && pips === bestPips && tiles > bestTiles)) {
+      isDraw = false;
     }
+    // If all criteria are equal, isDraw remains true
   }
+  
+  // Return -1 to indicate a draw if all players have equal scores, pips, and tiles
+  if (isDraw) return -1 as Player;
   return winner;
 }
 

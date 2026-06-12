@@ -272,8 +272,9 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     }
 
     if (state.phase === 'gameOver') {
+      const isDraw = state.winner === -1;
       const won = state.winner === 0;
-      statusEl.textContent = won ? 'You win!' : 'CPU wins.';
+      statusEl.textContent = isDraw ? 'Draw!' : (won ? 'You win!' : 'CPU wins.');
       hintEl.textContent =
         state.gameOverReason === 'empty'
           ? 'You emptied your hand.'
@@ -315,17 +316,22 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
   function showGameOverOverlay() {
     setTimeout(() => {
+      const isDraw = state.winner === -1;
       const won = state.winner === 0;
-      overlayTitle.textContent = won ? 'You win!' : 'CPU wins';
+      overlayTitle.textContent = isDraw ? 'Draw!' : (won ? 'You win!' : 'CPU wins');
       if (state.gameOverReason === 'empty') {
         overlayMsg.textContent = won
           ? 'You played your last tile.'
           : 'The CPU emptied its hand.';
       } else {
         // Muggins scoring: show scores
-        overlayMsg.textContent = won
-          ? `Game blocked. Your score: ${state.scores[0]}. CPU: ${state.scores[1]}.`
-          : `Game blocked. CPU had higher score (${state.scores[1]} vs your ${state.scores[0]}).`;
+        if (isDraw) {
+          overlayMsg.textContent = `Game blocked. It's a tie! Both have ${state.scores[0]} points.`;
+        } else {
+          overlayMsg.textContent = won
+            ? `Game blocked. Your score: ${state.scores[0]}. CPU: ${state.scores[1]}.`
+            : `Game blocked. CPU had higher score (${state.scores[1]} vs your ${state.scores[0]}).`;
+        }
       }
       overlay.classList.remove('hidden');
       btnNew.classList.add('hidden'); // Hide the "New game" button when overlay is shown
