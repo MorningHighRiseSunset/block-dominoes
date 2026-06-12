@@ -124,8 +124,8 @@ function centerDistance(
   _toDouble: boolean,
   dir: TravelDir,
 ): number {
-  // Add small epsilon to prevent overlaps while keeping tiles close
-  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir) + 0.02;
+  // No epsilon - tiles should touch exactly
+  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir);
 }
 
 function tileAabb(placement: ChainTilePlacement): { hw: number; hd: number } {
