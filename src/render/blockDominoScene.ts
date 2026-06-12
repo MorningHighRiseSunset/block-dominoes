@@ -229,7 +229,7 @@ export class BlockDominoScene {
     this.currentLegal = legal;
     this.interactive = interactive;
     this.rebuildChain(state);
-    this.rebuildHands(state, legal, interactive);
+    this.rebuildHands(state, interactive);
     this.updateCellHighlights(state, legal, this.selectedHandIndex);
     this.updateTargetCameraX(state);
   }
@@ -268,20 +268,14 @@ export class BlockDominoScene {
       const tile = state.chain[i];
       const { x, z, rotationY } = placements[i];
       const y = yBase;
-      // Determine which end this tile is at in the chain
-      const isRightEnd = i === n - 1;
       
-      // Use tile.leftPip and tile.rightPip, but swap based on position to ensure correct visual orientation
-      // The texture draws renderLeft at top, renderRight at bottom
-      // We need to ensure the matching pip is at the connection point
-      let renderLeft = tile.leftPip;
-      let renderRight = tile.rightPip;
+      // Use tile.leftPip and tile.rightPip, but swap them for rendering
+      // The texture might draw them in opposite order
+      const renderLeft = tile.rightPip;
+      const renderRight = tile.leftPip;
       
-      // If this is the right end of the chain, swap so the matching pip (rightPip) is at the correct visual position
-      if (isRightEnd) {
-        renderLeft = tile.rightPip;
-        renderRight = tile.leftPip;
-      }
+      // Log for debugging
+      console.log(`Tile ${i}: domino ${tile.domino.low}/${tile.domino.high}, oriented as ${tile.leftPip}/${tile.rightPip}, rendering as ${renderLeft}/${renderRight}, rotation ${rotationY}`);
       
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
@@ -302,7 +296,6 @@ export class BlockDominoScene {
 
   private rebuildHands(
     state: BlockDominoesState,
-    legal: BlockMove[],
     interactive: boolean,
   ) {
     for (const g of this.handMeshes.values()) {
@@ -310,10 +303,6 @@ export class BlockDominoScene {
       disposeGroup(g);
     }
     this.handMeshes.clear();
-
-    const legalIndices = new Set(
-      interactive ? legal.map((m) => m.handIndex) : [],
-    );
 
     for (const player of [0, 1] as Player[]) {
       const hand = state.hands[player];
@@ -354,15 +343,8 @@ export class BlockDominoScene {
 
         const hl = g.getObjectByName('highlight') as THREE.Mesh | undefined;
         if (hl) {
-          const isSelected = interactive && player === 0 && this.selectedHandIndex === i;
-          const isPlayable = interactive && player === 0 && legalIndices.has(i);
-          hl.visible = isSelected || isPlayable;
-          // Change color for selected domino
-          if (isSelected) {
-            (hl.material as THREE.MeshBasicMaterial).color.setHex(0x38bdf8); // Blue for selected
-          } else {
-            (hl.material as THREE.MeshBasicMaterial).color.setHex(0x2dd4bf); // Teal for playable
-          }
+          // Never show highlights on the rack
+          hl.visible = false;
         }
 
         const outline = g.userData.outline as THREE.LineSegments | undefined;
@@ -395,14 +377,14 @@ export class BlockDominoScene {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      // Create a simple blue box instead of a full domino with pips
+      const isFirstPlacement = state.chain.length === 0;
       const ghost = new THREE.Group();
       const box = new THREE.Mesh(
         new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D),
         new THREE.MeshBasicMaterial({
-          color: 0x38bdf8,
+          color: isFirstPlacement ? 0xffffff : 0x38bdf8,
           transparent: true,
-          opacity: 0.5,
+          opacity: isFirstPlacement ? 0.3 : 0.01, // Nearly invisible for drag detection, white outline for first placement
           depthWrite: false,
         }),
       );
@@ -532,7 +514,7 @@ export class BlockDominoScene {
     }
     
     // Rebuild to update highlights
-    this.rebuildHands(this.syncedState, this.currentLegal, this.interactive);
+    this.rebuildHands(this.syncedState, this.interactive);
     this.updateCellHighlights(this.syncedState, this.currentLegal, this.selectedHandIndex);
   }
 
@@ -597,7 +579,7 @@ export class BlockDominoScene {
           this.isDragging = true;
           this.dragHandIndex = handIndex;
           this.selectedHandIndex = handIndex;
-          this.rebuildHands(this.syncedState!, this.currentLegal, this.interactive);
+          this.rebuildHands(this.syncedState!, this.interactive);
           this.updateCellHighlights(this.syncedState!, this.currentLegal, this.selectedHandIndex);
 
           // Create drag mesh (ghost domino)
@@ -635,7 +617,7 @@ export class BlockDominoScene {
       // Clicked elsewhere - deselect
       if (this.selectedHandIndex !== null) {
         this.selectedHandIndex = null;
-        this.rebuildHands(this.syncedState!, this.currentLegal, this.interactive);
+        this.rebuildHands(this.syncedState!, this.interactive);
         this.updateCellHighlights(this.syncedState!, this.currentLegal, null);
       }
     };

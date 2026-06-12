@@ -56,6 +56,8 @@ export interface BlockDominoesState {
   lastMove: { player: Player; dominoId: number; end: ChainEnd } | null;
   /** Which way the chain turns when it hits the table edge. */
   snakeTurn: SnakeTurn;
+  /** Muggins scoring: points for each player (multiples of 5) */
+  scores: number[];
 }
 
 /** Tiles dealt to each player at the start of a hand (block dominoes, double-six). */
@@ -183,14 +185,18 @@ export function findStarterWithPlayerAnswer(
   return findStarter(hands);
 }
 
-function blockedWinner(hands: Domino[][]): Player {
+function blockedWinner(hands: Domino[][], scores: number[]): Player {
   let winner = 0;
+  let bestScore = scores[0];
   let bestPips = handPipCount(hands[0]);
   let bestTiles = hands[0].length;
   for (let p = 1; p < hands.length; p++) {
+    const score = scores[p];
     const pips = handPipCount(hands[p]);
     const tiles = hands[p].length;
-    if (pips < bestPips || (pips === bestPips && tiles < bestTiles)) {
+    // Muggins scoring: highest score wins, if tied then lowest pip count, if still tied then fewest tiles
+    if (score > bestScore || (score === bestScore && pips < bestPips) || (score === bestScore && pips === bestPips && tiles < bestTiles)) {
+      bestScore = score;
       bestPips = pips;
       bestTiles = tiles;
       winner = p;
@@ -217,6 +223,7 @@ export function newGame(playerCount: PlayerCount = 2): BlockDominoesState {
     passesInRow: 0,
     lastMove: null,
     snakeTurn: 'clockwise',
+    scores: Array(playerCount).fill(0),
   };
 }
 
@@ -241,6 +248,7 @@ export function newGameWithSetup(
     passesInRow: 0,
     lastMove: null,
     snakeTurn: 'clockwise',
+    scores: Array(playerCount).fill(0),
   };
 }
 
@@ -258,20 +266,31 @@ function matchesEnd(d: Domino, end: Pip): boolean {
 }
 
 function orientForEnd(d: Domino, end: Pip, side: ChainEnd): { leftPip: Pip; rightPip: Pip } | null {
-  if (d.low === end && d.high === end) {
-    return { leftPip: d.low, rightPip: d.high };
-  }
   // leftPip = pip at left end of chain, rightPip = pip at right end of chain
   // The matching pip should be at the connection point
+  if (d.low === end && d.high === end) {
+    // Double: both sides are the same
+    return { leftPip: d.low, rightPip: d.high };
+  }
   if (d.low === end) {
-    return side === 'left'
-      ? { leftPip: d.low, rightPip: d.high }  // low matches at left end
-      : { leftPip: d.high, rightPip: d.low }; // low matches at right end
+    // low matches the endpoint
+    if (side === 'left') {
+      // Placing on left end: low touches the chain (left), high is the new left end (right)
+      return { leftPip: d.low, rightPip: d.high };
+    } else {
+      // Placing on right end: low touches the chain (right), high is the new right end (left)
+      return { leftPip: d.high, rightPip: d.low };
+    }
   }
   if (d.high === end) {
-    return side === 'left'
-      ? { leftPip: d.high, rightPip: d.low }  // high matches at left end
-      : { leftPip: d.low, rightPip: d.high }; // high matches at right end
+    // high matches the endpoint
+    if (side === 'left') {
+      // Placing on left end: high touches the chain (left), low is the new left end (right)
+      return { leftPip: d.high, rightPip: d.low };
+    } else {
+      // Placing on right end: high touches the chain (right), low is the new right end (left)
+      return { leftPip: d.low, rightPip: d.high };
+    }
   }
   return null;
 }
@@ -293,14 +312,18 @@ export function getLegalMoves(state: BlockDominoesState, player: Player): BlockM
 
   for (let i = 0; i < hand.length; i++) {
     const d = hand[i];
-    // Only show one placement option per domino - prefer right end
-    // Disable left-side placement when chain has only one tile (first domino)
+    // Show both placement options if domino matches both ends
     if (state.rightEnd !== null && matchesEnd(d, state.rightEnd)) {
       moves.push({ handIndex: i, end: 'right' });
-    } else if (state.leftEnd !== null && matchesEnd(d, state.leftEnd) && state.chain.length > 1) {
+    }
+    if (state.leftEnd !== null && matchesEnd(d, state.leftEnd)) {
       moves.push({ handIndex: i, end: 'left' });
     }
   }
+
+  console.log('Legal moves for player', player, ':', moves.map(m => ({ domino: hand[m.handIndex].low + '/' + hand[m.handIndex].high, end: m.end })));
+  console.log('Chain ends:', state.leftEnd, state.rightEnd);
+  console.log('Chain:', state.chain.map(t => t.domino.low + '/' + t.domino.high + ' (' + t.leftPip + '/' + t.rightPip + ')'));
 
   return moves;
 }
@@ -311,20 +334,23 @@ export function mustPass(state: BlockDominoesState, player: Player): boolean {
 
 export function applyPass(state: BlockDominoesState): BlockDominoesState {
   const player = state.current;
+  console.log('applyPass: player', player, 'passesInRow', state.passesInRow);
   if (!mustPass(state, player)) return state;
 
   const passesInRow = state.passesInRow + 1;
   if (passesInRow >= state.playerCount) {
+    console.log('applyPass: game blocked, determining winner');
     return {
       ...state,
       phase: 'gameOver',
-      winner: blockedWinner(state.hands),
+      winner: blockedWinner(state.hands, state.scores),
       gameOverReason: 'blocked',
       passesInRow,
       lastMove: null,
     };
   }
 
+  console.log('applyPass: switching to player', nextPlayer(state, player));
   return {
     ...state,
     current: nextPlayer(state, player),
@@ -348,7 +374,7 @@ function computeTileLayout(
     return {
       x: 0,
       z: 0,
-      rotationY: rotationForTile(travelDir, isDouble),
+      rotationY: rotationForTile(travelDir, isDouble, true),
       travelDir,
     };
   }
@@ -386,6 +412,13 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     const chain = [played];
     const gameOver = hand.length === 0;
 
+    // Muggins scoring: if ends sum to multiple of 5, award points
+    const endSum = domino.low + domino.high;
+    const points = endSum % 5 === 0 ? endSum : 0;
+    console.log('First domino Muggins: domino', domino.low, '/', domino.high, 'endSum', endSum, 'points', points);
+    const scores = [...state.scores];
+    scores[player] += points;
+
     return {
       ...state,
       hands,
@@ -398,6 +431,7 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
       gameOverReason: gameOver ? 'empty' : null,
       passesInRow: 0,
       lastMove: { player, dominoId: domino.id, end: move.end },
+      scores,
     };
   }
 
@@ -417,15 +451,24 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
 
   if (move.end === 'left') {
     chain = [played, ...state.chain];
-    leftEnd = oriented.leftPip;
+    // oriented.leftPip is the matching pip (touches chain), oriented.rightPip is the new end
+    leftEnd = oriented.rightPip;
     rightEnd = state.rightEnd!;
   } else {
     chain = [...state.chain, played];
+    // oriented.rightPip is the matching pip (touches chain), oriented.leftPip is the new end
     leftEnd = state.leftEnd!;
-    rightEnd = oriented.rightPip;
+    rightEnd = oriented.leftPip;
   }
 
   const gameOver = hand.length === 0;
+
+  // Muggins scoring: if ends sum to multiple of 5, award points
+  const endSum = leftEnd + rightEnd;
+  const points = endSum % 5 === 0 ? endSum : 0;
+  console.log('Subsequent domino Muggins: domino', domino.low, '/', domino.high, 'ends', leftEnd, rightEnd, 'endSum', endSum, 'points', points);
+  const scores = [...state.scores];
+  scores[player] += points;
 
   return {
     ...state,
@@ -439,6 +482,7 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     gameOverReason: gameOver ? 'empty' : null,
     passesInRow: 0,
     lastMove: { player, dominoId: domino.id, end: move.end },
+    scores,
   };
 }
 

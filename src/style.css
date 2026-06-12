@@ -1021,6 +1021,18 @@ body,
   margin: -8px 0 16px !important;
 }
 
+.game-over-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.game-over-buttons .btn-primary,
+.game-over-buttons .btn-secondary {
+  flex: 1;
+  margin-top: 0;
+}
+
 .game-over-banner .btn-primary {
   margin-top: 0;
 }

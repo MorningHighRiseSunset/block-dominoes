@@ -3,7 +3,6 @@ import {
   applyPass,
   getLegalMoves,
   isLegalMove,
-  handPipCount,
   mustPass,
   newGame,
   pipLabel,
@@ -36,6 +35,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const overlayTitle = document.getElementById('overlay-title')!;
   const overlayMsg = document.getElementById('overlay-msg')!;
   const btnContinue = document.getElementById('btn-continue')!;
+  const btnCloseOverlay = document.getElementById('btn-close-overlay')!;
   const btnNew = document.getElementById('btn-new')!;
   const btnInstructions = document.getElementById('btn-instructions')!;
   const btnBackLobby = document.getElementById('btn-back-lobby')!;
@@ -205,6 +205,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       passesInRow: 0,
       lastMove: null,
       snakeTurn: 'clockwise',
+      scores: [0, 0],
     };
     previewHands = null; // Clear the preview hands
     overlay.classList.add('hidden');
@@ -255,11 +256,12 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   let previewHands: Domino[][] | null = null;
 
   function updateHud() {
-    const youPips = handPipCount(state.hands[0]);
-    const cpuPips = handPipCount(state.hands[1]);
+    // Muggins scoring: show points
+    const youScore = state.scores[0];
+    const cpuScore = state.scores[1];
 
-    scoreYou.textContent = String(youPips);
-    scoreAi.textContent = String(cpuPips);
+    scoreYou.textContent = String(youScore);
+    scoreAi.textContent = String(cpuScore);
 
     if (state.chain.length === 0) {
       endLeft.textContent = '—';
@@ -284,6 +286,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     }
 
     const legal = getLegalMoves(state, state.current);
+
+    console.log('Loop: current player', state.current, 'phase', state.phase, 'legal moves', legal.length);
 
     if (state.current === 0) {
       if (mustPass(state, 0)) {
@@ -320,9 +324,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
           ? 'You played your last tile.'
           : 'The CPU emptied its hand.';
       } else {
+        // Muggins scoring: show scores
         overlayMsg.textContent = won
-          ? `Game blocked. Your hand: ${handPipCount(state.hands[0])} pips. CPU: ${handPipCount(state.hands[1])}.`
-          : `Game blocked. CPU had fewer pips (${handPipCount(state.hands[1])} vs your ${handPipCount(state.hands[0])}).`;
+          ? `Game blocked. Your score: ${state.scores[0]}. CPU: ${state.scores[1]}.`
+          : `Game blocked. CPU had higher score (${state.scores[1]} vs your ${state.scores[0]}).`;
       }
       overlay.classList.remove('hidden');
       btnNew.classList.add('hidden'); // Hide the "New game" button when overlay is shown
@@ -333,6 +338,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     if (inputLocked || state.current !== 0 || state.phase !== 'playing') return;
     if (!isLegalMove(state, move, 0)) return;
     inputLocked = true;
+    const domino = state.hands[0][move.handIndex];
+    console.log('Player move:', domino.low, '/', domino.high, 'to', move.end, 'Chain ends:', state.leftEnd, state.rightEnd);
     state = applyMove(state, move);
     if (state.phase === 'gameOver') {
       updateHud();
@@ -381,6 +388,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
     inputLocked = true;
     const chainBefore = state.chain.length;
+    const lastMoveBefore = state.lastMove;
     state = runAiTurn(state);
 
     if (state.chain.length > chainBefore) {
@@ -390,6 +398,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
         const playedDomino = state.chain.find(t => t.domino.id === lastMove.dominoId);
         if (playedDomino) {
           const label = dominoLabel(playedDomino.domino);
+          console.log('CPU move:', playedDomino.domino.low, '/', playedDomino.domino.high, 'to', lastMove.end, 'Chain ends before:', lastMoveBefore ? [state.leftEnd, state.rightEnd] : 'N/A');
           showToast(`CPU played ${label}.`);
         }
       }
@@ -427,6 +436,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     startNewGame();
   });
 
+  btnCloseOverlay.addEventListener('click', () => {
+    overlay.classList.add('hidden');
+  });
+
   btnNew.addEventListener('click', startNewGame);
 
   function startNewGame() {
@@ -447,6 +460,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       passesInRow: 0,
       lastMove: null,
       snakeTurn: 'clockwise',
+      scores: [0, 0],
     };
     // Clear the overlay and button states
     overlay.classList.add('hidden');
