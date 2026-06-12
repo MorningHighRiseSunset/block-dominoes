@@ -336,6 +336,8 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     if (inputLocked || state.current !== 0 || state.phase !== 'playing') return;
     if (!isLegalMove(state, move, 0)) return;
     inputLocked = true;
+    const domino = state.hands[0][move.handIndex];
+    console.log(`Player move: ${domino.low}/${domino.high} to ${move.end}`);
     state = applyMove(state, move);
     if (state.phase === 'gameOver') {
       updateHud();
@@ -393,6 +395,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
         const playedDomino = state.chain.find(t => t.domino.id === lastMove.dominoId);
         if (playedDomino) {
           const label = dominoLabel(playedDomino.domino);
+          console.log(`CPU move: ${playedDomino.domino.low}/${playedDomino.domino.high} to ${lastMove.end}`);
           showToast(`CPU played ${label}.`);
         }
       }

@@ -321,6 +321,9 @@ export function getLegalMoves(state: BlockDominoesState, player: Player): BlockM
     }
   }
 
+  console.log('Legal moves for player', player, ':', moves.map(m => ({ domino: hand[m.handIndex].low + '/' + hand[m.handIndex].high, end: m.end })));
+  console.log('Chain ends:', state.leftEnd, state.rightEnd);
+
   return moves;
 }
 
@@ -437,6 +440,8 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     layout: computeTileLayout(state, move, isDouble),
   };
 
+  console.log(`applyMove: player ${player}, domino ${domino.low}/${domino.high}, end ${move.end}, endPip ${endPip}, oriented ${oriented.leftPip}/${oriented.rightPip}`);
+
   let chain: PlayedTile[];
   let leftEnd: Pip;
   let rightEnd: Pip;
@@ -452,6 +457,8 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     leftEnd = state.leftEnd!;
     rightEnd = oriented.leftPip;
   }
+
+  console.log(`applyMove: new chain ends ${leftEnd}/${rightEnd}`);
 
   const gameOver = hand.length === 0;
 
