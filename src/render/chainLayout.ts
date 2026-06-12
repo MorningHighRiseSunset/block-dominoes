@@ -90,8 +90,8 @@ function centerDistance(
   _toDouble: boolean,
   dir: TravelDir,
 ): number {
-  // Small negative epsilon to ensure tiles overlap slightly and touch
-  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir) - 0.001;
+  // No epsilon - tiles should touch exactly without overlap
+  return halfExtentAlongDir(fromRot, dir) + halfExtentAlongDir(toRot, dir);
 }
 
 function nextStep(
