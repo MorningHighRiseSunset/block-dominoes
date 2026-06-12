@@ -380,13 +380,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     }
 
     inputLocked = true;
-    const passesBefore = state.passesInRow;
     const chainBefore = state.chain.length;
     state = runAiTurn(state);
 
-    if (state.passesInRow > passesBefore && state.chain.length === chainBefore) {
-      showToast('CPU has no matching tile — passing.');
-    } else if (state.chain.length > chainBefore) {
+    if (state.chain.length > chainBefore) {
       // CPU played a tile
       const lastMove = state.lastMove;
       if (lastMove) {
@@ -408,8 +405,20 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     inputLocked = false;
     updateHud();
 
+    // Only schedule AI pass if it's still CPU's turn and they must pass
     if (state.current === 1 && mustPass(state, 1)) {
-      scheduleAi();
+      showToast('CPU has no matching tile — passing.');
+      setTimeout(() => {
+        state = applyPass(state);
+        inputLocked = false;
+        if (state.phase === 'gameOver') {
+          updateHud();
+          showGameOverOverlay();
+          return;
+        }
+        updateHud();
+        if (state.current === 1) scheduleAi();
+      }, 2000);
     }
   }
 

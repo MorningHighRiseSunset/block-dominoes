@@ -16,21 +16,8 @@ export interface ChainTilePlacement {
   isDouble: boolean;
 }
 
-/** Default growth heads away from the player hand (+Z). */
-export const INITIAL_TRAVEL_DIR: TravelDir = 'north';
-
-function rotationYForDir(d: TravelDir): number {
-  switch (d) {
-    case 'east':
-      return Math.PI / 2;
-    case 'west':
-      return -Math.PI / 2;
-    case 'south':
-      return 0;
-    case 'north':
-      return Math.PI;
-  }
-}
+/** Default growth heads to the right (east) for horizontal chain. */
+export const INITIAL_TRAVEL_DIR: TravelDir = 'east';
 
 function oppositeDir(d: TravelDir): TravelDir {
   switch (d) {
@@ -76,18 +63,23 @@ export function halfExtentAlongDir(rotationY: number, dir: TravelDir): number {
   return halfExtentOnAxis(rotationY, axisForDir(dir));
 }
 
-export function rotationForTile(travelDir: TravelDir, isDouble: boolean): number {
-  let rotationY = rotationYForDir(travelDir);
-  if (isDouble) rotationY += Math.PI / 2;
-  return rotationY;
+export function rotationForTile(_travelDir: TravelDir, isDouble: boolean, isFirst: boolean): number {
+  // First domino is always vertical (rotation 0 from player's perspective)
+  if (isFirst) {
+    return 0;
+  }
+  // Subsequent dominoes: horizontal unless double
+  if (isDouble) {
+    return 0; // Vertical for doubles
+  }
+  // Horizontal for non-doubles (rotation PI/2)
+  return Math.PI / 2;
 }
 
 /** Minimum center-to-center distance so tile faces touch along the chain axis. */
 function centerDistance(
   fromRot: number,
-  _fromDouble: boolean,
   toRot: number,
-  _toDouble: boolean,
   dir: TravelDir,
 ): number {
   // No epsilon - tiles should touch exactly without overlap
@@ -100,14 +92,14 @@ function nextStep(
   dir: TravelDir,
   runLen: number,
   fromRot: number,
-  fromDouble: boolean,
+  _fromDouble: boolean,
   toRot: number,
-  toDouble: boolean,
+  _toDouble: boolean,
   _snakeTurn: SnakeTurn,
   _existing: ChainTilePlacement[],
 ): { x: number; z: number; dir: TravelDir; runLen: number } {
   // Truly linear layout - never turn, always extend in the same direction
-  const dist = centerDistance(fromRot, fromDouble, toRot, toDouble, dir);
+  const dist = centerDistance(fromRot, toRot, dir);
   const fwd = stepFrom(x, z, dir, dist);
   return { x: fwd.x, z: fwd.z, dir, runLen: runLen + 1 };
 }
@@ -144,12 +136,13 @@ export function layoutChainAuto(
 
   for (let i = 0; i < chain.length; i++) {
     const tile = chain[i];
-    const rotationY = rotationForTile(dir, tile.isDouble);
+    const isFirst = i === 0;
+    const rotationY = rotationForTile(dir, tile.isDouble, isFirst);
     out.push({ x, z, rotationY, travelDir: dir, isDouble: tile.isDouble });
     if (i === chain.length - 1) break;
 
     const next = chain[i + 1];
-    const nextRot = rotationForTile(dir, next.isDouble);
+    const nextRot = rotationForTile(dir, next.isDouble, false);
     const step = nextStep(
       x,
       z,
@@ -182,7 +175,7 @@ export function extensionSlot(
     return {
       x: 0,
       z: 0,
-      rotationY: rotationForTile(travelDir, isDouble),
+      rotationY: rotationForTile(travelDir, isDouble, true),
       travelDir,
       isDouble,
     };
@@ -190,9 +183,9 @@ export function extensionSlot(
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
   const dir = end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir;
-  const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble);
-  const newRot = rotationForTile(dir, isDouble);
-  const dist = centerDistance(anchorRot, anchor.isDouble, newRot, isDouble, dir);
+  const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble, false);
+  const newRot = rotationForTile(dir, isDouble, false);
+  const dist = centerDistance(anchorRot, newRot, dir);
   const fwd = stepFrom(anchor.x, anchor.z, dir, dist);
 
   // Truly linear layout - always place in the forward direction

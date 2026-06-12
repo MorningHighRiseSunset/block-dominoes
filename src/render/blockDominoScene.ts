@@ -268,9 +268,21 @@ export class BlockDominoScene {
       const tile = state.chain[i];
       const { x, z, rotationY } = placements[i];
       const y = yBase;
-      // Use tile.leftPip and tile.rightPip directly - these represent which pip is at which end of the chain
-      const renderLeft = tile.leftPip;
-      const renderRight = tile.rightPip;
+      // Determine which end this tile is at in the chain
+      const isRightEnd = i === n - 1;
+      
+      // Use tile.leftPip and tile.rightPip, but swap based on position to ensure correct visual orientation
+      // The texture draws renderLeft at top, renderRight at bottom
+      // We need to ensure the matching pip is at the connection point
+      let renderLeft = tile.leftPip;
+      let renderRight = tile.rightPip;
+      
+      // If this is the right end of the chain, swap so the matching pip (rightPip) is at the correct visual position
+      if (isRightEnd) {
+        renderLeft = tile.rightPip;
+        renderRight = tile.leftPip;
+      }
+      
       if (i < this.chainMeshes.length) {
         const g = this.chainMeshes[i];
         g.position.set(x, y, z);

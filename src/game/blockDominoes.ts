@@ -262,17 +262,16 @@ function orientForEnd(d: Domino, end: Pip, side: ChainEnd): { leftPip: Pip; righ
     return { leftPip: d.low, rightPip: d.high };
   }
   // leftPip = pip at left end of chain, rightPip = pip at right end of chain
-  // When placing at left end: the matching pip becomes the new leftEnd, the other pip is exposed at right
-  // When placing at right end: the matching pip becomes the new rightEnd, the other pip is exposed at left
+  // The matching pip should be at the connection point
   if (d.low === end) {
     return side === 'left'
-      ? { leftPip: d.low, rightPip: d.high }  // low matches, becomes new leftEnd
-      : { leftPip: d.high, rightPip: d.low }; // low matches, becomes new rightEnd
+      ? { leftPip: d.low, rightPip: d.high }  // low matches at left end
+      : { leftPip: d.high, rightPip: d.low }; // low matches at right end
   }
   if (d.high === end) {
     return side === 'left'
-      ? { leftPip: d.high, rightPip: d.low }  // high matches, becomes new leftEnd
-      : { leftPip: d.low, rightPip: d.high }; // high matches, becomes new rightEnd
+      ? { leftPip: d.high, rightPip: d.low }  // high matches at left end
+      : { leftPip: d.low, rightPip: d.high }; // high matches at right end
   }
   return null;
 }
@@ -294,13 +293,12 @@ export function getLegalMoves(state: BlockDominoesState, player: Player): BlockM
 
   for (let i = 0; i < hand.length; i++) {
     const d = hand[i];
-    if (state.leftEnd !== null && matchesEnd(d, state.leftEnd)) {
-      moves.push({ handIndex: i, end: 'left' });
-    }
+    // Only show one placement option per domino - prefer right end
+    // Disable left-side placement when chain has only one tile (first domino)
     if (state.rightEnd !== null && matchesEnd(d, state.rightEnd)) {
-      if (!moves.some((m) => m.handIndex === i && m.end === 'right')) {
-        moves.push({ handIndex: i, end: 'right' });
-      }
+      moves.push({ handIndex: i, end: 'right' });
+    } else if (state.leftEnd !== null && matchesEnd(d, state.leftEnd) && state.chain.length > 1) {
+      moves.push({ handIndex: i, end: 'left' });
     }
   }
 
