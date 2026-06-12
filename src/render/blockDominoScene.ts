@@ -42,6 +42,18 @@ interface DropAnim {
   duration: number;
 }
 
+interface DrawAnim {
+  mesh: THREE.Group;
+  fromX: number;
+  fromY: number;
+  fromZ: number;
+  toX: number;
+  toY: number;
+  toZ: number;
+  t: number;
+  duration: number;
+}
+
 
 export class BlockDominoScene {
   readonly canvas: HTMLCanvasElement;
@@ -52,6 +64,7 @@ export class BlockDominoScene {
   private readonly chainRoot = new THREE.Group();
   private readonly handsRoot = new THREE.Group();
   private readonly highlightsRoot = new THREE.Group();
+  private readonly boneyardRoot = new THREE.Group();
   private readonly cellHighlights = new Map<string, THREE.Group>();
   private readonly handMeshes = new Map<string, THREE.Group>();
   private readonly chainMeshes: THREE.Group[] = [];
@@ -59,9 +72,11 @@ export class BlockDominoScene {
   private readonly pointer = new THREE.Vector2();
   private readonly clock = new THREE.Clock();
   private readonly dropAnims: DropAnim[] = [];
+  private readonly drawAnims: DrawAnim[] = [];
   private readonly playerRack = new THREE.Group();
   private placementListener: ((player: Player) => void) | null = null;
   private dropListener: ((move: BlockMove) => void) | null = null;
+  private drawListener: (() => void) | null = null;
   private currentLegal: BlockMove[] = [];
   private interactive = false;
   private syncedState: BlockDominoesState | null = null;
@@ -112,6 +127,7 @@ export class BlockDominoScene {
     this.scene.add(this.chainRoot);
     this.scene.add(this.handsRoot);
     this.scene.add(this.highlightsRoot);
+    this.scene.add(this.boneyardRoot);
     this.bindEvents();
     this.resize();
   }
@@ -146,6 +162,58 @@ export class BlockDominoScene {
     }
 
     this.tableRoot.add(this.playerRack);
+  }
+
+  private buildBoneyard(boneyardCount: number) {
+    // Clear existing boneyard
+    while (this.boneyardRoot.children.length > 0) {
+      const child = this.boneyardRoot.children[0];
+      this.boneyardRoot.remove(child);
+      disposeGroup(child as THREE.Group);
+    }
+
+    if (boneyardCount === 0) return;
+
+    // Create a stack of dominoes to represent the boneyard
+    // Position it on the left side of the board
+    const boneyardX = -6;
+    const boneyardZ = 0;
+    const boneyardY = TABLE_SURFACE_Y + 0.02;
+
+    // Create a base platform for the boneyard
+    const wood = makeWoodTexture();
+    const platformMat = new THREE.MeshStandardMaterial({
+      map: wood,
+      color: WOOD_COLOR,
+      roughness: 0.65,
+    });
+    const platform = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.05, 1.2),
+      platformMat
+    );
+    platform.position.set(boneyardX, boneyardY, boneyardZ);
+    platform.receiveShadow = true;
+    this.boneyardRoot.add(platform);
+
+    // Create stacked dominoes to represent the boneyard
+    // Show a few dominoes on top to indicate it's a boneyard
+    const visibleCount = Math.min(3, boneyardCount);
+    for (let i = 0; i < visibleCount; i++) {
+      const domino = createDominoBack(0); // Face-down domino
+      domino.position.set(boneyardX, boneyardY + 0.03 + i * 0.01, boneyardZ);
+      domino.rotation.set(0, Math.PI / 4, 0); // Slight rotation for visual interest
+      domino.scale.set(0.8, 0.8, 0.8); // Slightly smaller
+      this.boneyardRoot.add(domino);
+    }
+
+    // Add a hit box for clicking
+    const hitBox = new THREE.Mesh(
+      new THREE.BoxGeometry(1.5, 0.3, 1.5),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitBox.position.set(boneyardX, boneyardY + 0.15, boneyardZ);
+    hitBox.userData = { kind: 'boneyard' };
+    this.boneyardRoot.add(hitBox);
   }
 
   resize() {
@@ -196,9 +264,54 @@ export class BlockDominoScene {
     this.dropListener = fn;
   }
 
+  setDrawListener(fn: (() => void) | null) {
+    this.drawListener = fn;
+  }
+
+  triggerDrawAnimation(player: Player, dominoIndex: number) {
+    if (!this.syncedState) return;
+    
+    const hand = this.syncedState.hands[player];
+    const z = player === 0 ? PLAYER_HAND_Z : CPU_HAND_Z;
+    // Use same spread calculation as rebuildHands
+    const maxSpread = hand.length > 7 ? 0.85 : 1.02;
+    const spread = Math.min(maxSpread, 6.6 / Math.max(hand.length, 1));
+    const startX = -((hand.length - 1) * spread) / 2;
+    const handY = HAND_SURFACE_Y + TILE_H * 0.5;
+    const toX = startX + dominoIndex * spread;
+    const toY = handY;
+    const toZ = z;
+
+    // Create a temporary domino mesh for animation
+    const mesh = createDominoBack(player);
+    mesh.position.set(-6, TABLE_SURFACE_Y + 0.15, 0); // Start at boneyard position
+    mesh.rotation.set(0, Math.PI / 2, 0);
+    this.scene.add(mesh);
+
+    // Add animation
+    this.drawAnims.push({
+      mesh,
+      fromX: -6,
+      fromY: TABLE_SURFACE_Y + 0.15,
+      fromZ: 0,
+      toX,
+      toY,
+      toZ,
+      t: 0,
+      duration: 0.4,
+    });
+
+    // Remove mesh after animation
+    setTimeout(() => {
+      this.scene.remove(mesh);
+      disposeGroup(mesh);
+    }, 500);
+  }
+
   render() {
     const dt = this.clock.getDelta();
     this.updateDropAnims(dt);
+    this.updateDrawAnims(dt);
     this.updateCameraPosition(dt);
     this.renderer.render(this.scene, this.camera);
   }
@@ -224,6 +337,22 @@ export class BlockDominoScene {
     }
   }
 
+  private updateDrawAnims(dt: number) {
+    for (let i = this.drawAnims.length - 1; i >= 0; i--) {
+      const a = this.drawAnims[i];
+      a.t += dt;
+      const u = Math.min(1, a.t / a.duration);
+      const ease = 1 - (1 - u) ** 3;
+      a.mesh.position.x = a.fromX + (a.toX - a.fromX) * ease;
+      a.mesh.position.y = a.fromY + (a.toY - a.fromY) * ease;
+      a.mesh.position.z = a.fromZ + (a.toZ - a.fromZ) * ease;
+      if (u >= 1) {
+        a.mesh.position.set(a.toX, a.toY, a.toZ);
+        this.drawAnims.splice(i, 1);
+      }
+    }
+  }
+
   sync(state: BlockDominoesState, legal: BlockMove[], interactive: boolean) {
     this.syncedState = state;
     this.currentLegal = legal;
@@ -232,6 +361,7 @@ export class BlockDominoScene {
     this.rebuildHands(state, interactive);
     this.updateCellHighlights(state, legal, this.selectedHandIndex);
     this.updateTargetCameraX(state);
+    this.buildBoneyard(state.boneyard.length);
   }
 
   private updateTargetCameraX(state: BlockDominoesState) {
@@ -304,7 +434,9 @@ export class BlockDominoScene {
     for (const player of [0, 1] as Player[]) {
       const hand = state.hands[player];
       const z = player === 0 ? PLAYER_HAND_Z : CPU_HAND_Z;
-      const spread = Math.min(1.02, 6.6 / Math.max(hand.length, 1));
+      // Dynamic spread: compress more aggressively when hand exceeds 7 tiles
+      const maxSpread = hand.length > 7 ? 0.85 : 1.02;
+      const spread = Math.min(maxSpread, 6.6 / Math.max(hand.length, 1));
       const startX = -((hand.length - 1) * spread) / 2;
 
       for (let i = 0; i < hand.length; i++) {
@@ -552,11 +684,39 @@ export class BlockDominoScene {
     return null;
   }
 
+  private pickBoneyard(clientX: number, clientY: number): boolean {
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    this.pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+
+    const hits = this.raycaster.intersectObjects(this.boneyardRoot.children, true);
+
+    for (const hit of hits) {
+      let obj: THREE.Object3D | null = hit.object;
+      while (obj) {
+        const ud = obj.userData;
+        if (ud?.kind === 'boneyard') {
+          return true;
+        }
+        obj = obj.parent;
+      }
+    }
+
+    return false;
+  }
+
   private bindEvents() {
     window.addEventListener('resize', () => this.resize());
 
     const handlePointerDown = (clientX: number, clientY: number) => {
       if (!this.interactive) return;
+
+      // Check if clicking on boneyard
+      if (this.pickBoneyard(clientX, clientY)) {
+        this.drawListener?.();
+        return;
+      }
 
       // First check if clicking on a placement slot (only when a domino is selected)
       if (this.selectedHandIndex !== null) {

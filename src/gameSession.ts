@@ -4,11 +4,13 @@ import {
   getLegalMoves,
   isLegalMove,
   mustPass,
+  canDraw,
+  drawFromBoneyard,
   newGame,
   pipLabel,
   findStarter,
   findStarterWithPlayerAnswer,
-  dealHands,
+  dealHandsWithBoneyard,
   makeDeck,
   shuffle,
   dominoLabel,
@@ -188,9 +190,13 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     closeSetupModal();
     // Always use the preview hands that were shown in the modal
     if (!previewHands) {
-      previewHands = dealHands(shuffle(makeDeck()), 2);
+      const deck = shuffle(makeDeck());
+      const result = dealHandsWithBoneyard(deck, 2);
+      previewHands = result.hands;
+      previewBoneyard = result.boneyard;
     }
     const hands = previewHands;
+    const boneyard = previewBoneyard ?? [];
     const { player: starter } = findStarterWithPlayerAnswer(hands, playerHasDouble);
     state = {
       playerCount: 2,
@@ -206,8 +212,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       lastMove: null,
       snakeTurn: 'clockwise',
       scores: [0, 0],
+      boneyard,
     };
     previewHands = null; // Clear the preview hands
+    previewBoneyard = null;
     overlay.classList.add('hidden');
     btnNew.classList.add('hidden');
     inputLocked = false;
@@ -244,6 +252,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     unlockAudio();
     applyHumanMove(move);
   });
+  scene.setDrawListener(() => {
+    unlockAudio();
+    applyHumanDraw();
+  });
 
   canvas.addEventListener('pointerdown', () => unlockAudio());
 
@@ -254,6 +266,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   let loopRunning = false;
   let paused = true;
   let previewHands: Domino[][] | null = null;
+  let previewBoneyard: Domino[] | null = null;
 
   function updateHud() {
     // Muggins scoring: show points
@@ -279,7 +292,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
         state.gameOverReason === 'empty'
           ? 'You emptied your hand.'
           : state.gameOverReason === 'blocked'
-            ? 'Game blocked — fewest pips in hand wins (all players passed).'
+            ? 'Game blocked — Highest score wins!'
             : '';
       btnNew.classList.remove('hidden');
       scene.sync(state, [], false);
@@ -289,9 +302,15 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     const legal = getLegalMoves(state, state.current);
 
     if (state.current === 0) {
+      if (canDraw(state, 0)) {
+        statusEl.textContent = 'Your turn — draw from boneyard';
+        hintEl.textContent = `No matching tile. Click the boneyard to draw (${state.boneyard.length} tiles remaining).`;
+        scene.sync(state, [], true);
+        return;
+      }
       if (mustPass(state, 0)) {
         statusEl.textContent = 'Your turn';
-        hintEl.textContent = 'Block rules: no draw from the boneyard.';
+        hintEl.textContent = 'No matching tiles and boneyard is empty — passing.';
         scene.sync(state, [], false);
         schedulePass('You have no matching tile — passing.');
         return;
@@ -336,6 +355,18 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       overlay.classList.remove('hidden');
       btnNew.classList.add('hidden'); // Hide the "New game" button when overlay is shown
     }, 4500);
+  }
+
+  function applyHumanDraw() {
+    if (inputLocked || state.current !== 0 || state.phase !== 'playing') return;
+    if (!canDraw(state, 0)) return;
+    inputLocked = true;
+    state = drawFromBoneyard(state, 0);
+    const handAfter = state.hands[0].length;
+    // Trigger animation for the newly drawn domino (last index)
+    scene.triggerDrawAnimation(0, handAfter - 1);
+    updateHud();
+    inputLocked = false;
   }
 
   function applyHumanMove(move: BlockMove) {
@@ -389,6 +420,18 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     }
 
     inputLocked = true;
+    
+    // CPU may need to draw multiple tiles until it can play or boneyard is empty
+    let drewCount = 0;
+    while (canDraw(state, 1) && getLegalMoves(state, 1).length === 0) {
+      state = drawFromBoneyard(state, 1);
+      drewCount++;
+    }
+    
+    if (drewCount > 0) {
+      showToast(`CPU drew ${drewCount} tile${drewCount > 1 ? 's' : ''} from boneyard.`);
+    }
+
     const chainBefore = state.chain.length;
     state = runAiTurn(state);
 
@@ -445,7 +488,9 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   function startNewGame() {
     // Create preview hands so player can see their dominoes before answering
     const deck = shuffle(makeDeck());
-    previewHands = dealHands(deck, 2);
+    const result = dealHandsWithBoneyard(deck, 2);
+    previewHands = result.hands;
+    previewBoneyard = result.boneyard;
     const { player: starter } = findStarter(previewHands);
     state = {
       playerCount: 2,
@@ -461,6 +506,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       lastMove: null,
       snakeTurn: 'clockwise',
       scores: [0, 0],
+      boneyard: previewBoneyard,
     };
     // Clear the overlay and button states
     overlay.classList.add('hidden');

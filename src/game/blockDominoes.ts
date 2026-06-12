@@ -58,6 +58,8 @@ export interface BlockDominoesState {
   snakeTurn: SnakeTurn;
   /** Muggins scoring: points for each player (multiples of 5) */
   scores: number[];
+  /** Boneyard: remaining dominoes not yet dealt */
+  boneyard: Domino[];
 }
 
 /** Tiles dealt to each player at the start of a hand (block dominoes, double-six). */
@@ -122,6 +124,23 @@ export function dealHands(deck: Domino[], playerCount: PlayerCount): Domino[][] 
     offset += perHand;
   }
   return hands;
+}
+
+export function dealHandsWithBoneyard(deck: Domino[], playerCount: PlayerCount): { hands: Domino[][]; boneyard: Domino[] } {
+  const perHand = tilesPerPlayer(playerCount);
+  const dealt = totalDealt(playerCount);
+  if (dealt > DECK_SIZE) {
+    throw new Error(`Cannot deal ${dealt} tiles from a ${DECK_SIZE}-tile set`);
+  }
+
+  const hands: Domino[][] = [];
+  let offset = 0;
+  for (let i = 0; i < playerCount; i++) {
+    hands.push(deck.slice(offset, offset + perHand));
+    offset += perHand;
+  }
+  const boneyard = deck.slice(dealt);
+  return { hands, boneyard };
 }
 
 export function findStarter(hands: Domino[][]): { player: Player; domino: Domino } {
@@ -216,7 +235,7 @@ function blockedWinner(hands: Domino[][], scores: number[]): Player {
 
 export function newGame(playerCount: PlayerCount = 2): BlockDominoesState {
   const deck = shuffle(makeDeck());
-  const hands = dealHands(deck, playerCount);
+  const { hands, boneyard } = dealHandsWithBoneyard(deck, playerCount);
   const { player: starter } = findStarter(hands);
 
   return {
@@ -233,6 +252,7 @@ export function newGame(playerCount: PlayerCount = 2): BlockDominoesState {
     lastMove: null,
     snakeTurn: 'clockwise',
     scores: Array(playerCount).fill(0),
+    boneyard,
   };
 }
 
@@ -241,7 +261,7 @@ export function newGameWithSetup(
   playerHasDouble: { player: 0; double: Pip } | null = null,
 ): BlockDominoesState {
   const deck = shuffle(makeDeck());
-  const hands = dealHands(deck, playerCount);
+  const { hands, boneyard } = dealHandsWithBoneyard(deck, playerCount);
   const { player: starter } = findStarterWithPlayerAnswer(hands, playerHasDouble);
 
   return {
@@ -258,6 +278,7 @@ export function newGameWithSetup(
     lastMove: null,
     snakeTurn: 'clockwise',
     scores: Array(playerCount).fill(0),
+    boneyard,
   };
 }
 
@@ -335,7 +356,31 @@ export function getLegalMoves(state: BlockDominoesState, player: Player): BlockM
 }
 
 export function mustPass(state: BlockDominoesState, player: Player): boolean {
-  return state.phase === 'playing' && state.current === player && getLegalMoves(state, player).length === 0;
+  // Can only pass if no legal moves AND boneyard is empty
+  return state.phase === 'playing' && state.current === player && getLegalMoves(state, player).length === 0 && state.boneyard.length === 0;
+}
+
+export function canDraw(state: BlockDominoesState, player: Player): boolean {
+  // Can draw if no legal moves AND boneyard is not empty
+  return state.phase === 'playing' && state.current === player && getLegalMoves(state, player).length === 0 && state.boneyard.length > 0;
+}
+
+export function drawFromBoneyard(state: BlockDominoesState, player: Player): BlockDominoesState {
+  if (!canDraw(state, player)) return state;
+  
+  if (state.boneyard.length === 0) return state;
+  
+  const drawnDomino = state.boneyard[0];
+  const newBoneyard = state.boneyard.slice(1);
+  const newHands = state.hands.map((hand, i) => 
+    i === player ? [...hand, drawnDomino] : [...hand]
+  );
+  
+  return {
+    ...state,
+    hands: newHands,
+    boneyard: newBoneyard,
+  };
 }
 
 export function applyPass(state: BlockDominoesState): BlockDominoesState {

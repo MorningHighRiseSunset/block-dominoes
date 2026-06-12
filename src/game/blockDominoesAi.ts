@@ -1,6 +1,8 @@
 import {
   applyMove,
   applyPass,
+  canDraw,
+  drawFromBoneyard,
   getLegalMoves,
   handPipCount,
   type BlockDominoesState,
@@ -79,5 +81,11 @@ function countInHand(hand: { low: number; high: number }[], pip: number): number
 export function runAiTurn(state: BlockDominoesState): BlockDominoesState {
   const move = chooseAiMove(state);
   if (move) return applyMove(state, move);
+  
+  // If no legal moves, draw from boneyard if possible
+  if (canDraw(state, AI)) {
+    return drawFromBoneyard(state, AI);
+  }
+  
   return applyPass(state);
 }
