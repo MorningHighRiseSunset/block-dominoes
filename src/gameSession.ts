@@ -50,12 +50,11 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   const btnBig6 = document.getElementById('btn-big6')!;
   const btnBig5 = document.getElementById('btn-big5')!;
   const btnBig4 = document.getElementById('btn-big4')!;
-  const btnBig3 = document.getElementById('btn-big3')!;
-  const btnBig2 = document.getElementById('btn-big2')!;
-  const btnBig1 = document.getElementById('btn-big1')!;
-  const btnBig0 = document.getElementById('btn-big0')!;
   const btnNoDouble = document.getElementById('btn-nodouble')!;
   const gameToast = document.getElementById('game-toast')!;
+  const boneyardPanel = document.getElementById('boneyard-panel')!;
+  const boneyardCount = document.getElementById('boneyard-count')!;
+  const btnDraw = document.getElementById('btn-draw')! as HTMLButtonElement;
   const btnTurnCw = document.getElementById('btn-turn-cw') as HTMLButtonElement;
   const btnTurnCcw = document.getElementById('btn-turn-ccw') as HTMLButtonElement;
 
@@ -121,20 +120,12 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     btnBig6.classList.add('hidden');
     btnBig5.classList.add('hidden');
     btnBig4.classList.add('hidden');
-    btnBig3.classList.add('hidden');
-    btnBig2.classList.add('hidden');
-    btnBig1.classList.add('hidden');
-    btnBig0.classList.add('hidden');
 
-    // Check which doubles the player has
+    // Check which doubles the player has (only show Big 6, 5, 4)
     const hasDouble6 = hand.some(d => d.low === 6 && d.high === 6);
     const hasDouble5 = hand.some(d => d.low === 5 && d.high === 5);
     const hasDouble4 = hand.some(d => d.low === 4 && d.high === 4);
-    const hasDouble3 = hand.some(d => d.low === 3 && d.high === 3);
-    const hasDouble2 = hand.some(d => d.low === 2 && d.high === 2);
-    const hasDouble1 = hand.some(d => d.low === 1 && d.high === 1);
-    const hasDouble0 = hand.some(d => d.low === 0 && d.high === 0);
-    const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4 || hasDouble3 || hasDouble2 || hasDouble1 || hasDouble0;
+    const hasAnyDouble = hasDouble6 || hasDouble5 || hasDouble4;
 
     // Find CPU's highest double
     let cpuHighestDouble: Pip | null = null;
@@ -159,14 +150,10 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       setupInstruction.classList.add('hidden');
     }
 
-    // Show buttons only for doubles the player actually has
+    // Show buttons only for doubles the player actually has (only Big 6, 5, 4)
     if (hasDouble6) btnBig6.classList.remove('hidden');
     if (hasDouble5) btnBig5.classList.remove('hidden');
     if (hasDouble4) btnBig4.classList.remove('hidden');
-    if (hasDouble3) btnBig3.classList.remove('hidden');
-    if (hasDouble2) btnBig2.classList.remove('hidden');
-    if (hasDouble1) btnBig1.classList.remove('hidden');
-    if (hasDouble0) btnBig0.classList.remove('hidden');
 
     // If player has no doubles, hide all double buttons and only show "no double"
     if (!hasAnyDouble) {
@@ -237,10 +224,6 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
   btnBig6.addEventListener('click', () => startGameWithSetup({ player: 0, double: 6 as Pip }));
   btnBig5.addEventListener('click', () => startGameWithSetup({ player: 0, double: 5 as Pip }));
   btnBig4.addEventListener('click', () => startGameWithSetup({ player: 0, double: 4 as Pip }));
-  btnBig3.addEventListener('click', () => startGameWithSetup({ player: 0, double: 3 as Pip }));
-  btnBig2.addEventListener('click', () => startGameWithSetup({ player: 0, double: 2 as Pip }));
-  btnBig1.addEventListener('click', () => startGameWithSetup({ player: 0, double: 1 as Pip }));
-  btnBig0.addEventListener('click', () => startGameWithSetup({ player: 0, double: 0 as Pip }));
   btnNoDouble.addEventListener('click', () => startGameWithSetup(null));
 
   const scene = new BlockDominoScene(canvas);
@@ -252,7 +235,7 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     unlockAudio();
     applyHumanMove(move);
   });
-  scene.setDrawListener(() => {
+  btnDraw.addEventListener('click', () => {
     unlockAudio();
     applyHumanDraw();
   });
@@ -275,6 +258,15 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
 
     scoreYou.textContent = String(youScore);
     scoreAi.textContent = String(cpuScore);
+
+    // Update boneyard panel
+    boneyardCount.textContent = String(state.boneyard.length);
+    if (state.boneyard.length > 0 && state.phase === 'playing') {
+      boneyardPanel.classList.remove('hidden');
+      btnDraw.disabled = !canDraw(state, 0);
+    } else {
+      boneyardPanel.classList.add('hidden');
+    }
 
     if (state.chain.length === 0) {
       endLeft.textContent = '—';
@@ -362,11 +354,21 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     if (!canDraw(state, 0)) return;
     inputLocked = true;
     state = drawFromBoneyard(state, 0);
-    const handAfter = state.hands[0].length;
-    // Trigger animation for the newly drawn domino (last index)
-    scene.triggerDrawAnimation(0, handAfter - 1);
     updateHud();
     inputLocked = false;
+    
+    // Check if player can now play after drawing
+    const legal = getLegalMoves(state, 0);
+    if (legal.length === 0) {
+      // Still no legal moves, check if can draw again or must pass
+      if (canDraw(state, 0)) {
+        // Can draw again, let them continue
+        updateHud();
+      } else if (mustPass(state, 0)) {
+        // Must pass
+        schedulePass('You have no matching tile — passing.');
+      }
+    }
   }
 
   function applyHumanMove(move: BlockMove) {

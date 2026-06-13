@@ -1252,3 +1252,97 @@ body,
     bottom: 110px;
   }
 }
+
+/* —— Boneyard Panel —— */
+.boneyard-panel {
+  position: fixed;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px var(--shadow);
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  min-width: 80px;
+}
+
+.boneyard-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.boneyard-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.boneyard-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.boneyard-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.btn-draw {
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-draw:hover {
+  background: var(--you);
+  transform: translateY(-1px);
+}
+
+.btn-draw:active {
+  transform: translateY(0);
+}
+
+.btn-draw:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 768px) {
+  .boneyard-panel {
+    left: 8px;
+    padding: 8px 12px;
+    min-width: 70px;
+  }
+
+  .boneyard-icon {
+    font-size: 1.5rem;
+  }
+
+  .boneyard-count {
+    font-size: 1.2rem;
+  }
+
+  .btn-draw {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
