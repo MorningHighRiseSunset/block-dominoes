@@ -139,7 +139,13 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     // Update modal text based on what the player has
     const setupLead = document.querySelector('#setup-modal .modal-lead') as HTMLElement;
     if (hasAnyDouble) {
-      setupLead.textContent = 'Traditional domino setup: Which double would you like to start with?';
+      // Check if CPU has a higher double than what player can select
+      const playerMaxDouble = hasDouble6 ? 6 : (hasDouble5 ? 5 : 4);
+      if (cpuHighestDouble !== null && cpuHighestDouble > playerMaxDouble) {
+        setupLead.textContent = `CPU has Big ${cpuHighestDouble} and will go first. Select your double for reference:`;
+      } else {
+        setupLead.textContent = 'Traditional domino setup: Which double would you like to start with?';
+      }
       setupInstruction.classList.remove('hidden');
     } else {
       if (cpuHighestDouble !== null) {
@@ -355,7 +361,6 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
     inputLocked = true;
     state = drawFromBoneyard(state, 0);
     updateHud();
-    inputLocked = false;
     
     // Check if player can now play after drawing
     const legal = getLegalMoves(state, 0);
@@ -363,12 +368,20 @@ export function initGameSession(canvas: HTMLCanvasElement, onBackToLobby: () => 
       // Still no legal moves, check if can draw again or must pass
       if (canDraw(state, 0)) {
         // Can draw again, let them continue
-        updateHud();
+        scene.sync(state, [], false);
+        inputLocked = false;
+        return;
       } else if (mustPass(state, 0)) {
         // Must pass
+        inputLocked = false;
         schedulePass('You have no matching tile — passing.');
+        return;
       }
     }
+    
+    // Player has legal moves, sync scene with legal moves
+    scene.sync(state, legal, true);
+    inputLocked = false;
   }
 
   function applyHumanMove(move: BlockMove) {

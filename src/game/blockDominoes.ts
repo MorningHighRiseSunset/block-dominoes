@@ -185,14 +185,24 @@ export function findStarterWithPlayerAnswer(
   hands: Domino[][],
   playerHasDouble: { player: 0; double: Pip } | null,
 ): { player: Player; domino: Domino } {
-  // If player claims to have a specific double, verify and use that
+  // If player claims to have a specific double, verify it
   if (playerHasDouble) {
     const { player, double } = playerHasDouble;
     const hand = hands[player];
     const claimedDomino = hand.find((d) => d.low === double && d.high === double);
     
     if (claimedDomino) {
-      // Player actually has it, they start
+      // Player actually has the double they claimed
+      // Check if CPU has a higher double (Big 6 or Big 5 when player has Big 4)
+      const cpuHand = hands[1];
+      for (let p = 6; p > double; p--) {
+        const cpuDouble = cpuHand.find((d) => d.low === (p as Pip) && d.high === (p as Pip));
+        if (cpuDouble) {
+          // CPU has higher double, CPU goes first
+          return { player: 1, domino: cpuDouble };
+        }
+      }
+      // Player has the highest double, they start
       return { player, domino: claimedDomino };
     }
     
