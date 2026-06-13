@@ -306,10 +306,11 @@ export class BlockDominoScene {
     for (const player of [0, 1] as Player[]) {
       const hand = state.hands[player];
       const z = player === 0 ? PLAYER_HAND_Z : CPU_HAND_Z;
-      // Dynamic spread: compress more aggressively when hand exceeds 7 tiles
-      const maxSpread = hand.length > 7 ? 0.85 : 1.02;
-      const spread = Math.min(maxSpread, 6.6 / Math.max(hand.length, 1));
-      const startX = -((hand.length - 1) * spread) / 2;
+
+      const maxTilesPerRow = 7;
+      const rowCount = Math.ceil(hand.length / maxTilesPerRow);
+      const rowHeight = TILE_W + 0.16; // Space between rows so stacked dominoes don't collide
+      const handYBase = HAND_SURFACE_Y + TILE_H * 0.5 + (rowCount > 1 ? (rowCount - 1) * rowHeight * 0.5 : 0);
 
       for (let i = 0; i < hand.length; i++) {
         const d = hand[i];
@@ -321,8 +322,14 @@ export class BlockDominoScene {
           : createDominoBack(player);
         g.userData = { kind: 'hand', player, handIndex: i };
 
-        const handY = HAND_SURFACE_Y + TILE_H * 0.5;
-        g.position.set(startX + i * spread, handY, z);
+        const row = Math.floor(i / maxTilesPerRow);
+        const rowIndex = i % maxTilesPerRow;
+        const tilesInRow = row === rowCount - 1 ? hand.length - row * maxTilesPerRow : maxTilesPerRow;
+        const spread = Math.min(1.02, 6.6 / Math.max(tilesInRow, 1));
+        const startX = -((tilesInRow - 1) * spread) / 2;
+        const handX = startX + rowIndex * spread;
+        const handY = handYBase - row * rowHeight;
+        g.position.set(handX, handY, z);
         // Lay flat on the rack with long edge along the row
         g.rotation.set(0, Math.PI / 2, 0);
 
@@ -552,6 +559,32 @@ export class BlockDominoScene {
         }
         obj = obj.parent;
       }
+    }
+
+    // Fallback: if the raycast missed the slot ghost, choose the nearest valid slot to the pointer.
+    const plane = new THREE.Plane(
+      new THREE.Vector3(0, 1, 0),
+      -(TABLE_SURFACE_Y + TILE_LIFT + TILE_H * 0.5),
+    );
+    const point = new THREE.Vector3();
+    if (!this.raycaster.ray.intersectPlane(plane, point)) {
+      return null;
+    }
+
+    let nearest: { end: 'left' | 'right'; dist: number } | null = null;
+    for (const ghost of this.cellHighlights.values()) {
+      const ud = ghost.userData;
+      if (ud?.kind !== 'slot' || ud.handIndex !== this.selectedHandIndex) continue;
+      const dx = point.x - ghost.position.x;
+      const dz = point.z - ghost.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist <= 0.95 && (!nearest || dist < nearest.dist)) {
+        nearest = { end: ud.end as 'left' | 'right', dist };
+      }
+    }
+
+    if (nearest) {
+      return { handIndex: this.selectedHandIndex, end: nearest.end };
     }
 
     return null;

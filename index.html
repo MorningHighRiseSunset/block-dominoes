@@ -101,36 +101,43 @@
             <p class="tagline">Double-six · You vs CPU</p>
           </div>
         </div>
-        <div class="score-pills">
-          <div class="pill you">
-            <span>Your score</span>
-            <strong id="score-you">0</strong>
+        <div class="top-bar-actions">
+          <div id="boneyard-panel" class="boneyard-panel hidden">
+            <div class="boneyard-icon">🁢</div>
+            <div class="boneyard-info">
+              <span class="boneyard-label">Boneyard</span>
+              <span id="boneyard-count" class="boneyard-count">14</span>
+            </div>
+            <button id="btn-draw" type="button" class="btn-draw hidden">Draw</button>
+            <button id="btn-pass" type="button" class="btn-draw" style="background: #8b7355;">Pass</button>
           </div>
-          <div class="pill-divider" aria-hidden="true"></div>
-          <div class="pill cpu">
-            <span>CPU score</span>
-            <strong id="score-ai">0</strong>
+          <div id="last-played-panel" class="last-played-panel hidden">
+            <span class="panel-label">Last played</span>
+            <img id="last-played-image" class="last-played-image" src="" alt="Last played domino" />
+            <span id="last-played-desc" class="last-played-desc">—</span>
+            <button id="btn-close-last-played" type="button" class="btn-icon btn-icon--small" title="Hide last played">×</button>
           </div>
+          <div class="score-pills">
+            <div class="pill you">
+              <span>Your score</span>
+              <strong id="score-you">0</strong>
+            </div>
+            <div class="pill-divider" aria-hidden="true"></div>
+            <div class="pill cpu">
+              <span>CPU score</span>
+              <strong id="score-ai">0</strong>
+            </div>
+          </div>
+          <button id="btn-back-lobby" type="button" class="btn-icon" title="Back to lobby">
+            <span aria-hidden="true">⌂</span>
+            <span class="sr-only">Back to lobby</span>
+          </button>
+          <button id="btn-instructions" type="button" class="btn-icon" title="How to play">
+            <span aria-hidden="true">?</span>
+            <span class="sr-only">Instructions</span>
+          </button>
         </div>
-        <button id="btn-back-lobby" type="button" class="btn-icon" title="Back to lobby">
-          <span aria-hidden="true">⌂</span>
-          <span class="sr-only">Back to lobby</span>
-        </button>
-        <button id="btn-instructions" type="button" class="btn-icon" title="How to play">
-          <span aria-hidden="true">?</span>
-          <span class="sr-only">Instructions</span>
-        </button>
       </header>
-
-      <div id="boneyard-panel" class="boneyard-panel hidden">
-        <div class="boneyard-icon">🁢</div>
-        <div class="boneyard-info">
-          <span class="boneyard-label">Boneyard</span>
-          <span id="boneyard-count" class="boneyard-count">14</span>
-        </div>
-        <button id="btn-draw" type="button" class="btn-draw">Draw</button>
-      </div>
-
       <div id="game-toast" class="game-toast hidden" role="status" aria-live="polite"></div>
 
       <footer class="bottom-bar">

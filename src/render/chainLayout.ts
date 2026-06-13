@@ -22,7 +22,7 @@ export interface ChainTilePlacement {
   isDouble: boolean;
 }
 
-/** Default growth heads to the right (east) for horizontal chain. */
+/** Default growth heads rightward (east) for the opening vertical tile. */
 export const INITIAL_TRAVEL_DIR: TravelDir = 'east';
 
 function oppositeDir(d: TravelDir): TravelDir {
@@ -104,17 +104,11 @@ export function halfExtentAlongDir(rotationY: number, dir: TravelDir): number {
   return halfExtentOnAxis(rotationY, axisForDir(dir));
 }
 
-export function rotationForTile(_travelDir: TravelDir, isDouble: boolean, isFirst: boolean): number {
-  // First domino is always vertical (rotation 0 from player's perspective)
-  if (isFirst) {
-    return 0;
-  }
-  // Subsequent dominoes: horizontal unless double
+export function rotationForTile(travelDir: TravelDir, isDouble: boolean, _isFirst: boolean): number {
   if (isDouble) {
-    return 0; // Vertical for doubles
+    return 0; // Doubles remain vertical regardless of travel direction
   }
-  // Horizontal for non-doubles (rotation PI/2)
-  return Math.PI / 2;
+  return travelDir === 'east' || travelDir === 'west' ? Math.PI / 2 : 0;
 }
 
 /** Minimum center-to-center distance so tile faces touch along the chain axis. */
@@ -134,12 +128,16 @@ function nextStep(
   runLen: number,
   fromRot: number,
   _fromDouble: boolean,
-  toRot: number,
-  _toDouble: boolean,
+  toIsDouble: boolean,
   snakeTurn: SnakeTurn,
   _existing: ChainTilePlacement[],
 ): { x: number; z: number; dir: TravelDir; runLen: number } {
-  const dist = centerDistance(fromRot, toRot, dir);
+  const distanceAlong = (travelDir: TravelDir) => {
+    const toRot = rotationForTile(travelDir, toIsDouble, false);
+    return centerDistance(fromRot, toRot, travelDir);
+  };
+
+  const dist = distanceAlong(dir);
   let fwd = stepFrom(x, z, dir, dist);
   let newDir = dir;
 
@@ -148,7 +146,8 @@ function nextStep(
     // Turn based on snakeTurn setting
     newDir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
     // Recalculate position with new direction
-    fwd = stepFrom(x, z, newDir, dist);
+    const turnedDist = distanceAlong(newDir);
+    fwd = stepFrom(x, z, newDir, turnedDist);
   }
 
   return { x: fwd.x, z: fwd.z, dir: newDir, runLen: runLen + 1 };
@@ -192,7 +191,6 @@ export function layoutChainAuto(
     if (i === chain.length - 1) break;
 
     const next = chain[i + 1];
-    const nextRot = rotationForTile(dir, next.isDouble, false);
     const step = nextStep(
       x,
       z,
@@ -200,7 +198,6 @@ export function layoutChainAuto(
       runLen,
       rotationY,
       tile.isDouble,
-      nextRot,
       next.isDouble,
       snakeTurn,
       out,
@@ -232,30 +229,89 @@ export function extensionSlot(
   }
 
   const anchor = end === 'left' ? placements[0] : placements[placements.length - 1];
-  
-  // For right placement: extend in the same direction as the anchor's travel
-  // For left placement: always extend in the opposite direction of INITIAL_TRAVEL_DIR (west)
-  // This ensures consistent left-side growth regardless of the anchor's travelDir
-  let dir = end === 'left' ? oppositeDir(INITIAL_TRAVEL_DIR) : anchor.travelDir;
-  
-  const anchorRot = rotationForTile(anchor.travelDir, anchor.isDouble, false);
-  const newRot = rotationForTile(dir, isDouble, false);
-  const dist = centerDistance(anchorRot, newRot, dir);
-  let fwd = stepFrom(anchor.x, anchor.z, dir, dist);
 
-  // Check if the next position would be out of bounds and turn if needed
-  if (isOutOfBounds(fwd.x, fwd.z)) {
-    dir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
-    fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+  // Try multiple candidate directions to avoid placing a new tile overlapping
+  // any existing placements. This makes placement robust when the chain has
+  // turned and tiles exist on all four sides.
+  const preferred = end === 'left' ? oppositeDir(anchor.travelDir) : anchor.travelDir;
+  let candidates: TravelDir[];
+
+  // Special case: if this is the first extension (anchor is the opening tile at origin),
+  // only allow horizontal placement left/right from the starter tile.
+  if (placements.length === 1 && placements[0].x === 0 && placements[0].z === 0) {
+    candidates = [preferred, oppositeDir(preferred)];
+  } else {
+    candidates = [preferred, turnClockwise(preferred), turnCounterclockwise(preferred), oppositeDir(preferred)];
   }
 
-  // The travel direction for the new tile should be the direction it extends
-  const travelDir = dir;
+  // Helper: compute axis-aligned bbox for a tile centered at (x,z)
+  function bboxFor(x: number, z: number, rot: number) {
+    const hx = halfExtentOnAxis(rot, 'x');
+    const hz = halfExtentOnAxis(rot, 'z');
+    return { minX: x - hx, maxX: x + hx, minZ: z - hz, maxZ: z + hz };
+  }
+
+  // Helper: check intersection between two bboxes
+  function intersects(a: ReturnType<typeof bboxFor>, b: ReturnType<typeof bboxFor>) {
+    return !(a.maxX <= b.minX || a.minX >= b.maxX || a.maxZ <= b.minZ || a.minZ >= b.maxZ);
+  }
+
+  // Precompute existing bboxes to test collisions
+  const existing = placements.map((p) => bboxFor(p.x, p.z, p.rotationY));
+
+  for (let cand of candidates) {
+    let dir = cand;
+    const anchorRot = anchor.rotationY;
+    const newRot = rotationForTile(dir, isDouble, false);
+    const dist = centerDistance(anchorRot, newRot, dir);
+    let fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+
+    // If out of bounds, try turning according to snakeTurn for this candidate
+    if (isOutOfBounds(fwd.x, fwd.z)) {
+      dir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
+      fwd = stepFrom(anchor.x, anchor.z, dir, dist);
+    }
+
+    const candidateBox = bboxFor(fwd.x, fwd.z, newRot);
+    let collision = false;
+    for (const ex of existing) {
+      if (intersects(candidateBox, ex)) {
+        collision = true;
+        break;
+      }
+    }
+    if (!collision) {
+      return {
+        x: fwd.x,
+        z: fwd.z,
+        rotationY: newRot,
+        travelDir: end === 'right' ? dir : oppositeDir(dir),
+        isDouble,
+      };
+    }
+  }
+
+  // Fallback: use preferred direction even if collision detected
+  const fallbackDir = preferred;
+  const fallbackRot = rotationForTile(fallbackDir, isDouble, false);
+  const fallbackDist = centerDistance(anchor.rotationY, fallbackRot, fallbackDir);
+  let fallbackFwd = stepFrom(anchor.x, anchor.z, fallbackDir, fallbackDist);
+  if (isOutOfBounds(fallbackFwd.x, fallbackFwd.z)) {
+    const turned = snakeTurn === 'clockwise' ? turnClockwise(fallbackDir) : turnCounterclockwise(fallbackDir);
+    fallbackFwd = stepFrom(anchor.x, anchor.z, turned, fallbackDist);
+    return {
+      x: fallbackFwd.x,
+      z: fallbackFwd.z,
+      rotationY: rotationForTile(turned, isDouble, false),
+      travelDir: end === 'right' ? turned : oppositeDir(turned),
+      isDouble,
+    };
+  }
   return {
-    x: fwd.x,
-    z: fwd.z,
-    rotationY: newRot,
-    travelDir,
+    x: fallbackFwd.x,
+    z: fallbackFwd.z,
+    rotationY: fallbackRot,
+    travelDir: end === 'right' ? fallbackDir : oppositeDir(fallbackDir),
     isDouble,
   };
 }
