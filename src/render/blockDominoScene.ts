@@ -310,7 +310,7 @@ export class BlockDominoScene {
       const maxTilesPerRow = 7;
       const rowCount = Math.ceil(hand.length / maxTilesPerRow);
       const rowHeight = TILE_W + 0.16; // Space between rows so stacked dominoes don't collide
-      const handYBase = HAND_SURFACE_Y + TILE_H * 0.5 + (rowCount > 1 ? (rowCount - 1) * rowHeight * 0.5 : 0);
+      const handYBase = HAND_SURFACE_Y + TILE_H * 0.5 + (rowCount - 1) * rowHeight;
 
       for (let i = 0; i < hand.length; i++) {
         const d = hand[i];

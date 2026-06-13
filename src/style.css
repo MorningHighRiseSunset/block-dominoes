@@ -452,11 +452,12 @@ body,
   right: 0;
   z-index: 10;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 14px 20px;
-  background: linear-gradient(180deg, var(--glass) 0%, rgba(26, 36, 51, 0) 100%);
+  gap: 12px;
+  padding: 10px 16px;
+  background: rgba(16, 24, 39, 0.92);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   pointer-events: none;
   flex-wrap: wrap;
 }
@@ -468,7 +469,7 @@ body,
 .top-bar-actions {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -476,18 +477,48 @@ body,
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  justify-content: center;
   min-width: 0;
+  padding: 4px;
+}
+
+.score-pills {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 10px;
+  min-width: 60px;
+}
+
+.pill span {
+  font-size: 0.62rem;
+}
+
+.pill strong {
+  font-size: 1.25rem;
+}
+
+.last-played-panel .panel-label {
+  display: none;
 }
 
 .brand-mark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: linear-gradient(135deg, #e8c547 0%, #c9a227 100%);
   color: #1a1408;
   font-size: 1rem;
@@ -511,9 +542,7 @@ body,
 }
 
 .tagline {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  margin-top: 1px;
+  display: none;
 }
 
 .score-pills {
@@ -1122,7 +1151,7 @@ body,
   }
 
   .brand h1 {
-    font-size: 1rem;
+    display: none;
   }
 
   .tagline {
@@ -1162,6 +1191,24 @@ body,
 
   .turn-text {
     font-size: 0.95rem;
+  }
+
+  .top-bar {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .top-bar-actions {
+    justify-content: space-between;
+  }
+
+  .score-pills {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .last-played-panel {
+    max-width: 140px;
   }
 
   .ends-chip {
@@ -1266,17 +1313,17 @@ body,
 /* —— Boneyard Panel —— */
 .boneyard-panel {
   position: static;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
+  background: rgba(20, 30, 48, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
-  padding: 10px 14px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  gap: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
   z-index: 10;
   backdrop-filter: blur(14px);
-  min-width: 160px;
+  min-width: 130px;
 }
 
 .boneyard-icon {
@@ -1295,6 +1342,7 @@ body,
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  display: none;
 }
 
 .boneyard-count {
@@ -1337,7 +1385,6 @@ body,
 
 @media (max-width: 768px) {
   .boneyard-panel {
-    left: 8px;
     padding: 8px 12px;
     min-width: 70px;
   }
@@ -1361,30 +1408,38 @@ body,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 12px;
-  background: var(--glass);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 12px var(--shadow);
-  backdrop-filter: blur(12px);
-  min-width: 120px;
+  background: rgba(20, 30, 48, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(16px);
+  min-width: 110px;
+  max-width: 150px;
 }
 
 .last-played-image {
   display: block;
-  width: 32px;
+  width: 28px;
   height: auto;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .last-played-desc {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70px;
 }
 
-.last-played-panel.minimized .last-played-desc,
-.last-played-panel.minimized .panel-label {
+.last-played-panel .panel-label {
+  display: none;
+}
+
+.last-played-panel.minimized .last-played-desc {
   display: none;
 }
 

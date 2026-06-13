@@ -262,13 +262,15 @@ export function extensionSlot(
   for (let cand of candidates) {
     let dir = cand;
     const anchorRot = anchor.rotationY;
-    const newRot = rotationForTile(dir, isDouble, false);
-    const dist = centerDistance(anchorRot, newRot, dir);
+    let newRot = rotationForTile(dir, isDouble, false);
+    let dist = centerDistance(anchorRot, newRot, dir);
     let fwd = stepFrom(anchor.x, anchor.z, dir, dist);
 
     // If out of bounds, try turning according to snakeTurn for this candidate
     if (isOutOfBounds(fwd.x, fwd.z)) {
       dir = snakeTurn === 'clockwise' ? turnClockwise(dir) : turnCounterclockwise(dir);
+      newRot = rotationForTile(dir, isDouble, false);
+      dist = centerDistance(anchorRot, newRot, dir);
       fwd = stepFrom(anchor.x, anchor.z, dir, dist);
     }
 
@@ -293,16 +295,18 @@ export function extensionSlot(
 
   // Fallback: use preferred direction even if collision detected
   const fallbackDir = preferred;
-  const fallbackRot = rotationForTile(fallbackDir, isDouble, false);
-  const fallbackDist = centerDistance(anchor.rotationY, fallbackRot, fallbackDir);
+  let fallbackRot = rotationForTile(fallbackDir, isDouble, false);
+  let fallbackDist = centerDistance(anchor.rotationY, fallbackRot, fallbackDir);
   let fallbackFwd = stepFrom(anchor.x, anchor.z, fallbackDir, fallbackDist);
   if (isOutOfBounds(fallbackFwd.x, fallbackFwd.z)) {
     const turned = snakeTurn === 'clockwise' ? turnClockwise(fallbackDir) : turnCounterclockwise(fallbackDir);
+    fallbackRot = rotationForTile(turned, isDouble, false);
+    fallbackDist = centerDistance(anchor.rotationY, fallbackRot, turned);
     fallbackFwd = stepFrom(anchor.x, anchor.z, turned, fallbackDist);
     return {
       x: fallbackFwd.x,
       z: fallbackFwd.z,
-      rotationY: rotationForTile(turned, isDouble, false),
+      rotationY: fallbackRot,
       travelDir: end === 'right' ? turned : oppositeDir(turned),
       isDouble,
     };
