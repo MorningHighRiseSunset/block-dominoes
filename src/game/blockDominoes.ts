@@ -468,6 +468,7 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
     const points = endSum % 5 === 0 ? endSum : 0;
     const scores = [...state.scores];
     scores[player] += points;
+    console.log(`First move: played ${domino.low}|${domino.high}, endSum=${endSum}, points=${points}`);
 
     return {
       ...state,
@@ -516,10 +517,18 @@ export function applyMove(state: BlockDominoesState, move: BlockMove): BlockDomi
   const gameOver = hand.length === 0;
 
   // Muggins scoring: if ends sum to multiple of 5, award points
-  const endSum = leftEnd + rightEnd;
+  // Doubles at chain ends count their full pip value
+  const leftTile = chain[0]; // First tile in chain (left end)
+  const rightTile = chain[chain.length - 1]; // Last tile in chain (right end)
+  const leftIsDouble = leftTile.isDouble;
+  const rightIsDouble = rightTile.isDouble;
+  const leftValue = leftIsDouble ? leftTile.domino.low + leftTile.domino.high : leftEnd;
+  const rightValue = rightIsDouble ? rightTile.domino.low + rightTile.domino.high : rightEnd;
+  const endSum = leftValue + rightValue;
   const points = endSum % 5 === 0 ? endSum : 0;
   const scores = [...state.scores];
   scores[player] += points;
+  console.log(`Subsequent move: played ${domino.low}|${domino.high}, leftEnd=${leftEnd}, rightEnd=${rightEnd}, leftIsDouble=${leftIsDouble}, rightIsDouble=${rightIsDouble}, leftValue=${leftValue}, rightValue=${rightValue}, endSum=${endSum}, points=${points}`);
 
   return {
     ...state,
