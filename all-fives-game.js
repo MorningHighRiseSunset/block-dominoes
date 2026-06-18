@@ -8,12 +8,16 @@ let boardEnds = { left: null, right: null, top: null, bottom: null };
 let endPositions = { left: null, right: null, top: null, bottom: null };
 let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
+let playerScore = 0;
+let cpuScore = 0;
 
 function init() {
     createDominoSet();
     spawnCenterDomino();
     dealDominoes();
     renderRacks();
+    updateScores();
+    setupTouchScrolling();
 }
 
 function createDominoSet() {
@@ -139,21 +143,31 @@ function createPips(value) {
 
 function renderRacks() {
     const playerRack = document.getElementById('playerRack');
-    const cpuRack = document.getElementById('cpuRack');
     
     playerRack.innerHTML = '';
-    cpuRack.innerHTML = '';
     
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false);
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });
+}
+
+function updateScores() {
+    document.getElementById('playerScore').textContent = playerScore;
+    document.getElementById('cpuScore').textContent = cpuScore;
+}
+
+function calculateScore() {
+    // Sum of all open ends (left, right, top, bottom)
+    let sum = 0;
+    if (boardEnds.left !== null) sum += boardEnds.left;
+    if (boardEnds.right !== null) sum += boardEnds.right;
+    if (boardEnds.top !== null) sum += boardEnds.top;
+    if (boardEnds.bottom !== null) sum += boardEnds.bottom;
     
-    cpuDominoes.forEach(domino => {
-        const el = createDominoElement(domino, false);
-        cpuRack.appendChild(el);
-    });
+    // Score is the largest multiple of 5 less than or equal to the sum
+    return Math.floor(sum / 5) * 5;
 }
 
 function selectDomino(domino, element) {
@@ -263,13 +277,17 @@ function showValidPlacementZones(domino) {
         const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
         const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
         
-        // Check if we need to turn (if horizontal placement would go off left edge)
-        if (leftPos.x - 100 < 0) {
-            // Turn: place vertically below
-            validZones.push({ side: 'left', x: dominoCenterX - 25, y: leftPos.y + (leftPos.isHorizontal ? 50 : 100), width: 50, height: 100, horizontal: false });
-        } else {
-            // Normal horizontal placement
+        // Always try horizontal placement first
+        if (leftPos.x - 100 >= 0) {
             validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+        }
+        
+        // Also try vertical placement if horizontal would go off edge
+        if (leftPos.x - 100 < 0) {
+            const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
+            if (newY + 100 <= boardDimensions.height) {
+                validZones.push({ side: 'left', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
+            }
         }
     }
     
@@ -281,13 +299,17 @@ function showValidPlacementZones(domino) {
         const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
         const xOffset = rightPos.isHorizontal ? 100 : 50;
         
-        // Check if we need to turn (if horizontal placement would go off right edge)
-        if (rightPos.x + xOffset > boardDimensions.width) {
-            // Turn: place vertically below
-            validZones.push({ side: 'right', x: dominoCenterX - 25, y: rightPos.y + (rightPos.isHorizontal ? 50 : 100), width: 50, height: 100, horizontal: false });
-        } else {
-            // Normal horizontal placement
+        // Always try horizontal placement first
+        if (rightPos.x + xOffset <= boardDimensions.width) {
             validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+        }
+        
+        // Also try vertical placement if horizontal would go off edge
+        if (rightPos.x + xOffset > boardDimensions.width) {
+            const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
+            if (newY + 100 <= boardDimensions.height) {
+                validZones.push({ side: 'right', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
+            }
         }
     }
     
@@ -298,13 +320,17 @@ function showValidPlacementZones(domino) {
         const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
         const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
         
-        // Check if we need to turn (if vertical placement would go off top edge)
-        if (topPos.y - 100 < 0) {
-            // Turn: place horizontally to the right
-            validZones.push({ side: 'top', x: topPos.x + (topPos.isHorizontal ? 100 : 50), y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-        } else {
-            // Normal vertical placement
+        // Always try vertical placement first
+        if (topPos.y - 100 >= 0) {
             validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
+        }
+        
+        // Also try horizontal placement if vertical would go off edge
+        if (topPos.y - 100 < 0) {
+            const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
+            if (newX + 100 <= boardDimensions.width) {
+                validZones.push({ side: 'top', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+            }
         }
     }
     
@@ -316,13 +342,17 @@ function showValidPlacementZones(domino) {
         const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
         const yOffset = bottomPos.isHorizontal ? 50 : 100;
         
-        // Check if we need to turn (if vertical placement would go off bottom edge)
-        if (bottomPos.y + yOffset > boardDimensions.height) {
-            // Turn: place horizontally to the right
-            validZones.push({ side: 'bottom', x: bottomPos.x + (bottomPos.isHorizontal ? 100 : 50), y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-        } else {
-            // Normal vertical placement
+        // Always try vertical placement first
+        if (bottomPos.y + yOffset <= boardDimensions.height) {
             validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
+        }
+        
+        // Also try horizontal placement if vertical would go off edge
+        if (bottomPos.y + yOffset > boardDimensions.height) {
+            const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
+            if (newX + 100 <= boardDimensions.width) {
+                validZones.push({ side: 'bottom', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+            }
         }
     }
     
@@ -412,25 +442,39 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     });
     
     // Update board ends to the NEW exposed number (all 4 directions)
+    // Store the actual end position where the next domino would attach
     if (side === 'left') {
         boardEnds.left = orientedDomino.top;
+        // For left placement, the end is at the left edge of the domino
+        // Store the domino's position (top-left corner) and orientation
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'right') {
         boardEnds.right = orientedDomino.bottom;
+        // For right placement, the end is at the right edge of the domino
+        // Store the domino's position (top-left corner) and orientation
         endPositions.right = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'top') {
         boardEnds.top = orientedDomino.top;
+        // For top placement, the end is at the top edge of the domino
+        // Store the domino's position (top-left corner) and orientation
         endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'bottom') {
         boardEnds.bottom = orientedDomino.bottom;
+        // For bottom placement, the end is at the bottom edge of the domino
+        // Store the domino's position (top-left corner) and orientation
         endPositions.bottom = { x: x, y: y, isHorizontal: isHorizontal };
     }
     
+    // Calculate and update score
+    const score = calculateScore();
     if (isPlayerTurn) {
+        playerScore += score;
         playerDominoes = playerDominoes.filter(d => d.id !== domino.id);
     } else {
+        cpuScore += score;
         cpuDominoes = cpuDominoes.filter(d => d.id !== domino.id);
     }
+    updateScores();
     
     renderRacks();
     selectedDomino = null;
@@ -438,6 +482,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     isPlayerTurn = !isPlayerTurn;
     
     updateBoneyardCount();
+    
+    // Auto-scroll to the last placed domino
+    scrollToDomino(x, y);
     
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1000);
@@ -461,13 +508,17 @@ function cpuPlay() {
             const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
             const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
             
-            // Check if we need to turn
-            if (leftPos.x - 100 < 0) {
-                // Turn: place vertically below
-                validMoves.push({ domino, side: 'left', x: dominoCenterX - 25, y: leftPos.y + (leftPos.isHorizontal ? 50 : 100), horizontal: false });
-            } else {
-                // Normal horizontal placement
+            // Always try horizontal placement first
+            if (leftPos.x - 100 >= 0) {
                 validMoves.push({ domino, side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, horizontal: true });
+            }
+            
+            // Also try vertical placement if horizontal would go off edge
+            if (leftPos.x - 100 < 0) {
+                const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
+                if (newY + 100 <= boardDimensions.height) {
+                    validMoves.push({ domino, side: 'left', x: dominoCenterX - 25, y: newY, horizontal: false });
+                }
             }
         }
         
@@ -478,13 +529,17 @@ function cpuPlay() {
             const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
             const xOffset = rightPos.isHorizontal ? 100 : 50;
             
-            // Check if we need to turn
-            if (rightPos.x + xOffset > boardDimensions.width) {
-                // Turn: place vertically below
-                validMoves.push({ domino, side: 'right', x: dominoCenterX - 25, y: rightPos.y + (rightPos.isHorizontal ? 50 : 100), horizontal: false });
-            } else {
-                // Normal horizontal placement
+            // Always try horizontal placement first
+            if (rightPos.x + xOffset <= boardDimensions.width) {
                 validMoves.push({ domino, side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, horizontal: true });
+            }
+            
+            // Also try vertical placement if horizontal would go off edge
+            if (rightPos.x + xOffset > boardDimensions.width) {
+                const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
+                if (newY + 100 <= boardDimensions.height) {
+                    validMoves.push({ domino, side: 'right', x: dominoCenterX - 25, y: newY, horizontal: false });
+                }
             }
         }
         
@@ -494,13 +549,17 @@ function cpuPlay() {
             const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
             const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
             
-            // Check if we need to turn
-            if (topPos.y - 100 < 0) {
-                // Turn: place horizontally to the right
-                validMoves.push({ domino, side: 'top', x: topPos.x + (topPos.isHorizontal ? 100 : 50), y: dominoCenterY - 25, horizontal: true });
-            } else {
-                // Normal vertical placement
+            // Always try vertical placement first
+            if (topPos.y - 100 >= 0) {
                 validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, horizontal: false });
+            }
+            
+            // Also try horizontal placement if vertical would go off edge
+            if (topPos.y - 100 < 0) {
+                const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
+                if (newX + 100 <= boardDimensions.width) {
+                    validMoves.push({ domino, side: 'top', x: newX, y: dominoCenterY - 25, horizontal: true });
+                }
             }
         }
         
@@ -511,13 +570,17 @@ function cpuPlay() {
             const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
             const yOffset = bottomPos.isHorizontal ? 50 : 100;
             
-            // Check if we need to turn
-            if (bottomPos.y + yOffset > boardDimensions.height) {
-                // Turn: place horizontally to the right
-                validMoves.push({ domino, side: 'bottom', x: bottomPos.x + (bottomPos.isHorizontal ? 100 : 50), y: dominoCenterY - 25, horizontal: true });
-            } else {
-                // Normal vertical placement
+            // Always try vertical placement first
+            if (bottomPos.y + yOffset <= boardDimensions.height) {
                 validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, horizontal: false });
+            }
+            
+            // Also try horizontal placement if vertical would go off edge
+            if (bottomPos.y + yOffset > boardDimensions.height) {
+                const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
+                if (newX + 100 <= boardDimensions.width) {
+                    validMoves.push({ domino, side: 'bottom', x: newX, y: dominoCenterY - 25, horizontal: true });
+                }
             }
         }
     });
@@ -538,6 +601,84 @@ function cpuPlay() {
             updateBoneyardCount();
         }
     }
+}
+
+function setupTouchScrolling() {
+    const boardContainer = document.querySelector('.board-container');
+    let isDown = false;
+    let startX;
+    let startY;
+    let scrollLeft;
+    let scrollTop;
+
+    // Mouse events for desktop
+    boardContainer.addEventListener('mousedown', (e) => {
+        isDown = true;
+        startX = e.pageX - boardContainer.offsetLeft;
+        startY = e.pageY - boardContainer.offsetTop;
+        scrollLeft = boardContainer.scrollLeft;
+        scrollTop = boardContainer.scrollTop;
+    });
+
+    boardContainer.addEventListener('mouseleave', () => {
+        isDown = false;
+    });
+
+    boardContainer.addEventListener('mouseup', () => {
+        isDown = false;
+    });
+
+    boardContainer.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - boardContainer.offsetLeft;
+        const y = e.pageY - boardContainer.offsetTop;
+        const walkX = (x - startX) * 2;
+        const walkY = (y - startY) * 2;
+        boardContainer.scrollLeft = scrollLeft - walkX;
+        boardContainer.scrollTop = scrollTop - walkY;
+    });
+
+    // Touch events for mobile
+    boardContainer.addEventListener('touchstart', (e) => {
+        isDown = true;
+        startX = e.touches[0].pageX - boardContainer.offsetLeft;
+        startY = e.touches[0].pageY - boardContainer.offsetTop;
+        scrollLeft = boardContainer.scrollLeft;
+        scrollTop = boardContainer.scrollTop;
+    });
+
+    boardContainer.addEventListener('touchend', () => {
+        isDown = false;
+    });
+
+    boardContainer.addEventListener('touchmove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.touches[0].pageX - boardContainer.offsetLeft;
+        const y = e.touches[0].pageY - boardContainer.offsetTop;
+        const walkX = (x - startX) * 2;
+        const walkY = (y - startY) * 2;
+        boardContainer.scrollLeft = scrollLeft - walkX;
+        boardContainer.scrollTop = scrollTop - walkY;
+    });
+}
+
+function scrollToDomino(x, y) {
+    const boardContainer = document.querySelector('.board-container');
+    const containerWidth = boardContainer.clientWidth;
+    const containerHeight = boardContainer.clientHeight;
+    
+    // Calculate the scroll position to center the domino
+    const scrollLeft = x - containerWidth / 2 + 50;
+    const scrollTop = y - containerHeight / 2 + 50;
+    
+    // Smooth scroll to the position
+    boardContainer.scrollTo({
+        left: scrollLeft,
+        top: scrollTop,
+        behavior: 'smooth'
+    });
 }
 
 document.addEventListener('DOMContentLoaded', init);

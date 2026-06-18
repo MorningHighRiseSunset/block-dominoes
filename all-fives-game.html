@@ -8,9 +8,15 @@
 </head>
 <body>
     <div class="game-container">
-        <div class="cpu-rack">
-            <h2>CPU</h2>
-            <div class="rack" id="cpuRack"></div>
+        <div class="score-bar">
+            <div class="score-item">
+                <h2>CPU</h2>
+                <span class="score">Score: <span id="cpuScore">0</span></span>
+            </div>
+            <div class="score-item">
+                <h2>Player</h2>
+                <span class="score">Score: <span id="playerScore">0</span></span>
+            </div>
         </div>
         
         <div class="board-container">
@@ -22,7 +28,6 @@
         </div>
         
         <div class="player-rack">
-            <h2>Player</h2>
             <div class="rack" id="playerRack"></div>
         </div>
     </div>
