@@ -133,20 +133,20 @@ body {
 }
 
 .player-rack {
-    height: 180px;
+    height: 140px;
     background: linear-gradient(180deg, #fff8e7 0%, #f5e6d3 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 16px;
+    padding: 0 16px;
     flex-shrink: 0;
     border-top: 3px solid #8b7765;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .board-container {
-    height: calc(100vh - 250px);
+    height: calc(100vh - 210px);
     background: radial-gradient(ellipse at center, #fff8e7 0%, #f5e6d3 50%, #e8d4bc 100%);
     display: flex;
     align-items: center;
@@ -353,13 +353,13 @@ body {
     }
     
     .player-rack {
-        height: 200px;
-        padding: 12px;
+        height: 160px;
+        padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 260px);
+        height: calc(100vh - 200px);
         min-width: 100%;
         overflow: auto;
     }
