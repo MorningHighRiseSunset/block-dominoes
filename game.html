@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dominoes Test</title>
+    <link rel="stylesheet" href="all-fives-game.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-bar">
+            <div class="score-item">
+                <h2>CPU</h2>
+                <span class="score">Score: <span id="cpuScore">0</span></span>
+            </div>
+            <div class="score-item">
+                <h2>Player</h2>
+                <span class="score">Score: <span id="playerScore">0</span></span>
+            </div>
+        </div>
+        
+        <div class="board-container">
+            <div class="board" id="board"></div>
+            <div class="boneyard" id="boneyard">
+                <h3>Boneyard: <span id="boneyardCount">0</span></h3>
+                <button id="drawBtn" class="draw-btn">Draw Domino</button>
+            </div>
+        </div>
+        
+        <div class="player-rack">
+            <div class="rack" id="playerRack"></div>
+        </div>
+    </div>
+    
+    <script src="all-fives-game.js"></script>
+</body>
+</html>

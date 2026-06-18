@@ -1,4 +1,10 @@
 {
   "version": 2,
-  "outputDirectory": "."
+  "outputDirectory": ".",
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    }
+  ]
 }
