@@ -17,17 +17,17 @@ body {
     height: 100vh;
     max-width: 100%;
     overflow: hidden;
+    border: none;
 }
 
 .cpu-rack, .player-rack {
-    height: 120px;
+    height: 140px;
     background: rgba(255, 253, 245, 0.9);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 8px;
-    border-bottom: 2px solid rgba(139, 119, 101, 0.3);
+    padding: 10px;
     flex-shrink: 0;
 }
 
@@ -37,7 +37,7 @@ body {
 }
 
 .board-container {
-    height: calc(100vh - 240px);
+    height: calc(100vh - 300px);
     background: linear-gradient(180deg, #fdf5e6 0%, #f5deb3 50%, #ede0c8 100%);
     display: flex;
     align-items: center;
@@ -202,8 +202,8 @@ body {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
     .cpu-rack, .player-rack {
-        height: 100px;
-        padding: 5px;
+        height: 110px;
+        padding: 6px;
     }
     
     .cpu-rack h2, .player-rack h2 {
@@ -212,7 +212,7 @@ body {
     }
     
     .board-container {
-        height: calc(100vh - 200px);
+        height: calc(100vh - 240px);
     }
     
     .boneyard {
