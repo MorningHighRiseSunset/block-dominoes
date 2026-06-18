@@ -1,0 +1,9 @@
+{
+  "name": "block-dominoes",
+  "version": "1.0.0",
+  "description": "All Fives Dominoes Game",
+  "scripts": {
+    "build": "echo 'No build needed for static site'"
+  },
+  "devDependencies": {}
+}
