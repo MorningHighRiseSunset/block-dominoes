@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "all-fives-game.html",
+      "src": "index.html",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/all-fives-game.html"
+      "dest": "/index.html"
     }
   ]
 }
