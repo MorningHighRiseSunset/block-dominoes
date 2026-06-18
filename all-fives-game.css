@@ -32,6 +32,78 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.last-played-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 8px 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.last-played-label {
+    color: #5c4a3d;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.last-played-domino {
+    width: 30px;
+    height: 60px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f8f0 50%, #f0ebe0 100%);
+    border: 2px solid #2d2d2d;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.last-played-domino-half {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #888;
+}
+
+.last-played-domino-half:last-child {
+    border-bottom: none;
+}
+
+.last-played-pips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+}
+
+.last-played-pip {
+    width: 5px;
+    height: 5px;
+    background: radial-gradient(circle at 30% 30%, #4a4a4a 0%, #1a1a1a 70%, #000000 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.last-played-pips[data-value="0"] .last-played-pip { display: none; }
+.last-played-pips[data-value="1"] .last-played-pip:nth-child(5) { display: block; }
+.last-played-pips[data-value="1"] .last-played-pip:not(:nth-child(5)) { display: none; }
+.last-played-pips[data-value="2"] .last-played-pip:nth-child(1), .last-played-pips[data-value="2"] .last-played-pip:nth-child(9) { display: block; }
+.last-played-pips[data-value="2"] .last-played-pip:not(:nth-child(1)):not(:nth-child(9)) { display: none; }
+.last-played-pips[data-value="3"] .last-played-pip:nth-child(1), .last-played-pips[data-value="3"] .last-played-pip:nth-child(5), .last-played-pips[data-value="3"] .last-played-pip:nth-child(9) { display: block; }
+.last-played-pips[data-value="3"] .last-played-pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { display: none; }
+.last-played-pips[data-value="4"] .last-played-pip:nth-child(1), .last-played-pips[data-value="4"] .last-played-pip:nth-child(3), .last-played-pips[data-value="4"] .last-played-pip:nth-child(7), .last-played-pips[data-value="4"] .last-played-pip:nth-child(9) { display: block; }
+.last-played-pips[data-value="4"] .last-played-pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { display: none; }
+.last-played-pips[data-value="5"] .last-played-pip:nth-child(1), .last-played-pips[data-value="5"] .last-played-pip:nth-child(3), .last-played-pips[data-value="5"] .last-played-pip:nth-child(5), .last-played-pips[data-value="5"] .last-played-pip:nth-child(7), .last-played-pips[data-value="5"] .last-played-pip:nth-child(9) { display: block; }
+.last-played-pips[data-value="5"] .last-played-pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { display: none; }
+.last-played-pips[data-value="6"] .last-played-pip:nth-child(1), .last-played-pips[data-value="6"] .last-played-pip:nth-child(2), .last-played-pips[data-value="6"] .last-played-pip:nth-child(3), .last-played-pips[data-value="6"] .last-played-pip:nth-child(7), .last-played-pips[data-value="6"] .last-played-pip:nth-child(8), .last-played-pips[data-value="6"] .last-played-pip:nth-child(9) { display: block; }
+.last-played-pips[data-value="6"] .last-played-pip:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(8)):not(:nth-child(9)) { display: none; }
+
 .score-item {
     display: flex;
     flex-direction: column;
@@ -84,6 +156,7 @@ body {
     min-width: 400px;
     overflow: auto;
     box-shadow: inset 0 0 30px rgba(139, 119, 101, 0.2);
+    touch-action: pan-x pan-y;
 }
 
 .boneyard {
@@ -317,5 +390,26 @@ body {
     
     .rack .domino {
         transform: scale(0.9);
+    }
+    
+    .last-played-container {
+        padding: 6px 12px;
+    }
+    
+    .last-played-domino {
+        width: 24px;
+        height: 48px;
+    }
+    
+    .last-played-pips {
+        width: 16px;
+        height: 16px;
+        padding: 2px;
+        gap: 1px;
+    }
+    
+    .last-played-pip {
+        width: 4px;
+        height: 4px;
     }
 }
