@@ -353,12 +353,12 @@ body {
     }
     
     .player-rack {
-        height: 160px;
+        height: 200px;
         padding: 12px;
     }
     
     .board-container {
-        height: calc(100vh - 220px);
+        height: calc(100vh - 260px);
         min-width: 100%;
         overflow: auto;
     }
