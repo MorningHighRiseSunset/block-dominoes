@@ -10,6 +10,7 @@ let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
 let playerScore = 0;
 let cpuScore = 0;
+let audioContext = null;
 
 function init() {
     createDominoSet();
@@ -18,6 +19,7 @@ function init() {
     renderRacks();
     updateScores();
     setupTouchScrolling();
+    initAudio();
 }
 
 function createDominoSet() {
@@ -176,6 +178,9 @@ function selectDomino(domino, element) {
     document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     selectedDomino = domino;
+    
+    // Play selection sound
+    playSelectSound();
     
     // Show valid placement zones (use requestAnimationFrame to prevent layout thrashing)
     requestAnimationFrame(() => {
@@ -433,6 +438,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     
     board.appendChild(dominoEl);
     
+    // Play placement sound
+    playDominoSound();
+    
     boardDominoes.push({
         domino: orientedDomino,
         x: x,
@@ -679,6 +687,60 @@ function scrollToDomino(x, y) {
         top: scrollTop,
         behavior: 'smooth'
     });
+}
+
+function initAudio() {
+    try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.log('Web Audio API not supported');
+    }
+}
+
+function playDominoSound() {
+    if (!audioContext) return;
+    
+    try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.1);
+    } catch (e) {
+        console.log('Error playing sound:', e);
+    }
+}
+
+function playSelectSound() {
+    if (!audioContext) return;
+    
+    try {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 600;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.08);
+    } catch (e) {
+        console.log('Error playing sound:', e);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', init);
