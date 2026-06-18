@@ -316,30 +316,9 @@ function showValidPlacementZones(domino) {
         const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
         const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
         
-        // For horizontal chain (left/right): doubles should be vertical, non-doubles horizontal
-        const isDouble = domino.top === domino.bottom;
-        if (isDouble) {
-            // Double: prefer vertical placement
-            const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
-            if (newY + 100 <= boardDimensions.height) {
-                validZones.push({ side: 'left', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
-            }
-            // Fallback to horizontal if vertical would go off edge
-            if (leftPos.x - 100 >= 0) {
-                validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-        } else {
-            // Non-double: prefer horizontal placement
-            if (leftPos.x - 100 >= 0) {
-                validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-            // Fallback to vertical if horizontal would go off edge
-            if (leftPos.x - 100 < 0) {
-                const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
-                if (newY + 100 <= boardDimensions.height) {
-                    validZones.push({ side: 'left', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
-                }
-            }
+        // Only allow horizontal placement on left (no chain turns)
+        if (leftPos.x - 100 >= 0) {
+            validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
         }
     }
     
@@ -351,30 +330,9 @@ function showValidPlacementZones(domino) {
         const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
         const xOffset = rightPos.isHorizontal ? 100 : 50;
         
-        // For horizontal chain (left/right): doubles should be vertical, non-doubles horizontal
-        const isDouble = domino.top === domino.bottom;
-        if (isDouble) {
-            // Double: prefer vertical placement
-            const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
-            if (newY + 100 <= boardDimensions.height) {
-                validZones.push({ side: 'right', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
-            }
-            // Fallback to horizontal if vertical would go off edge
-            if (rightPos.x + xOffset <= boardDimensions.width) {
-                validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-        } else {
-            // Non-double: prefer horizontal placement
-            if (rightPos.x + xOffset <= boardDimensions.width) {
-                validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-            // Fallback to vertical if horizontal would go off edge
-            if (rightPos.x + xOffset > boardDimensions.width) {
-                const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
-                if (newY + 100 <= boardDimensions.height) {
-                    validZones.push({ side: 'right', x: dominoCenterX - 25, y: newY, width: 50, height: 100, horizontal: false });
-                }
-            }
+        // Only allow horizontal placement on right (no chain turns)
+        if (rightPos.x + xOffset <= boardDimensions.width) {
+            validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
         }
     }
     
@@ -385,30 +343,9 @@ function showValidPlacementZones(domino) {
         const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
         const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
         
-        // For vertical chain (top/bottom): doubles should be horizontal, non-doubles vertical
-        const isDouble = domino.top === domino.bottom;
-        if (isDouble) {
-            // Double: prefer horizontal placement
-            const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
-            if (newX + 100 <= boardDimensions.width) {
-                validZones.push({ side: 'top', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-            // Fallback to vertical if horizontal would go off edge
-            if (topPos.y - 100 >= 0) {
-                validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            // Non-double: prefer vertical placement
-            if (topPos.y - 100 >= 0) {
-                validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
-            }
-            // Fallback to horizontal if vertical would go off edge
-            if (topPos.y - 100 < 0) {
-                const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
-                if (newX + 100 <= boardDimensions.width) {
-                    validZones.push({ side: 'top', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-                }
-            }
+        // Only allow vertical placement on top (no chain turns)
+        if (topPos.y - 100 >= 0) {
+            validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
         }
     }
     
@@ -420,30 +357,9 @@ function showValidPlacementZones(domino) {
         const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
         const yOffset = bottomPos.isHorizontal ? 50 : 100;
         
-        // For vertical chain (top/bottom): doubles should be horizontal, non-doubles vertical
-        const isDouble = domino.top === domino.bottom;
-        if (isDouble) {
-            // Double: prefer horizontal placement
-            const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
-            if (newX + 100 <= boardDimensions.width) {
-                validZones.push({ side: 'bottom', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-            }
-            // Fallback to vertical if horizontal would go off edge
-            if (bottomPos.y + yOffset <= boardDimensions.height) {
-                validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            // Non-double: prefer vertical placement
-            if (bottomPos.y + yOffset <= boardDimensions.height) {
-                validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
-            }
-            // Fallback to horizontal if vertical would go off edge
-            if (bottomPos.y + yOffset > boardDimensions.height) {
-                const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
-                if (newX + 100 <= boardDimensions.width) {
-                    validZones.push({ side: 'bottom', x: newX, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
-                }
-            }
+        // Only allow vertical placement on bottom (no chain turns)
+        if (bottomPos.y + yOffset <= boardDimensions.height) {
+            validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
         }
     }
     
@@ -605,30 +521,9 @@ function cpuPlay() {
             const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
             const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
             
-            // For horizontal chain (left/right): doubles should be vertical, non-doubles horizontal
-            const isDouble = domino.top === domino.bottom;
-            if (isDouble) {
-                // Double: prefer vertical placement
-                const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
-                if (newY + 100 <= boardDimensions.height) {
-                    validMoves.push({ domino, side: 'left', x: dominoCenterX - 25, y: newY, horizontal: false });
-                }
-                // Fallback to horizontal if vertical would go off edge
-                if (leftPos.x - 100 >= 0) {
-                    validMoves.push({ domino, side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, horizontal: true });
-                }
-            } else {
-                // Non-double: prefer horizontal placement
-                if (leftPos.x - 100 >= 0) {
-                    validMoves.push({ domino, side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, horizontal: true });
-                }
-                // Fallback to vertical if horizontal would go off edge
-                if (leftPos.x - 100 < 0) {
-                    const newY = leftPos.y + (leftPos.isHorizontal ? 50 : 100);
-                    if (newY + 100 <= boardDimensions.height) {
-                        validMoves.push({ domino, side: 'left', x: dominoCenterX - 25, y: newY, horizontal: false });
-                    }
-                }
+            // Only allow horizontal placement on left (no chain turns)
+            if (leftPos.x - 100 >= 0) {
+                validMoves.push({ domino, side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, horizontal: true });
             }
         }
         
@@ -639,30 +534,9 @@ function cpuPlay() {
             const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
             const xOffset = rightPos.isHorizontal ? 100 : 50;
             
-            // For horizontal chain (left/right): doubles should be vertical, non-doubles horizontal
-            const isDouble = domino.top === domino.bottom;
-            if (isDouble) {
-                // Double: prefer vertical placement
-                const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
-                if (newY + 100 <= boardDimensions.height) {
-                    validMoves.push({ domino, side: 'right', x: dominoCenterX - 25, y: newY, horizontal: false });
-                }
-                // Fallback to horizontal if vertical would go off edge
-                if (rightPos.x + xOffset <= boardDimensions.width) {
-                    validMoves.push({ domino, side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, horizontal: true });
-                }
-            } else {
-                // Non-double: prefer horizontal placement
-                if (rightPos.x + xOffset <= boardDimensions.width) {
-                    validMoves.push({ domino, side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, horizontal: true });
-                }
-                // Fallback to vertical if horizontal would go off edge
-                if (rightPos.x + xOffset > boardDimensions.width) {
-                    const newY = rightPos.y + (rightPos.isHorizontal ? 50 : 100);
-                    if (newY + 100 <= boardDimensions.height) {
-                        validMoves.push({ domino, side: 'right', x: dominoCenterX - 25, y: newY, horizontal: false });
-                    }
-                }
+            // Only allow horizontal placement on right (no chain turns)
+            if (rightPos.x + xOffset <= boardDimensions.width) {
+                validMoves.push({ domino, side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, horizontal: true });
             }
         }
         
@@ -672,30 +546,9 @@ function cpuPlay() {
             const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
             const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
             
-            // For vertical chain (top/bottom): doubles should be horizontal, non-doubles vertical
-            const isDouble = domino.top === domino.bottom;
-            if (isDouble) {
-                // Double: prefer horizontal placement
-                const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
-                if (newX + 100 <= boardDimensions.width) {
-                    validMoves.push({ domino, side: 'top', x: newX, y: dominoCenterY - 25, horizontal: true });
-                }
-                // Fallback to vertical if horizontal would go off edge
-                if (topPos.y - 100 >= 0) {
-                    validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, horizontal: false });
-                }
-            } else {
-                // Non-double: prefer vertical placement
-                if (topPos.y - 100 >= 0) {
-                    validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, horizontal: false });
-                }
-                // Fallback to horizontal if vertical would go off edge
-                if (topPos.y - 100 < 0) {
-                    const newX = topPos.x + (topPos.isHorizontal ? 100 : 50);
-                    if (newX + 100 <= boardDimensions.width) {
-                        validMoves.push({ domino, side: 'top', x: newX, y: dominoCenterY - 25, horizontal: true });
-                    }
-                }
+            // Only allow vertical placement on top (no chain turns)
+            if (topPos.y - 100 >= 0) {
+                validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, horizontal: false });
             }
         }
         
@@ -706,30 +559,9 @@ function cpuPlay() {
             const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
             const yOffset = bottomPos.isHorizontal ? 50 : 100;
             
-            // For vertical chain (top/bottom): doubles should be horizontal, non-doubles vertical
-            const isDouble = domino.top === domino.bottom;
-            if (isDouble) {
-                // Double: prefer horizontal placement
-                const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
-                if (newX + 100 <= boardDimensions.width) {
-                    validMoves.push({ domino, side: 'bottom', x: newX, y: dominoCenterY - 25, horizontal: true });
-                }
-                // Fallback to vertical if horizontal would go off edge
-                if (bottomPos.y + yOffset <= boardDimensions.height) {
-                    validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, horizontal: false });
-                }
-            } else {
-                // Non-double: prefer vertical placement
-                if (bottomPos.y + yOffset <= boardDimensions.height) {
-                    validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, horizontal: false });
-                }
-                // Fallback to horizontal if vertical would go off edge
-                if (bottomPos.y + yOffset > boardDimensions.height) {
-                    const newX = bottomPos.x + (bottomPos.isHorizontal ? 100 : 50);
-                    if (newX + 100 <= boardDimensions.width) {
-                        validMoves.push({ domino, side: 'bottom', x: newX, y: dominoCenterY - 25, horizontal: true });
-                    }
-                }
+            // Only allow vertical placement on bottom (no chain turns)
+            if (bottomPos.y + yOffset <= boardDimensions.height) {
+                validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, horizontal: false });
             }
         }
     });
