@@ -334,7 +334,7 @@ body {
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-height: 600px) and (orientation: landscape) {
     .score-bar {
         padding: 8px 12px;
     }
@@ -412,5 +412,32 @@ body {
     .last-played-pip {
         width: 4px;
         height: 4px;
+    }
+}
+
+/* Extra small screens (older Android phones, iPhone SE, etc.) */
+@media (max-width: 375px) {
+    .player-rack {
+        height: 200px;
+    }
+    
+    .board-container {
+        height: calc(100vh - 240px);
+    }
+    
+    .rack .domino {
+        transform: scale(0.5);
+    }
+    
+    .score-bar {
+        padding: 6px 8px;
+    }
+    
+    .score-item h2 {
+        font-size: 0.9rem;
+    }
+    
+    .score {
+        font-size: 0.75rem;
     }
 }
