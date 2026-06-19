@@ -30,6 +30,8 @@ body {
     flex-shrink: 0;
     border-bottom: 3px solid #8b7765;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .last-played-container {
@@ -160,15 +162,14 @@ body {
 }
 
 .boneyard {
-    position: absolute;
-    top: 15px;
-    right: 15px;
     background: linear-gradient(145deg, #fff8e7, #f5e6d3);
-    padding: 12px 16px;
+    padding: 8px 12px;
     border-radius: 12px;
     border: 2px solid #8b7765;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .boneyard h3 {
@@ -224,8 +225,8 @@ body {
 
 .rack {
     display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    gap: 0;
+    flex-wrap: nowrap;
     justify-content: center;
     min-height: 150px;
 }
@@ -336,7 +337,8 @@ body {
 /* Mobile responsiveness */
 @media (max-width: 768px) and (orientation: portrait) {
     .score-bar {
-        padding: 6px 10px;
+        padding: 6px 8px;
+        gap: 4px;
     }
     
     .score-item {
@@ -370,13 +372,18 @@ body {
     }
     
     .boneyard {
-        padding: 6px 10px;
-        top: 8px;
-        right: 8px;
+        padding: 4px 8px;
+        margin-left: 8px;
+    }
+    
+    .board-container {
+        height: calc(100vh - 320px);
+        min-width: 100%;
+        overflow: auto;
     }
     
     .boneyard h3 {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         margin-bottom: 4px;
     }
     
@@ -386,7 +393,8 @@ body {
     }
     
     .rack {
-        gap: 8px;
+        gap: 0;
+        flex-wrap: nowrap;
     }
     
     .rack .domino {
@@ -418,6 +426,7 @@ body {
 @media (max-width: 768px) and (orientation: landscape) {
     .score-bar {
         padding: 8px 12px;
+        gap: 6px;
     }
     
     .score-item {
@@ -451,9 +460,8 @@ body {
     }
     
     .boneyard {
-        padding: 8px 12px;
-        top: 10px;
-        right: 10px;
+        padding: 6px 10px;
+        margin-left: 10px;
     }
     
     .boneyard h3 {
@@ -467,7 +475,8 @@ body {
     }
     
     .rack {
-        gap: 12px;
+        gap: 0;
+        flex-wrap: nowrap;
     }
     
     .rack .domino {
@@ -511,11 +520,13 @@ body {
     }
     
     .rack {
-        gap: 6px;
+        gap: 0;
+        flex-wrap: nowrap;
     }
     
     .score-bar {
-        padding: 6px 8px;
+        padding: 4px 6px;
+        gap: 3px;
     }
     
     .score-item h2 {
