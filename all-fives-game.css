@@ -353,13 +353,13 @@ body {
     }
     
     .player-rack {
-        height: 440px;
+        height: 200px;
         padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 480px);
+        height: calc(100vh - 240px);
         min-width: 100%;
         overflow: auto;
     }
@@ -390,7 +390,7 @@ body {
     }
     
     .rack .domino {
-        transform: scale(0.9);
+        transform: scale(0.6);
     }
     
     .last-played-container {
