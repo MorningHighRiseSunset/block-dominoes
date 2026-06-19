@@ -334,7 +334,88 @@ body {
 }
 
 /* Mobile responsiveness */
-@media (max-width: 768px), (max-height: 600px) and (orientation: landscape) {
+@media (max-width: 768px) and (orientation: portrait) {
+    .score-bar {
+        padding: 6px 10px;
+    }
+    
+    .score-item {
+        padding: 4px 8px;
+    }
+    
+    .score-item h2 {
+        font-size: 0.85rem;
+    }
+    
+    .score {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+    }
+    
+    .player-rack {
+        height: 260px;
+        padding: 0 8px;
+        justify-content: flex-start;
+    }
+    
+    .board-container {
+        height: calc(100vh - 300px);
+        min-width: 100%;
+        overflow: auto;
+    }
+    
+    .board {
+        min-width: 800px;
+        min-height: 600px;
+    }
+    
+    .boneyard {
+        padding: 6px 10px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .boneyard h3 {
+        font-size: 0.75rem;
+        margin-bottom: 4px;
+    }
+    
+    .draw-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+    
+    .rack {
+        gap: 3px;
+    }
+    
+    .rack .domino {
+        transform: scale(0.4);
+    }
+    
+    .last-played-container {
+        padding: 4px 8px;
+    }
+    
+    .last-played-domino {
+        width: 20px;
+        height: 40px;
+    }
+    
+    .last-played-pips {
+        width: 14px;
+        height: 14px;
+        padding: 2px;
+        gap: 1px;
+    }
+    
+    .last-played-pip {
+        width: 3px;
+        height: 3px;
+    }
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
     .score-bar {
         padding: 8px 12px;
     }
@@ -353,13 +434,13 @@ body {
     }
     
     .player-rack {
-        height: 250px;
+        height: 200px;
         padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 290px);
+        height: calc(100vh - 240px);
         min-width: 100%;
         overflow: auto;
     }
@@ -386,11 +467,11 @@ body {
     }
     
     .rack {
-        gap: 4px;
+        gap: 6px;
     }
     
     .rack .domino {
-        transform: scale(0.5);
+        transform: scale(0.55);
     }
     
     .last-played-container {
