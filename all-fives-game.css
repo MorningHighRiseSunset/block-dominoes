@@ -353,13 +353,13 @@ body {
     }
     
     .player-rack {
-        height: 230px;
+        height: 250px;
         padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 270px);
+        height: calc(100vh - 290px);
         min-width: 100%;
         overflow: auto;
     }
@@ -386,11 +386,11 @@ body {
     }
     
     .rack {
-        gap: 8px;
+        gap: 4px;
     }
     
     .rack .domino {
-        transform: scale(0.6);
+        transform: scale(0.5);
     }
     
     .last-played-container {
@@ -418,15 +418,19 @@ body {
 /* Extra small screens (older Android phones, iPhone SE, etc.) */
 @media (max-width: 375px) {
     .player-rack {
-        height: 200px;
+        height: 220px;
     }
     
     .board-container {
-        height: calc(100vh - 240px);
+        height: calc(100vh - 260px);
     }
     
     .rack .domino {
-        transform: scale(0.5);
+        transform: scale(0.45);
+    }
+    
+    .rack {
+        gap: 3px;
     }
     
     .score-bar {
