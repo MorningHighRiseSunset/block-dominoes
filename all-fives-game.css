@@ -353,13 +353,13 @@ body {
     }
     
     .player-rack {
-        height: 260px;
+        height: 280px;
         padding: 0 8px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 300px);
+        height: calc(100vh - 320px);
         min-width: 100%;
         overflow: auto;
     }
@@ -386,11 +386,11 @@ body {
     }
     
     .rack {
-        gap: 3px;
+        gap: 8px;
     }
     
     .rack .domino {
-        transform: scale(0.4);
+        transform: scale(0.5);
     }
     
     .last-played-container {
@@ -434,13 +434,13 @@ body {
     }
     
     .player-rack {
-        height: 200px;
+        height: 220px;
         padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 240px);
+        height: calc(100vh - 260px);
         min-width: 100%;
         overflow: auto;
     }
@@ -467,11 +467,11 @@ body {
     }
     
     .rack {
-        gap: 6px;
+        gap: 12px;
     }
     
     .rack .domino {
-        transform: scale(0.55);
+        transform: scale(0.6);
     }
     
     .last-played-container {
@@ -499,19 +499,19 @@ body {
 /* Extra small screens (older Android phones, iPhone SE, etc.) */
 @media (max-width: 375px) {
     .player-rack {
-        height: 220px;
+        height: 240px;
     }
     
     .board-container {
-        height: calc(100vh - 260px);
+        height: calc(100vh - 280px);
     }
     
     .rack .domino {
-        transform: scale(0.45);
+        transform: scale(0.48);
     }
     
     .rack {
-        gap: 3px;
+        gap: 6px;
     }
     
     .score-bar {
@@ -525,4 +525,28 @@ body {
     .score {
         font-size: 0.75rem;
     }
+}
+
+/* Samsung/Android specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .player-rack {
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+    
+    .rack .domino {
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+}
+
+/* Prevent unwanted zooming on mobile */
+.rack {
+    touch-action: manipulation;
+}
+
+.player-rack {
+    touch-action: pan-y;
 }
