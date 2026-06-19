@@ -353,13 +353,13 @@ body {
     }
     
     .player-rack {
-        height: 180px;
+        height: 440px;
         padding: 0 12px;
         justify-content: flex-start;
     }
     
     .board-container {
-        height: calc(100vh - 220px);
+        height: calc(100vh - 480px);
         min-width: 100%;
         overflow: auto;
     }
