@@ -261,26 +261,24 @@ function createMiniPips(value) {
 }
 
 function calculateScore() {
-    // Sum only the actual open ends of the chain
-    // In this 4-direction implementation, we count all non-null ends
+    // In a turning chain, we need to count only the actual open ends
+    // The current implementation tracks 4 independent ends, but we should only count
+    // the ends that are actually part of the chain. For now, we'll count all non-null ends
+    // but this is a simplification that may overcount in some scenarios.
     let sum = 0;
-    let endCount = 0;
     
+    // Only count ends that have been set (non-null)
     if (boardEnds.left !== null) {
         sum += boardEnds.left;
-        endCount++;
     }
     if (boardEnds.right !== null) {
         sum += boardEnds.right;
-        endCount++;
     }
     if (boardEnds.top !== null) {
         sum += boardEnds.top;
-        endCount++;
     }
     if (boardEnds.bottom !== null) {
         sum += boardEnds.bottom;
-        endCount++;
     }
     
     // In All Fives, you only score if the sum is a multiple of 5
@@ -366,6 +364,7 @@ function updateDrawButton() {
                 domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom);
     });
     
+    // Enable draw button only if player has no valid moves and boneyard has dominoes
     if (!hasValidMove && boneyard.length > 0) {
         drawBtn.disabled = false;
     } else {
@@ -537,8 +536,9 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on bottom
-            if (!checkOverlap(dominoCenterX - 50, bottomPos.y + 50, 100, 50)) {
-                validZones.push({ side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + 50, width: 100, height: 50, horizontal: true });
+            const yOffset = bottomPos.isHorizontal ? 50 : 100;
+            if (!checkOverlap(dominoCenterX - 50, bottomPos.y + yOffset, 100, 50)) {
+                validZones.push({ side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + yOffset, width: 100, height: 50, horizontal: true });
             }
         } else {
             // Vertical placement for non-doubles on bottom
@@ -663,6 +663,10 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // Store the domino's position (top-left corner) and orientation
         endPositions.bottom = { x: x, y: y, isHorizontal: isHorizontal };
     }
+    
+    // In a turning chain, when you place on one side, you might block adjacent sides
+    // This is a simplified version - a full implementation would track chain topology
+    // For now, we'll keep all 4 ends independent as per the current game design
     
     // Calculate and update score
     const score = calculateScore();
@@ -857,8 +861,8 @@ function setupTouchScrolling() {
         e.preventDefault();
         const x = e.pageX - boardContainer.offsetLeft;
         const y = e.pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 1.5;
-        const walkY = (y - startY) * 1.5;
+        const walkX = (x - startX) * 2.5;
+        const walkY = (y - startY) * 2.5;
         boardContainer.scrollLeft = scrollLeft - walkX;
         boardContainer.scrollTop = scrollTop - walkY;
     });
@@ -881,8 +885,8 @@ function setupTouchScrolling() {
         e.preventDefault();
         const x = e.touches[0].pageX - boardContainer.offsetLeft;
         const y = e.touches[0].pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 1.5;
-        const walkY = (y - startY) * 1.5;
+        const walkX = (x - startX) * 2.5;
+        const walkY = (y - startY) * 2.5;
         boardContainer.scrollLeft = scrollLeft - walkX;
         boardContainer.scrollTop = scrollTop - walkY;
     }, { passive: false });
@@ -890,13 +894,17 @@ function setupTouchScrolling() {
 
 function scrollToDomino(x, y) {
     const boardContainer = document.querySelector('.board-container');
+    const boardElement = document.getElementById('board');
     const containerWidth = boardContainer.clientWidth;
     const containerHeight = boardContainer.clientHeight;
     
     // Calculate the scroll position to center the domino
-    // Since board is centered, we scroll to center the domino in viewport
-    const scrollLeft = x - containerWidth / 2 + 50;
-    const scrollTop = y - containerHeight / 2 + 50;
+    // Account for the board being centered with CSS transform
+    const boardLeft = (boardContainer.scrollWidth - boardElement.offsetWidth) / 2;
+    const boardTop = (boardContainer.scrollHeight - boardElement.offsetHeight) / 2;
+    
+    const scrollLeft = boardLeft + x - containerWidth / 2 + 25;
+    const scrollTop = boardTop + y - containerHeight / 2 + 50;
     
     // Smooth scroll to the position
     boardContainer.scrollTo({
