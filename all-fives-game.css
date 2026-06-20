@@ -154,9 +154,51 @@ body {
     position: relative;
     flex-shrink: 0;
     min-width: 400px;
-    overflow: auto;
+    overflow: hidden;
     box-shadow: inset 0 0 30px rgba(139, 119, 101, 0.2);
     touch-action: none;
+    cursor: grab;
+}
+
+.board-container.is-panning {
+    cursor: grabbing;
+}
+
+.camera-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.zone-hint-arrows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 20;
+    overflow: hidden;
+}
+
+.zone-hint-arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-top: 11px solid transparent;
+    border-bottom: 11px solid transparent;
+    border-left: 20px solid rgba(139, 119, 101, 0.5);
+    filter: drop-shadow(0 1px 3px rgba(92, 74, 61, 0.25));
+    animation: hint-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.85; }
 }
 
 .boneyard {
@@ -213,15 +255,14 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     overflow: hidden;
-    width: 2000px;
-    height: 2000px;
-    cursor: grab;
+    width: 800px;
+    height: 600px;
     user-select: none;
     -webkit-user-select: none;
 }
 
 .board:active {
-    cursor: grabbing;
+    cursor: inherit;
 }
 
 .rack {
@@ -316,6 +357,7 @@ body {
     background: rgba(139, 119, 101, 0.2);
     cursor: pointer;
     border-radius: 8px;
+    z-index: 10;
 }
 
 .placement-zone:hover {
@@ -368,7 +410,7 @@ body {
     .board-container {
         height: calc(100vh - 320px);
         min-width: 100%;
-        overflow: auto;
+        overflow: hidden;
     }
     
     .board {
@@ -379,12 +421,6 @@ body {
     .boneyard {
         padding: 4px 8px;
         margin-left: 8px;
-    }
-    
-    .board-container {
-        height: calc(100vh - 320px);
-        min-width: 100%;
-        overflow: auto;
     }
     
     .boneyard h3 {
@@ -457,7 +493,7 @@ body {
     .board-container {
         height: calc(100vh - 260px);
         min-width: 100%;
-        overflow: auto;
+        overflow: hidden;
     }
     
     .board {

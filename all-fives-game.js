@@ -11,6 +11,12 @@ let isShowingZones = false;
 let playerScore = 0;
 let cpuScore = 0;
 let audioContext = null;
+let camera = { x: 0, y: 0, zoom: 1 };
+let cameraAnimating = false;
+let cameraAnimationFrame = null;
+let momentumFrame = null;
+let lastPanVelocity = { x: 0, y: 0 };
+const FOCUS_ZOOM = 1.35;
 
 function init() {
     createDominoSet();
@@ -119,9 +125,8 @@ function spawnCenterDomino() {
     
     const board = document.getElementById('board');
     
-    // Board is now 2000x2000, center is at 1000, 1000
-    boardDimensions.width = 2000;
-    boardDimensions.height = 2000;
+    boardDimensions.width = 800;
+    boardDimensions.height = 600;
     
     const centerX = (boardDimensions.width - 50) / 2;
     const centerY = (boardDimensions.height - 100) / 2;
@@ -306,6 +311,7 @@ function selectDomino(domino, element) {
             isShowingZones = true;
             showValidPlacementZones(domino);
             isShowingZones = false;
+            requestAnimationFrame(() => updateZoneHintArrows());
         }
     });
 }
@@ -572,6 +578,8 @@ function showValidPlacementZones(domino) {
     // If no valid zones for this domino, check if player needs to draw
     if (validZones.length === 0) {
         updateDrawButton();
+    } else {
+        requestAnimationFrame(() => updateZoneHintArrows());
     }
 }
 
@@ -579,6 +587,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     const boardEl = document.getElementById('board');
     
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
+    clearZoneHintArrows();
     document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
     
     // Expand board if needed before placing domino
@@ -691,8 +700,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     updateBoneyardCount();
     updateDrawButton();
     
-    // Disable auto-scroll to prevent camera jumping
-    // The board is large enough that manual scrolling is preferred
+    const dominoWidth = isHorizontal ? 100 : 50;
+    const dominoHeight = isHorizontal ? 50 : 100;
+    focusOnBoardPoint(x, y, dominoWidth, dominoHeight);
     
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1000);
@@ -822,89 +832,285 @@ function cpuPlay() {
     }
 }
 
+function getBoardContainer() {
+    return document.querySelector('.board-container');
+}
+
+function getCameraLayer() {
+    return document.getElementById('cameraLayer');
+}
+
+function getBoardElement() {
+    return document.getElementById('board');
+}
+
+function isMobileView() {
+    return window.matchMedia('(max-width: 768px)').matches;
+}
+
+function applyCamera() {
+    const layer = getCameraLayer();
+    if (!layer) return;
+    layer.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.zoom})`;
+
+    if (selectedDomino && document.querySelectorAll('.placement-zone').length > 0) {
+        updateZoneHintArrows();
+    }
+}
+
+function boardToScreen(boardX, boardY) {
+    const container = getBoardContainer();
+    const board = getBoardElement();
+    const centerX = container.clientWidth / 2;
+    const centerY = container.clientHeight / 2;
+    const layerX = centerX - board.offsetWidth / 2 + boardX;
+    const layerY = centerY - board.offsetHeight / 2 + boardY;
+
+    return {
+        x: centerX + camera.x + (layerX - centerX) * camera.zoom,
+        y: centerY + camera.y + (layerY - centerY) * camera.zoom
+    };
+}
+
+function isZoneVisible(x, y, width, height, margin = 12) {
+    const container = getBoardContainer();
+    const corners = [
+        boardToScreen(x, y),
+        boardToScreen(x + width, y),
+        boardToScreen(x, y + height),
+        boardToScreen(x + width, y + height)
+    ];
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+
+    return corners.some(corner =>
+        corner.x >= margin &&
+        corner.x <= cw - margin &&
+        corner.y >= margin &&
+        corner.y <= ch - margin
+    );
+}
+
+function clearZoneHintArrows() {
+    const arrows = document.getElementById('zoneHintArrows');
+    if (arrows) arrows.innerHTML = '';
+}
+
+function updateZoneHintArrows() {
+    clearZoneHintArrows();
+    if (!isMobileView() || !selectedDomino) return;
+
+    const container = getBoardContainer();
+    const arrowsContainer = document.getElementById('zoneHintArrows');
+    if (!container || !arrowsContainer) return;
+
+    const zones = document.querySelectorAll('.placement-zone');
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const edgePadding = 28;
+
+    zones.forEach(zone => {
+        const x = parseFloat(zone.style.left);
+        const y = parseFloat(zone.style.top);
+        const width = parseFloat(zone.style.width);
+        const height = parseFloat(zone.style.height);
+
+        if (isZoneVisible(x, y, width, height)) return;
+
+        const center = boardToScreen(x + width / 2, y + height / 2);
+        const containerCenterX = cw / 2;
+        const containerCenterY = ch / 2;
+        const dx = center.x - containerCenterX;
+        const dy = center.y - containerCenterY;
+
+        let arrowX;
+        let arrowY;
+        let rotation;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            if (dx > 0) {
+                arrowX = cw - edgePadding;
+                arrowY = Math.max(edgePadding, Math.min(ch - edgePadding, center.y));
+                rotation = 0;
+            } else {
+                arrowX = edgePadding;
+                arrowY = Math.max(edgePadding, Math.min(ch - edgePadding, center.y));
+                rotation = 180;
+            }
+        } else if (dy > 0) {
+            arrowX = Math.max(edgePadding, Math.min(cw - edgePadding, center.x));
+            arrowY = ch - edgePadding;
+            rotation = 90;
+        } else {
+            arrowX = Math.max(edgePadding, Math.min(cw - edgePadding, center.x));
+            arrowY = edgePadding;
+            rotation = -90;
+        }
+
+        const arrow = document.createElement('div');
+        arrow.className = 'zone-hint-arrow';
+        arrow.style.left = arrowX + 'px';
+        arrow.style.top = arrowY + 'px';
+        arrow.style.transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+        arrowsContainer.appendChild(arrow);
+    });
+}
+
+function animateCameraTo(targetX, targetY, targetZoom, duration = 500) {
+    stopMomentum();
+    if (cameraAnimationFrame) {
+        cancelAnimationFrame(cameraAnimationFrame);
+        cameraAnimationFrame = null;
+    }
+
+    const start = { ...camera };
+    const startTime = performance.now();
+    cameraAnimating = true;
+
+    function step(now) {
+        const progress = Math.min(1, (now - startTime) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        camera.x = start.x + (targetX - start.x) * eased;
+        camera.y = start.y + (targetY - start.y) * eased;
+        camera.zoom = start.zoom + (targetZoom - start.zoom) * eased;
+        applyCamera();
+
+        if (progress < 1) {
+            cameraAnimationFrame = requestAnimationFrame(step);
+        } else {
+            cameraAnimating = false;
+            cameraAnimationFrame = null;
+        }
+    }
+
+    cameraAnimationFrame = requestAnimationFrame(step);
+}
+
+function focusOnBoardPoint(boardX, boardY, boardWidth, boardHeight, zoom = FOCUS_ZOOM) {
+    const container = getBoardContainer();
+    const board = getBoardElement();
+    if (!container || !board) return;
+
+    const centerX = container.clientWidth / 2;
+    const centerY = container.clientHeight / 2;
+    const dominoCenterX = centerX - board.offsetWidth / 2 + boardX + boardWidth / 2;
+    const dominoCenterY = centerY - board.offsetHeight / 2 + boardY + boardHeight / 2;
+    const targetX = -(dominoCenterX - centerX) * zoom;
+    const targetY = -(dominoCenterY - centerY) * zoom;
+
+    animateCameraTo(targetX, targetY, zoom);
+}
+
+function stopMomentum() {
+    if (momentumFrame) {
+        cancelAnimationFrame(momentumFrame);
+        momentumFrame = null;
+    }
+}
+
+function applyMomentum() {
+    const friction = 0.9;
+    const minVelocity = 0.4;
+
+    function tick() {
+        if (Math.abs(lastPanVelocity.x) < minVelocity && Math.abs(lastPanVelocity.y) < minVelocity) {
+            momentumFrame = null;
+            return;
+        }
+
+        camera.x += lastPanVelocity.x;
+        camera.y += lastPanVelocity.y;
+        lastPanVelocity.x *= friction;
+        lastPanVelocity.y *= friction;
+        applyCamera();
+        momentumFrame = requestAnimationFrame(tick);
+    }
+
+    momentumFrame = requestAnimationFrame(tick);
+}
+
 function setupTouchScrolling() {
-    const boardContainer = document.querySelector('.board-container');
-    let isDown = false;
-    let startX;
-    let startY;
-    let scrollLeft;
-    let scrollTop;
+    const container = getBoardContainer();
+    let isPanning = false;
+    let lastX = 0;
+    let lastY = 0;
 
-    // Mouse events for desktop
-    boardContainer.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.pageX - boardContainer.offsetLeft;
-        startY = e.pageY - boardContainer.offsetTop;
-        scrollLeft = boardContainer.scrollLeft;
-        scrollTop = boardContainer.scrollTop;
-        boardContainer.style.cursor = 'grabbing';
-    });
+    function shouldIgnorePan(target) {
+        return target.closest('.placement-zone') || target.closest('.rack');
+    }
 
-    boardContainer.addEventListener('mouseleave', () => {
-        isDown = false;
-        boardContainer.style.cursor = 'grab';
-    });
+    function startPan(clientX, clientY) {
+        if (cameraAnimating) return;
+        stopMomentum();
+        isPanning = true;
+        lastX = clientX;
+        lastY = clientY;
+        lastPanVelocity = { x: 0, y: 0 };
+        container.classList.add('is-panning');
+    }
 
-    boardContainer.addEventListener('mouseup', () => {
-        isDown = false;
-        boardContainer.style.cursor = 'grab';
-    });
+    function movePan(clientX, clientY) {
+        if (!isPanning) return;
 
-    boardContainer.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
+        const dx = clientX - lastX;
+        const dy = clientY - lastY;
+        camera.x += dx;
+        camera.y += dy;
+        lastPanVelocity = { x: dx, y: dy };
+        lastX = clientX;
+        lastY = clientY;
+        applyCamera();
+    }
+
+    function endPan() {
+        if (!isPanning) return;
+        isPanning = false;
+        container.classList.remove('is-panning');
+
+        if (isMobileView()) {
+            applyMomentum();
+        }
+    }
+
+    container.addEventListener('mousedown', (e) => {
+        if (shouldIgnorePan(e.target)) return;
         e.preventDefault();
-        const x = e.pageX - boardContainer.offsetLeft;
-        const y = e.pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 2.5;
-        const walkY = (y - startY) * 2.5;
-        boardContainer.scrollLeft = scrollLeft - walkX;
-        boardContainer.scrollTop = scrollTop - walkY;
+        startPan(e.clientX, e.clientY);
     });
 
-    // Touch events for mobile with improved sensitivity
-    boardContainer.addEventListener('touchstart', (e) => {
-        isDown = true;
-        startX = e.touches[0].pageX - boardContainer.offsetLeft;
-        startY = e.touches[0].pageY - boardContainer.offsetTop;
-        scrollLeft = boardContainer.scrollLeft;
-        scrollTop = boardContainer.scrollTop;
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        e.preventDefault();
+        movePan(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('mouseup', endPan);
+
+    container.addEventListener('touchstart', (e) => {
+        if (shouldIgnorePan(e.target)) return;
+        if (e.touches.length !== 1) return;
+        startPan(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (!isPanning || e.touches.length !== 1) return;
+        e.preventDefault();
+        movePan(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
 
-    boardContainer.addEventListener('touchend', () => {
-        isDown = false;
-    });
-
-    boardContainer.addEventListener('touchmove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.touches[0].pageX - boardContainer.offsetLeft;
-        const y = e.touches[0].pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 2.5;
-        const walkY = (y - startY) * 2.5;
-        boardContainer.scrollLeft = scrollLeft - walkX;
-        boardContainer.scrollTop = scrollTop - walkY;
-    }, { passive: false });
+    container.addEventListener('touchend', endPan);
+    container.addEventListener('touchcancel', endPan);
 }
 
 function centerCameraOnBoard() {
-    const boardContainer = document.querySelector('.board-container');
-    const boardElement = document.getElementById('board');
-    
-    // The board is 2000x2000, center is at 1000,1000
-    // We need to scroll so the center of the board is visible in the center of the viewport
-    const boardCenterX = 1000;
-    const boardCenterY = 1000;
-    
-    const containerCenterX = boardContainer.clientWidth / 2;
-    const containerCenterY = boardContainer.clientHeight / 2;
-    
-    boardContainer.scrollLeft = boardCenterX - containerCenterX;
-    boardContainer.scrollTop = boardCenterY - containerCenterY;
-}
-
-function scrollToDomino(x, y) {
-    // Disabled - camera tracking removed to allow free movement
-    // The camera can now pan freely in all directions
+    stopMomentum();
+    if (cameraAnimationFrame) {
+        cancelAnimationFrame(cameraAnimationFrame);
+        cameraAnimationFrame = null;
+    }
+    cameraAnimating = false;
+    camera = { x: 0, y: 0, zoom: 1 };
+    requestAnimationFrame(() => applyCamera());
 }
 
 function initAudio() {
