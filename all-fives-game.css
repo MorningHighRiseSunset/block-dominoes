@@ -337,6 +337,14 @@ body {
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
+.domino.player-domino {
+    background: linear-gradient(145deg, #fffaf0 0%, #f5e6d3 50%, #e8d4bc 100%);
+}
+
+.domino.cpu-domino {
+    background: linear-gradient(145deg, #f0f0f5 0%, #e8e8f0 50%, #d8d8e0 100%);
+}
+
 .rack .domino {
     position: relative;
     flex-shrink: 0;
@@ -661,7 +669,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
-    background: rgba(92, 74, 61, 0.92);
+    background: rgba(92, 74, 61, 0.75);
     color: #fff8e7;
     padding: 10px 18px;
     border-radius: 10px;

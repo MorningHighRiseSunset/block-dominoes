@@ -274,9 +274,9 @@ function dealDominoes() {
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
 }
 
-function createDominoElement(domino, isHorizontal) {
+function createDominoElement(domino, isHorizontal, owner = 'player') {
     const el = document.createElement('div');
-    el.className = 'domino' + (isHorizontal ? ' horizontal' : '');
+    el.className = 'domino' + (isHorizontal ? ' horizontal' : '') + (owner === 'player' ? ' player-domino' : ' cpu-domino');
     el.dataset.id = domino.id;
     
     const topHalf = document.createElement('div');
@@ -313,7 +313,7 @@ function renderRacks() {
     playerRack.innerHTML = '';
 
     playerDominoes.forEach(domino => {
-        const el = createDominoElement(domino, false);
+        const el = createDominoElement(domino, false, 'player');
         if (boardDominoes.length === 0 && isPlayerTurn && startingDomino && domino.id === startingDomino.id) {
             el.classList.add('starter-domino');
         }
@@ -360,12 +360,17 @@ function createMiniPips(value) {
 function calculateScore() {
     let sum = 0;
 
-    ['left', 'right', 'top', 'bottom'].forEach(side => {
-        if (boardEnds[side] !== null) {
-            sum += boardEnds[side];
-        }
-    });
+    // Only sum the actual open ends of the domino chain
+    // In Muggins/All Fives, you score based on the sum of open ends
+    // The chain has 2 open ends (left and right in standard play)
+    if (boardEnds.left !== null) {
+        sum += boardEnds.left;
+    }
+    if (boardEnds.right !== null) {
+        sum += boardEnds.right;
+    }
 
+    // Only score if the sum is a multiple of 5
     if (sum > 0 && sum % 5 === 0) {
         return sum;
     }
@@ -493,10 +498,10 @@ function showNextHint() {
             toast.classList.add('hidden');
             toast.classList.remove('fade-out');
             if (!gameOver) {
-                hintTimeout = setTimeout(showNextHint, 800);
+                hintTimeout = setTimeout(showNextHint, 2000);
             }
         }, 600);
-    }, 3000);
+    }, 6000);
 }
 
 function selectDomino(domino, element) {
@@ -800,31 +805,49 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         }
     } else {
         const matchingEnd = boardEnds[side];
-    
+
+        // Orient the domino so the matching number connects to the board
+        // The NEW exposed number will be the other side
         if (isHorizontal) {
             if (side === 'left') {
+                // For left placement, the right side of domino (bottom) connects to board
+                // The left side (top) becomes the new open end
                 if (domino.top === matchingEnd) {
+                    // Need to flip so matching number is on the right
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
+                // If domino.bottom === matchingEnd, no flip needed - bottom is already on right
             } else if (side === 'right') {
+                // For right placement, the left side of domino (top) connects to board
+                // The right side (bottom) becomes the new open end
                 if (domino.bottom === matchingEnd) {
+                    // Need to flip so matching number is on the left
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
+                // If domino.top === matchingEnd, no flip needed - top is already on left
             }
         } else {
             if (side === 'top') {
+                // For top placement, the bottom side of domino (bottom) connects to board
+                // The top side (top) becomes the new open end
                 if (domino.top === matchingEnd) {
+                    // Need to flip so matching number is on the bottom
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
+                // If domino.bottom === matchingEnd, no flip needed - bottom is already on bottom
             } else if (side === 'bottom') {
+                // For bottom placement, the top side of domino (top) connects to board
+                // The bottom side (bottom) becomes the new open end
                 if (domino.bottom === matchingEnd) {
+                    // Need to flip so matching number is on the top
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
+                // If domino.top === matchingEnd, no flip needed - top is already on top
             }
         }
     }
     
-    const dominoEl = createDominoElement(orientedDomino, isHorizontal);
+    const dominoEl = createDominoElement(orientedDomino, isHorizontal, wasPlayerTurn ? 'player' : 'cpu');
     dominoEl.style.left = x + 'px';
     dominoEl.style.top = y + 'px';
     
@@ -844,11 +867,13 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     // Update board ends to the NEW exposed number
     if (side === 'center') {
         if (orientedDomino.top === orientedDomino.bottom) {
+            // Double placed in center - all 4 sides have the same value
             boardEnds.left = orientedDomino.top;
             boardEnds.right = orientedDomino.bottom;
             boardEnds.top = orientedDomino.top;
             boardEnds.bottom = orientedDomino.bottom;
         } else {
+            // Non-double placed in center horizontally - only left and right are open
             boardEnds.left = orientedDomino.top;
             boardEnds.right = orientedDomino.bottom;
             boardEnds.top = null;
@@ -859,24 +884,20 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endPositions.top = isHorizontal ? null : { x, y, isHorizontal };
         endPositions.bottom = isHorizontal ? null : { x, y, isHorizontal };
     } else if (side === 'left') {
+        // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
-        // For left placement, the end is at the left edge of the domino
-        // Store the domino's position (top-left corner) and orientation
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'right') {
+        // For right placement, the right side of the domino is the NEW open end
         boardEnds.right = orientedDomino.bottom;
-        // For right placement, the end is at the right edge of the domino
-        // Store the domino's position (top-left corner) and orientation
         endPositions.right = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'top') {
+        // For top placement, the top side of the domino is the NEW open end
         boardEnds.top = orientedDomino.top;
-        // For top placement, the end is at the top edge of the domino
-        // Store the domino's position (top-left corner) and orientation
         endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
     } else if (side === 'bottom') {
+        // For bottom placement, the bottom side of the domino is the NEW open end
         boardEnds.bottom = orientedDomino.bottom;
-        // For bottom placement, the end is at the bottom edge of the domino
-        // Store the domino's position (top-left corner) and orientation
         endPositions.bottom = { x: x, y: y, isHorizontal: isHorizontal };
     }
     
