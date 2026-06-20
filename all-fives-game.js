@@ -890,12 +890,16 @@ function centerCameraOnBoard() {
     const boardContainer = document.querySelector('.board-container');
     const boardElement = document.getElementById('board');
     
-    // Center the camera on the board initially
-    const scrollLeft = (boardElement.offsetWidth - boardContainer.clientWidth) / 2;
-    const scrollTop = (boardElement.offsetHeight - boardContainer.clientHeight) / 2;
+    // The board is 2000x2000, center is at 1000,1000
+    // We need to scroll so the center of the board is visible in the center of the viewport
+    const boardCenterX = 1000;
+    const boardCenterY = 1000;
     
-    boardContainer.scrollLeft = scrollLeft;
-    boardContainer.scrollTop = scrollTop;
+    const containerCenterX = boardContainer.clientWidth / 2;
+    const containerCenterY = boardContainer.clientHeight / 2;
+    
+    boardContainer.scrollLeft = boardCenterX - containerCenterX;
+    boardContainer.scrollTop = boardCenterY - containerCenterY;
 }
 
 function scrollToDomino(x, y) {
