@@ -172,6 +172,7 @@ body {
     height: 100%;
     transform-origin: center center;
     will-change: transform;
+    overflow: visible;
 }
 
 .zone-hint-arrows {
@@ -199,6 +200,55 @@ body {
 @keyframes hint-pulse {
     0%, 100% { opacity: 0.4; }
     50% { opacity: 0.85; }
+}
+
+.turn-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 25;
+    pointer-events: none;
+    text-align: center;
+    padding: 14px 22px;
+    border: 3px dashed rgba(139, 119, 101, 0.75);
+    border-radius: 16px;
+    background: rgba(255, 248, 231, 0.94);
+    box-shadow: 0 4px 20px rgba(92, 74, 61, 0.2);
+    color: #5c4a3d;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    min-width: 180px;
+    animation: turn-pulse 2s ease-in-out infinite;
+}
+
+.turn-indicator.hidden {
+    display: none;
+}
+
+.turn-indicator strong {
+    display: block;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+}
+
+.turn-indicator .starter-domino-label {
+    font-weight: bold;
+    color: #8b5a2b;
+}
+
+@keyframes turn-pulse {
+    0%, 100% { border-color: rgba(139, 119, 101, 0.55); }
+    50% { border-color: rgba(139, 90, 43, 0.95); }
+}
+
+.rack .domino.starter-domino {
+    animation: starter-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes starter-glow {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(139, 90, 43, 0.45); }
+    50% { box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.9); }
 }
 
 .boneyard {
@@ -254,7 +304,7 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    overflow: hidden;
+    overflow: visible;
     width: 800px;
     height: 600px;
     user-select: none;
