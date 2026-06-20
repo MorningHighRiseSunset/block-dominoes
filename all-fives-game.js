@@ -690,30 +690,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     updateBoneyardCount();
     updateDrawButton();
     
-    // Auto-scroll to the last placed domino only if it's outside visible area
-    const boardContainer = document.querySelector('.board-container');
-    const boardElement = document.getElementById('board');
-    const dominoRight = x + (isHorizontal ? 100 : 50);
-    const dominoBottom = y + (isHorizontal ? 50 : 100);
-    
-    // Calculate board position in scrollable area
-    const boardLeft = (boardContainer.scrollWidth - boardElement.offsetWidth) / 2;
-    const boardTop = (boardContainer.scrollHeight - boardElement.offsetHeight) / 2;
-    
-    // Check if domino is visible in viewport
-    const dominoScreenLeft = boardLeft + x;
-    const dominoScreenRight = boardLeft + dominoRight;
-    const dominoScreenTop = boardTop + y;
-    const dominoScreenBottom = boardTop + dominoBottom;
-    
-    const isVisible = (dominoScreenLeft >= boardContainer.scrollLeft && 
-                      dominoScreenRight <= boardContainer.scrollLeft + boardContainer.clientWidth &&
-                      dominoScreenTop >= boardContainer.scrollTop && 
-                      dominoScreenBottom <= boardContainer.scrollTop + boardContainer.clientHeight);
-    
-    if (!isVisible) {
-        scrollToDomino(x, y);
-    }
+    // Disable auto-scroll to prevent camera jumping
+    // The board is large enough that manual scrolling is preferred
     
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1000);
@@ -811,8 +789,23 @@ function cpuPlay() {
     });
     
     if (validMoves.length > 0) {
-        const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
-        placeDomino(randomMove.domino, randomMove.side, randomMove.x, randomMove.y, randomMove.horizontal);
+        // Prioritize highest doubles, then highest total value
+        validMoves.sort((a, b) => {
+            const aIsDouble = a.domino.top === a.domino.bottom;
+            const bIsDouble = b.domino.top === b.domino.bottom;
+            const aValue = a.domino.top + a.domino.bottom;
+            const bValue = b.domino.top + b.domino.bottom;
+            
+            // Prefer doubles
+            if (aIsDouble && !bIsDouble) return -1;
+            if (!aIsDouble && bIsDouble) return 1;
+            
+            // If both are doubles or both are not doubles, prefer higher value
+            return bValue - aValue;
+        });
+        
+        const bestMove = validMoves[0];
+        placeDomino(bestMove.domino, bestMove.side, bestMove.x, bestMove.y, bestMove.horizontal);
     } else {
         // CPU has no valid moves - draw from boneyard or skip turn
         if (boneyard.length > 0) {
