@@ -20,6 +20,7 @@ function init() {
     updateScores();
     setupTouchScrolling();
     initAudio();
+    centerCameraOnBoard();
 }
 
 function createDominoSet() {
@@ -885,26 +886,21 @@ function setupTouchScrolling() {
     }, { passive: false });
 }
 
-function scrollToDomino(x, y) {
+function centerCameraOnBoard() {
     const boardContainer = document.querySelector('.board-container');
     const boardElement = document.getElementById('board');
-    const containerWidth = boardContainer.clientWidth;
-    const containerHeight = boardContainer.clientHeight;
     
-    // Calculate the scroll position to center the domino
-    // Account for the board being centered with CSS transform
-    const boardLeft = (boardContainer.scrollWidth - boardElement.offsetWidth) / 2;
-    const boardTop = (boardContainer.scrollHeight - boardElement.offsetHeight) / 2;
+    // Center the camera on the board initially
+    const scrollLeft = (boardElement.offsetWidth - boardContainer.clientWidth) / 2;
+    const scrollTop = (boardElement.offsetHeight - boardContainer.clientHeight) / 2;
     
-    const scrollLeft = boardLeft + x - containerWidth / 2 + 25;
-    const scrollTop = boardTop + y - containerHeight / 2 + 50;
-    
-    // Smooth scroll to the position
-    boardContainer.scrollTo({
-        left: scrollLeft,
-        top: scrollTop,
-        behavior: 'smooth'
-    });
+    boardContainer.scrollLeft = scrollLeft;
+    boardContainer.scrollTop = scrollTop;
+}
+
+function scrollToDomino(x, y) {
+    // Disabled - camera tracking removed to allow free movement
+    // The camera can now pan freely in all directions
 }
 
 function initAudio() {
