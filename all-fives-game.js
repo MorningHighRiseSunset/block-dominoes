@@ -24,6 +24,7 @@ let gameOver = false;
 let passesInRow = 0;
 let hintIndex = 0;
 let hintTimeout = null;
+let lastPlayedSide = null;
 
 const GAME_HINTS = [
     'Edge arrows point to off-screen moves',
@@ -358,21 +359,24 @@ function createMiniPips(value) {
 }
 
 function calculateScore() {
-    let sum = 0;
-
-    // Only sum the actual open ends of the domino chain
-    // In Muggins/All Fives, you score based on the sum of open ends
-    // The chain has 2 open ends (left and right in standard play)
-    if (boardEnds.left !== null) {
-        sum += boardEnds.left;
-    }
-    if (boardEnds.right !== null) {
-        sum += boardEnds.right;
+    // In Muggins/All Fives, scoring is:
+    // Sum of the starting domino (both numbers) + outer endpoint of last placed domino
+    if (!startingDomino || boardDominoes.length === 0) {
+        return 0;
     }
 
-    // Only score if the sum is a multiple of 5
-    if (sum > 0 && sum % 5 === 0) {
-        return sum;
+    // Sum of the starting domino (both numbers)
+    const starterSum = startingDomino.top + startingDomino.bottom;
+
+    // Get the outer endpoint from the side that was just played
+    const outerEndpoint = lastPlayedSide && boardEnds[lastPlayedSide] !== null ? boardEnds[lastPlayedSide] : 0;
+
+    // Total score = starter sum + outer endpoint
+    const total = starterSum + outerEndpoint;
+
+    // Only score if the total is a multiple of 5
+    if (total > 0 && total % 5 === 0) {
+        return total;
     }
     return 0;
 }
@@ -865,20 +869,14 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     });
     
     // Update board ends to the NEW exposed number
+    lastPlayedSide = side; // Track which side was just played for scoring
     if (side === 'center') {
-        if (orientedDomino.top === orientedDomino.bottom) {
-            // Double placed in center - all 4 sides have the same value
-            boardEnds.left = orientedDomino.top;
-            boardEnds.right = orientedDomino.bottom;
-            boardEnds.top = orientedDomino.top;
-            boardEnds.bottom = orientedDomino.bottom;
-        } else {
-            // Non-double placed in center horizontally - only left and right are open
-            boardEnds.left = orientedDomino.top;
-            boardEnds.right = orientedDomino.bottom;
-            boardEnds.top = null;
-            boardEnds.bottom = null;
-        }
+        // Starting domino placement - all 4 sides should be open regardless of double/non-double
+        // This allows players to choose placement direction
+        boardEnds.left = orientedDomino.top;
+        boardEnds.right = orientedDomino.bottom;
+        boardEnds.top = orientedDomino.top;
+        boardEnds.bottom = orientedDomino.bottom;
         endPositions.left = { x, y, isHorizontal };
         endPositions.right = { x, y, isHorizontal };
         endPositions.top = isHorizontal ? null : { x, y, isHorizontal };
