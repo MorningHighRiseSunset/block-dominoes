@@ -191,16 +191,31 @@ function createMiniPips(value) {
 }
 
 function calculateScore() {
-    // Sum of all open ends (left, right, top, bottom)
+    // Sum only the actual open ends of the chain
+    // In this 4-direction implementation, we count all non-null ends
     let sum = 0;
-    if (boardEnds.left !== null) sum += boardEnds.left;
-    if (boardEnds.right !== null) sum += boardEnds.right;
-    if (boardEnds.top !== null) sum += boardEnds.top;
-    if (boardEnds.bottom !== null) sum += boardEnds.bottom;
+    let endCount = 0;
+    
+    if (boardEnds.left !== null) {
+        sum += boardEnds.left;
+        endCount++;
+    }
+    if (boardEnds.right !== null) {
+        sum += boardEnds.right;
+        endCount++;
+    }
+    if (boardEnds.top !== null) {
+        sum += boardEnds.top;
+        endCount++;
+    }
+    if (boardEnds.bottom !== null) {
+        sum += boardEnds.bottom;
+        endCount++;
+    }
     
     // In All Fives, you only score if the sum is a multiple of 5
     // Return the sum if it's a multiple of 5, otherwise return 0
-    if (sum % 5 === 0) {
+    if (sum % 5 === 0 && sum > 0) {
         return sum;
     }
     return 0;
@@ -242,7 +257,7 @@ function drawFromBoneyard() {
     renderRacks();
     
     // Check if player now has valid moves
-    checkPlayerValidMoves();
+    updateDrawButton();
 }
 
 function checkPlayerValidMoves() {
@@ -262,6 +277,27 @@ function checkPlayerValidMoves() {
         isPlayerTurn = false;
         drawBtn.disabled = true;
         setTimeout(cpuPlay, 1000);
+    } else {
+        drawBtn.disabled = true;
+    }
+}
+
+function updateDrawButton() {
+    const drawBtn = document.getElementById('drawBtn');
+    if (!isPlayerTurn) {
+        drawBtn.disabled = true;
+        return;
+    }
+    
+    const hasValidMove = playerDominoes.some(domino => {
+        return (domino.top === boardEnds.left || domino.bottom === boardEnds.left ||
+                domino.top === boardEnds.right || domino.bottom === boardEnds.right ||
+                domino.top === boardEnds.top || domino.bottom === boardEnds.top ||
+                domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom);
+    });
+    
+    if (!hasValidMove && boneyard.length > 0) {
+        drawBtn.disabled = false;
     } else {
         drawBtn.disabled = true;
     }
@@ -324,6 +360,27 @@ function showValidPlacementZones(domino) {
     
     const validZones = [];
     
+    // Helper function to check if a zone overlaps with any placed domino
+    function checkOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
+        for (const placed of boardDominoes) {
+            const placedWidth = placed.isHorizontal ? 100 : 50;
+            const placedHeight = placed.isHorizontal ? 50 : 100;
+            const placedRight = placed.x + placedWidth;
+            const placedBottom = placed.y + placedHeight;
+            const zoneRight = zoneX + zoneWidth;
+            const zoneBottom = zoneY + zoneHeight;
+            
+            // Check if rectangles overlap
+            if (!(zoneRight <= placed.x || 
+                  zoneX >= placedRight || 
+                  zoneBottom <= placed.y || 
+                  zoneY >= placedBottom)) {
+                return true; // Overlap detected
+            }
+        }
+        return false; // No overlap
+    }
+    
     // Check left - use stored left end position
     if (boardEnds.left !== null && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) {
         const leftPos = endPositions.left;
@@ -337,12 +394,12 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceVertically) {
             // Vertical placement for doubles on left/right
-            if (leftPos.x - 50 >= 0) {
+            if (leftPos.x - 50 >= 0 && !checkOverlap(leftPos.x - 50, dominoCenterY - 50, 50, 100)) {
                 validZones.push({ side: 'left', x: leftPos.x - 50, y: dominoCenterY - 50, width: 50, height: 100, horizontal: false });
             }
         } else {
             // Horizontal placement for non-doubles on left
-            if (leftPos.x - 100 >= 0) {
+            if (leftPos.x - 100 >= 0 && !checkOverlap(leftPos.x - 100, dominoCenterY - 25, 100, 50)) {
                 validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
             }
         }
@@ -361,13 +418,13 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceVertically) {
             // Vertical placement for doubles on right
-            if (rightPos.x + 50 <= boardDimensions.width) {
+            if (rightPos.x + 50 <= boardDimensions.width && !checkOverlap(rightPos.x + 50, dominoCenterY - 50, 50, 100)) {
                 validZones.push({ side: 'right', x: rightPos.x + 50, y: dominoCenterY - 50, width: 50, height: 100, horizontal: false });
             }
         } else {
             // Horizontal placement for non-doubles on right
             const xOffset = rightPos.isHorizontal ? 100 : 50;
-            if (rightPos.x + xOffset <= boardDimensions.width) {
+            if (rightPos.x + xOffset <= boardDimensions.width && !checkOverlap(rightPos.x + xOffset, dominoCenterY - 25, 100, 50)) {
                 validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
             }
         }
@@ -386,12 +443,12 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on top/bottom
-            if (topPos.y - 50 >= 0) {
+            if (topPos.y - 50 >= 0 && !checkOverlap(dominoCenterX - 50, topPos.y - 50, 100, 50)) {
                 validZones.push({ side: 'top', x: dominoCenterX - 50, y: topPos.y - 50, width: 100, height: 50, horizontal: true });
             }
         } else {
             // Vertical placement for non-doubles on top
-            if (topPos.y - 100 >= 0) {
+            if (topPos.y - 100 >= 0 && !checkOverlap(dominoCenterX - 25, topPos.y - 100, 50, 100)) {
                 validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
             }
         }
@@ -410,13 +467,13 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on bottom
-            if (bottomPos.y + 50 <= boardDimensions.height) {
+            if (bottomPos.y + 50 <= boardDimensions.height && !checkOverlap(dominoCenterX - 50, bottomPos.y + 50, 100, 50)) {
                 validZones.push({ side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + 50, width: 100, height: 50, horizontal: true });
             }
         } else {
             // Vertical placement for non-doubles on bottom
             const yOffset = bottomPos.isHorizontal ? 50 : 100;
-            if (bottomPos.y + yOffset <= boardDimensions.height) {
+            if (bottomPos.y + yOffset <= boardDimensions.height && !checkOverlap(dominoCenterX - 25, bottomPos.y + yOffset, 50, 100)) {
                 validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
             }
         }
@@ -443,7 +500,7 @@ function showValidPlacementZones(domino) {
     
     // If no valid zones for this domino, check if player needs to draw
     if (validZones.length === 0) {
-        checkPlayerValidMoves();
+        updateDrawButton();
     }
 }
 
@@ -554,9 +611,20 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     isPlayerTurn = !isPlayerTurn;
     
     updateBoneyardCount();
+    updateDrawButton();
     
-    // Auto-scroll to the last placed domino
-    scrollToDomino(x, y);
+    // Auto-scroll to the last placed domino only if it's outside visible area
+    const boardContainer = document.querySelector('.board-container');
+    const dominoRight = x + (isHorizontal ? 100 : 50);
+    const dominoBottom = y + (isHorizontal ? 50 : 100);
+    const isVisible = (x >= boardContainer.scrollLeft && 
+                      dominoRight <= boardContainer.scrollLeft + boardContainer.clientWidth &&
+                      y >= boardContainer.scrollTop && 
+                      dominoBottom <= boardContainer.scrollTop + boardContainer.clientHeight);
+    
+    if (!isVisible) {
+        scrollToDomino(x, y);
+    }
     
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1000);
@@ -702,14 +770,17 @@ function setupTouchScrolling() {
         startY = e.pageY - boardContainer.offsetTop;
         scrollLeft = boardContainer.scrollLeft;
         scrollTop = boardContainer.scrollTop;
+        boardContainer.style.cursor = 'grabbing';
     });
 
     boardContainer.addEventListener('mouseleave', () => {
         isDown = false;
+        boardContainer.style.cursor = 'grab';
     });
 
     boardContainer.addEventListener('mouseup', () => {
         isDown = false;
+        boardContainer.style.cursor = 'grab';
     });
 
     boardContainer.addEventListener('mousemove', (e) => {
@@ -717,20 +788,20 @@ function setupTouchScrolling() {
         e.preventDefault();
         const x = e.pageX - boardContainer.offsetLeft;
         const y = e.pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 2;
-        const walkY = (y - startY) * 2;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
         boardContainer.scrollLeft = scrollLeft - walkX;
         boardContainer.scrollTop = scrollTop - walkY;
     });
 
-    // Touch events for mobile
+    // Touch events for mobile with improved sensitivity
     boardContainer.addEventListener('touchstart', (e) => {
         isDown = true;
         startX = e.touches[0].pageX - boardContainer.offsetLeft;
         startY = e.touches[0].pageY - boardContainer.offsetTop;
         scrollLeft = boardContainer.scrollLeft;
         scrollTop = boardContainer.scrollTop;
-    });
+    }, { passive: false });
 
     boardContainer.addEventListener('touchend', () => {
         isDown = false;
@@ -741,11 +812,11 @@ function setupTouchScrolling() {
         e.preventDefault();
         const x = e.touches[0].pageX - boardContainer.offsetLeft;
         const y = e.touches[0].pageY - boardContainer.offsetTop;
-        const walkX = (x - startX) * 2;
-        const walkY = (y - startY) * 2;
+        const walkX = (x - startX) * 1.5;
+        const walkY = (y - startY) * 1.5;
         boardContainer.scrollLeft = scrollLeft - walkX;
         boardContainer.scrollTop = scrollTop - walkY;
-    });
+    }, { passive: false });
 }
 
 function scrollToDomino(x, y) {

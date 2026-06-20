@@ -159,7 +159,7 @@ body {
     min-width: 400px;
     overflow: auto;
     box-shadow: inset 0 0 30px rgba(139, 119, 101, 0.2);
-    touch-action: pan-x pan-y;
+    touch-action: none;
 }
 
 .boneyard {
@@ -218,6 +218,8 @@ body {
     min-width: 1200px;
     min-height: 800px;
     cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .board:active {
