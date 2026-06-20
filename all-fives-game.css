@@ -151,9 +151,6 @@ body {
 .board-container {
     height: calc(100vh - 210px);
     background: radial-gradient(ellipse at center, #fff8e7 0%, #f5e6d3 50%, #e8d4bc 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
     flex-shrink: 0;
     min-width: 400px;
@@ -211,12 +208,13 @@ body {
 }
 
 .board {
-    width: 100%;
-    height: 100%;
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     overflow: hidden;
-    min-width: 1200px;
-    min-height: 800px;
+    width: 2000px;
+    height: 2000px;
     cursor: grab;
     user-select: none;
     -webkit-user-select: none;
