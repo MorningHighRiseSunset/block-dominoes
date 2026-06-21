@@ -360,19 +360,17 @@ function createMiniPips(value) {
 
 function calculateScore() {
     // In Muggins/All Fives, scoring is:
-    // Sum of the starting domino (both numbers) + outer endpoint of last placed domino
-    if (!startingDomino || boardDominoes.length === 0) {
+    // Sum of all open ends on the board - if multiple of 5, score that many points
+    if (boardDominoes.length === 0) {
         return 0;
     }
 
-    // Sum of the starting domino (both numbers)
-    const starterSum = startingDomino.top + startingDomino.bottom;
-
-    // Get the outer endpoint from the side that was just played
-    const outerEndpoint = lastPlayedSide && boardEnds[lastPlayedSide] !== null ? boardEnds[lastPlayedSide] : 0;
-
-    // Total score = starter sum + outer endpoint
-    const total = starterSum + outerEndpoint;
+    // Sum all open ends (non-null values in boardEnds)
+    let total = 0;
+    if (boardEnds.left !== null) total += boardEnds.left;
+    if (boardEnds.right !== null) total += boardEnds.right;
+    if (boardEnds.top !== null) total += boardEnds.top;
+    if (boardEnds.bottom !== null) total += boardEnds.bottom;
 
     // Only score if the total is a multiple of 5
     if (total > 0 && total % 5 === 0) {
