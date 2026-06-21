@@ -365,6 +365,11 @@ function calculateScore() {
         return 0;
     }
 
+    // Don't score for the starting domino placement (only 1 domino on board)
+    if (boardDominoes.length === 1) {
+        return 0;
+    }
+
     // Sum all open ends (non-null values in boardEnds)
     let total = 0;
     if (boardEnds.left !== null) total += boardEnds.left;
