@@ -351,7 +351,7 @@ body {
 .rack .domino {
     position: relative;
     flex-shrink: 0;
-    margin: 0 -6px 0 0;
+    margin: 0 4px 0 0;
     padding: 0;
     border: 1px solid #2d2d2d;
     box-shadow: none;
@@ -666,7 +666,7 @@ body {
         backface-visibility: hidden;
         -webkit-transform: translateZ(0);
         transform: translateZ(0);
-        margin: 0 -8px 0 0; /* Increase negative margin for better spacing on Android */
+        margin: 0 4px 0 0;
     }
 }
 
