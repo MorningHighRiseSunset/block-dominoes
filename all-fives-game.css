@@ -211,16 +211,29 @@ body {
     z-index: 25;
     pointer-events: none;
     text-align: center;
-    padding: 14px 22px;
-    border: 3px dashed rgba(139, 119, 101, 0.75);
-    border-radius: 16px;
-    background: rgba(255, 248, 231, 0.94);
-    box-shadow: 0 4px 20px rgba(92, 74, 61, 0.2);
+    width: 60px;
+    height: 120px;
+    border: 3px solid rgba(139, 119, 101, 0.6);
+    border-radius: 6px;
+    background: rgba(255, 248, 231, 0.4);
+    box-shadow: 0 4px 20px rgba(92, 74, 61, 0.15);
     color: #5c4a3d;
-    font-size: 0.95rem;
-    line-height: 1.45;
-    min-width: 180px;
+    font-size: 0.6rem;
+    line-height: 1.2;
+    display: flex;
+    flex-direction: column;
     animation: turn-pulse 2s ease-in-out infinite;
+}
+
+.turn-indicator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(139, 119, 101, 0.5);
+    transform: translateY(-50%);
 }
 
 .turn-indicator.hidden {
@@ -229,8 +242,8 @@ body {
 
 .turn-indicator strong {
     display: block;
-    font-size: 1.05rem;
-    margin-bottom: 4px;
+    font-size: 0.7rem;
+    margin-bottom: 2px;
 }
 
 .turn-indicator .starter-domino-label {
