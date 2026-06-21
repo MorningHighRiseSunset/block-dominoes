@@ -1087,6 +1087,7 @@ function cpuPlay() {
         } else {
             isPlayerTurn = true;
             updateBoneyardCount();
+            updateDrawButton();
             recordPass();
         }
     }
