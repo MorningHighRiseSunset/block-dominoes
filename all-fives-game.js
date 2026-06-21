@@ -583,11 +583,6 @@ function updateDrawButton() {
 function showValidPlacementZones(domino) {
     const board = document.getElementById('board');
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
-    
-    // Debug: log current board ends
-    console.log('Board ends:', boardEnds);
-    console.log('End positions:', endPositions);
-    console.log('Selected domino:', domino);
 
     if (boardDominoes.length === 0) {
         if (!isPlayerTurn || !startingDomino || domino.id !== startingDomino.id) {
@@ -653,14 +648,21 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceVertically) {
             // Vertical placement for doubles on left/right
-            const xOffset = leftPos.isHorizontal ? 100 : 50;
-            if (!checkOverlap(leftPos.x - xOffset, dominoCenterY - 50, 50, 100)) {
-                validZones.push({ side: 'left', x: leftPos.x - xOffset, y: dominoCenterY - 50, width: 50, height: 100, horizontal: false });
+            const newWidth = 50; // Width of vertical domino being placed
+            const zoneX = leftPos.x - newWidth;
+            const zoneY = dominoCenterY - 50;
+            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
+            if (!overlaps) {
+                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
             }
         } else {
             // Horizontal placement for non-doubles on left
-            if (!checkOverlap(leftPos.x - 100, dominoCenterY - 25, 100, 50)) {
-                validZones.push({ side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+            const newWidth = 100; // Width of horizontal domino being placed
+            const zoneX = leftPos.x - newWidth;
+            const zoneY = dominoCenterY - 25;
+            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
+            if (!overlaps) {
+                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
             }
         }
     }
@@ -678,15 +680,21 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceVertically) {
             // Vertical placement for doubles on right
-            const xOffset = rightPos.isHorizontal ? 100 : 50;
-            if (!checkOverlap(rightPos.x + xOffset, dominoCenterY - 50, 50, 100)) {
-                validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 50, width: 50, height: 100, horizontal: false });
+            const existingWidth = rightPos.isHorizontal ? 100 : 50;
+            const zoneX = rightPos.x + existingWidth;
+            const zoneY = dominoCenterY - 50;
+            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
+            if (!overlaps) {
+                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
             }
         } else {
             // Horizontal placement for non-doubles on right
-            const xOffset = rightPos.isHorizontal ? 100 : 50;
-            if (!checkOverlap(rightPos.x + xOffset, dominoCenterY - 25, 100, 50)) {
-                validZones.push({ side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, width: 100, height: 50, horizontal: true });
+            const existingWidth = rightPos.isHorizontal ? 100 : 50;
+            const zoneX = rightPos.x + existingWidth;
+            const zoneY = dominoCenterY - 25;
+            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
+            if (!overlaps) {
+                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
             }
         }
     }
@@ -704,14 +712,21 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on top/bottom
-            const yOffset = topPos.isHorizontal ? 50 : 100;
-            if (!checkOverlap(dominoCenterX - 50, topPos.y - yOffset, 100, 50)) {
-                validZones.push({ side: 'top', x: dominoCenterX - 50, y: topPos.y - yOffset, width: 100, height: 50, horizontal: true });
+            const newHeight = 50; // Height of horizontal domino being placed
+            const zoneX = dominoCenterX - 50;
+            const zoneY = topPos.y - newHeight;
+            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
+            if (!overlaps) {
+                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
             }
         } else {
             // Vertical placement for non-doubles on top
-            if (!checkOverlap(dominoCenterX - 25, topPos.y - 100, 50, 100)) {
-                validZones.push({ side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, width: 50, height: 100, horizontal: false });
+            const newHeight = 100; // Height of vertical domino being placed
+            const zoneX = dominoCenterX - 25;
+            const zoneY = topPos.y - newHeight;
+            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
+            if (!overlaps) {
+                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
             }
         }
     }
@@ -729,15 +744,21 @@ function showValidPlacementZones(domino) {
         
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on bottom
-            const yOffset = bottomPos.isHorizontal ? 50 : 100;
-            if (!checkOverlap(dominoCenterX - 50, bottomPos.y + yOffset, 100, 50)) {
-                validZones.push({ side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + yOffset, width: 100, height: 50, horizontal: true });
+            const existingHeight = bottomPos.isHorizontal ? 50 : 100;
+            const zoneX = dominoCenterX - 50;
+            const zoneY = bottomPos.y + existingHeight;
+            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
+            if (!overlaps) {
+                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
             }
         } else {
             // Vertical placement for non-doubles on bottom
-            const yOffset = bottomPos.isHorizontal ? 50 : 100;
-            if (!checkOverlap(dominoCenterX - 25, bottomPos.y + yOffset, 50, 100)) {
-                validZones.push({ side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, width: 50, height: 100, horizontal: false });
+            const existingHeight = bottomPos.isHorizontal ? 50 : 100;
+            const zoneX = dominoCenterX - 25;
+            const zoneY = bottomPos.y + existingHeight;
+            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
+            if (!overlaps) {
+                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
             }
         }
     }
@@ -996,10 +1017,12 @@ function cpuPlay() {
             
             if (shouldPlaceVertically) {
                 // Vertical placement for doubles on left
-                validMoves.push({ domino, side: 'left', x: leftPos.x - 50, y: dominoCenterY - 50, horizontal: false });
+                const newWidth = 50; // Width of vertical domino being placed
+                validMoves.push({ domino, side: 'left', x: leftPos.x - newWidth, y: dominoCenterY - 50, horizontal: false });
             } else {
                 // Horizontal placement for non-doubles on left
-                validMoves.push({ domino, side: 'left', x: leftPos.x - 100, y: dominoCenterY - 25, horizontal: true });
+                const newWidth = 100; // Width of horizontal domino being placed
+                validMoves.push({ domino, side: 'left', x: leftPos.x - newWidth, y: dominoCenterY - 25, horizontal: true });
             }
         }
         
@@ -1015,11 +1038,12 @@ function cpuPlay() {
             
             if (shouldPlaceVertically) {
                 // Vertical placement for doubles on right
-                validMoves.push({ domino, side: 'right', x: rightPos.x + 50, y: dominoCenterY - 50, horizontal: false });
+                const existingWidth = rightPos.isHorizontal ? 100 : 50;
+                validMoves.push({ domino, side: 'right', x: rightPos.x + existingWidth, y: dominoCenterY - 50, horizontal: false });
             } else {
                 // Horizontal placement for non-doubles on right
-                const xOffset = rightPos.isHorizontal ? 100 : 50;
-                validMoves.push({ domino, side: 'right', x: rightPos.x + xOffset, y: dominoCenterY - 25, horizontal: true });
+                const existingWidth = rightPos.isHorizontal ? 100 : 50;
+                validMoves.push({ domino, side: 'right', x: rightPos.x + existingWidth, y: dominoCenterY - 25, horizontal: true });
             }
         }
         
@@ -1035,10 +1059,12 @@ function cpuPlay() {
             
             if (shouldPlaceHorizontally) {
                 // Horizontal placement for doubles on top
-                validMoves.push({ domino, side: 'top', x: dominoCenterX - 50, y: topPos.y - 50, width: 100, height: 50, horizontal: true });
+                const newHeight = 50; // Height of horizontal domino being placed
+                validMoves.push({ domino, side: 'top', x: dominoCenterX - 50, y: topPos.y - newHeight, width: 100, height: 50, horizontal: true });
             } else {
                 // Vertical placement for non-doubles on top
-                validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - 100, horizontal: false });
+                const newHeight = 100; // Height of vertical domino being placed
+                validMoves.push({ domino, side: 'top', x: dominoCenterX - 25, y: topPos.y - newHeight, horizontal: false });
             }
         }
         
@@ -1053,12 +1079,12 @@ function cpuPlay() {
             const shouldPlaceHorizontally = isDouble;
             
             if (shouldPlaceHorizontally) {
-                const yOffset = bottomPos.isHorizontal ? 50 : 100;
-                validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + yOffset, horizontal: true });
+                const existingHeight = bottomPos.isHorizontal ? 50 : 100;
+                validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + existingHeight, horizontal: true });
             } else {
                 // Vertical placement for non-doubles on bottom
-                const yOffset = bottomPos.isHorizontal ? 50 : 100;
-                validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + yOffset, horizontal: false });
+                const existingHeight = bottomPos.isHorizontal ? 50 : 100;
+                validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 25, y: bottomPos.y + existingHeight, horizontal: false });
             }
         }
     });
@@ -1079,7 +1105,18 @@ function cpuPlay() {
             return bValue - aValue;
         });
         
-        const bestMove = validMoves[0];
+        // Find the highest priority moves (same domino value and double status)
+        const bestValue = validMoves[0].domino.top + validMoves[0].domino.bottom;
+        const bestIsDouble = validMoves[0].domino.top === validMoves[0].domino.bottom;
+        const bestMoves = validMoves.filter(m => {
+            const isDouble = m.domino.top === m.domino.bottom;
+            const value = m.domino.top + m.domino.bottom;
+            return isDouble === bestIsDouble && value === bestValue;
+        });
+        
+        // Randomly choose from the best moves to avoid always picking the same side
+        const randomIndex = Math.floor(Math.random() * bestMoves.length);
+        const bestMove = bestMoves[randomIndex];
         placeDomino(bestMove.domino, bestMove.side, bestMove.x, bestMove.y, bestMove.horizontal);
     } else {
         if (boneyard.length > 0) {
