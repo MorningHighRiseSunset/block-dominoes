@@ -583,6 +583,11 @@ function updateDrawButton() {
 function showValidPlacementZones(domino) {
     const board = document.getElementById('board');
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
+    
+    // Debug: log current board ends
+    console.log('Board ends:', boardEnds);
+    console.log('End positions:', endPositions);
+    console.log('Selected domino:', domino);
 
     if (boardDominoes.length === 0) {
         if (!isPlayerTurn || !startingDomino || domino.id !== startingDomino.id) {
