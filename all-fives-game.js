@@ -8,8 +8,6 @@ let boardEnds = { left: null, right: null, top: null, bottom: null };
 let endPositions = { left: null, right: null, top: null, bottom: null };
 let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
-let playerScore = 0;
-let cpuScore = 0;
 let audioContext = null;
 let camera = { x: 0, y: 0, zoom: 1 };
 let cameraAnimating = false;
@@ -28,7 +26,6 @@ let lastPlayedSide = null;
 
 const GAME_HINTS = [
     'Edge arrows point to off-screen moves',
-    'Score when open ends total a multiple of 5',
     'Drag the board to look around',
     'Highest double starts — play it in the center',
     'Tap a tile, then tap a highlighted spot to play',
@@ -42,7 +39,6 @@ function init() {
     startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
     renderRacks();
-    updateScores();
     showTurnIndicator(starter);
     setupTouchScrolling();
     initAudio();
@@ -323,10 +319,6 @@ function renderRacks() {
     });
 }
 
-function updateScores() {
-    document.getElementById('playerScore').textContent = playerScore;
-    document.getElementById('cpuScore').textContent = cpuScore;
-}
 
 function updateLastPlayedDomino(domino) {
     const lastPlayedContainer = document.getElementById('lastPlayedDomino');
@@ -358,31 +350,6 @@ function createMiniPips(value) {
     return container;
 }
 
-function calculateScore() {
-    // In Muggins/All Fives, scoring is:
-    // Sum of all open ends on the board - if multiple of 5, score that many points
-    if (boardDominoes.length === 0) {
-        return 0;
-    }
-
-    // Don't score for the starting domino placement (only 1 domino on board)
-    if (boardDominoes.length === 1) {
-        return 0;
-    }
-
-    // Sum all open ends (non-null values in boardEnds)
-    let total = 0;
-    if (boardEnds.left !== null) total += boardEnds.left;
-    if (boardEnds.right !== null) total += boardEnds.right;
-    if (boardEnds.top !== null) total += boardEnds.top;
-    if (boardEnds.bottom !== null) total += boardEnds.bottom;
-
-    // Only score if the total is a multiple of 5
-    if (total > 0 && total % 5 === 0) {
-        return total;
-    }
-    return 0;
-}
 
 function countPipsInHand(dominoes) {
     return dominoes.reduce((total, domino) => total + domino.top + domino.bottom, 0);
@@ -448,7 +415,6 @@ function endGame(result, message, playerPips, cpuPips) {
     const overlay = document.getElementById('gameOverOverlay');
     const title = document.getElementById('gameOverTitle');
     const msg = document.getElementById('gameOverMessage');
-    const scores = document.getElementById('gameOverScores');
 
     if (result === 'win') {
         title.textContent = 'You Win!';
@@ -463,25 +429,12 @@ function endGame(result, message, playerPips, cpuPips) {
 
     msg.textContent = message;
     if (playerPips !== null) {
-        scores.textContent = `Your pips: ${playerPips}  ·  CPU pips: ${cpuPips}`;
-    } else {
-        scores.textContent = `Final score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
+        msg.textContent += ` Your pips: ${playerPips}  ·  CPU pips: ${cpuPips}`;
     }
 
     overlay.classList.remove('hidden');
 }
 
-function showScorePopup(points) {
-    const container = getBoardContainer();
-    if (!container || points <= 0) return;
-
-    const popup = document.createElement('div');
-    popup.className = 'score-popup';
-    popup.textContent = `+${points} All Fives!`;
-    container.appendChild(popup);
-    playScoreSound();
-    setTimeout(() => popup.remove(), 1300);
-}
 
 function setupHintSystem() {
     showNextHint();
@@ -954,17 +907,11 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     // This is a simplified version - a full implementation would track chain topology
     // For now, we'll keep all 4 ends independent as per the current game design
     
-    // Calculate and update score
-    const score = calculateScore();
     if (wasPlayerTurn) {
-        playerScore += score;
         playerDominoes = playerDominoes.filter(d => d.id !== domino.id);
-        if (score > 0) showScorePopup(score);
     } else {
-        cpuScore += score;
         cpuDominoes = cpuDominoes.filter(d => d.id !== domino.id);
     }
-    updateScores();
     
     updateLastPlayedDomino(orientedDomino);
     recordMove();
@@ -1481,11 +1428,6 @@ function playSelectSound() {
     playTone(640, 0.07, 0.16);
 }
 
-function playScoreSound() {
-    playTone(660, 0.1, 0.22);
-    setTimeout(() => playTone(880, 0.1, 0.2), 80);
-    setTimeout(() => playTone(1100, 0.12, 0.18), 160);
-}
 
 function playDrawSound() {
     playTone(340, 0.08, 0.14);
