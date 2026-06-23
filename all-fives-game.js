@@ -670,8 +670,12 @@ function hasAnyValidMove(dominoes) {
     return dominoes.some(domino =>
         (boardEnds.left !== null && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) ||
         (boardEnds.right !== null && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) ||
-        (boardEnds.top !== null && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) ||
-        (boardEnds.bottom !== null && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom))
+        // Top and bottom are only available if both side arms are filled (spinner rule)
+        (leftArmFilled && rightArmFilled && boardEnds.top !== null && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) ||
+        (leftArmFilled && rightArmFilled && boardEnds.bottom !== null && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) ||
+        // Also check if top/bottom can be opened from spinner when both sides are filled
+        (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0 && (domino.top === boardDominoes[0].domino.top || domino.bottom === boardDominoes[0].domino.top)) ||
+        (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0 && (domino.top === boardDominoes[0].domino.bottom || domino.bottom === boardDominoes[0].domino.bottom))
     );
 }
 
@@ -1229,6 +1233,11 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     const dominoEl = createDominoElement(orientedDomino, isHorizontal, wasPlayerTurn ? 'player' : 'cpu');
     dominoEl.style.left = x + 'px';
     dominoEl.style.top = y + 'px';
+    
+    // Rotate domino 180 degrees when placed on bottom so it faces correctly
+    if (side === 'bottom' && !isHorizontal) {
+        dominoEl.style.transform = 'rotate(180deg)';
+    }
     
     boardEl.appendChild(dominoEl);
     
