@@ -6,6 +6,7 @@ let selectedDomino = null;
 let isPlayerTurn = true;
 let boardEnds = { left: null, right: null, top: null, bottom: null };
 let endPositions = { left: null, right: null, top: null, bottom: null };
+let endIsDouble = { left: false, right: false, top: false, bottom: false };
 let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
 let audioContext = null;
@@ -23,6 +24,11 @@ let passesInRow = 0;
 let hintIndex = 0;
 let hintTimeout = null;
 let lastPlayedSide = null;
+let playerScore = 0;
+let cpuScore = 0;
+const WINNING_SCORE = 100;
+let leftArmFilled = false;
+let rightArmFilled = false;
 
 const GAME_HINTS = [
     'Edge arrows point to off-screen moves',
@@ -45,6 +51,7 @@ function init() {
     centerCameraOnBoard();
     updateDrawButton();
     setupHintSystem();
+    updateScoreDisplay();
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
 
     if (!isPlayerTurn) {
@@ -78,10 +85,13 @@ function initializeBoard() {
     boardDominoes = [];
     boardEnds = { left: null, right: null, top: null, bottom: null };
     endPositions = { left: null, right: null, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
     boardDimensions.width = 800;
     boardDimensions.height = 600;
     board.style.width = '800px';
     board.style.height = '600px';
+    leftArmFilled = false;
+    rightArmFilled = false;
 }
 
 function formatDominoLabel(domino) {
@@ -93,6 +103,286 @@ function getDominoRank(domino) {
         return 1000 + domino.top;
     }
     return domino.top + domino.bottom;
+}
+
+function calculateOpenEndsSum() {
+    let sum = 0;
+    if (boardEnds.left !== null) sum += boardEnds.left;
+    if (boardEnds.right !== null) sum += boardEnds.right;
+    if (boardEnds.top !== null) sum += boardEnds.top;
+    if (boardEnds.bottom !== null) sum += boardEnds.bottom;
+    return sum;
+}
+
+function calculateScoreFromEnds(playedSide) {
+    // Muggins All 5s scoring rules:
+    // 1. If an end has a double, count both sides (double the value)
+    // 2. Spinner top/bottom:
+    //    - If 0 or 1 side arms filled: count both top and bottom
+    //    - If 2 side arms filled: ignore top and bottom
+    //    - If 3 or 4 arms filled: count the played arms
+    let sum = 0;
+
+    // Count left end (double if it's a double)
+    if (boardEnds.left !== null) {
+        sum += endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
+    }
+
+    // Count right end (double if it's a double)
+    if (boardEnds.right !== null) {
+        sum += endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
+    }
+
+    // Count top and bottom only if they have been played on (not just opened)
+    if (boardEnds.top !== null) {
+        sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+    }
+    if (boardEnds.bottom !== null) {
+        sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+    }
+
+    if (sum % 5 === 0) {
+        return sum;
+    }
+    return 0;
+}
+
+function updateScoreDisplay() {
+    document.getElementById('playerScore').textContent = playerScore;
+    document.getElementById('cpuScore').textContent = cpuScore;
+}
+
+// Test function to verify scoring against rules examples
+// Call this from browser console: testScoring()
+function testScoring() {
+    console.log('=== Testing Muggins All 5s Scoring ===\n');
+
+    // Save current state
+    const savedBoardEnds = { ...boardEnds };
+    const savedEndIsDouble = { ...endIsDouble };
+    const savedLeftArmFilled = leftArmFilled;
+    const savedRightArmFilled = rightArmFilled;
+
+    // Test 1: 1/3 - 3/3 (one side occupied)
+    // Expected: 1 + 3 + 3 = 7 → 0 points
+    boardEnds = { left: 1, right: null, top: 3, bottom: 3 };
+    endIsDouble = { left: false, right: false, top: true, bottom: true };
+    leftArmFilled = true;
+    rightArmFilled = false;
+    const score1 = calculateScoreFromEnds('left');
+    console.log('Test 1: 1/3 - 3/3 (one side occupied)');
+    console.log('  Expected: 1 + 3 + 3 = 7 → 0 points');
+    console.log('  Actual:', score1, 'points');
+    console.log('  Result:', score1 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 2: 1/3 - 3/3 - 3/6 (both sides occupied)
+    // Expected: 1 + 6 = 7 → 0 points (spinner top/bottom ignored)
+    boardEnds = { left: 1, right: 6, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score2 = calculateScoreFromEnds('right');
+    console.log('Test 2: 1/3 - 3/3 - 3/6 (both sides occupied)');
+    console.log('  Expected: 1 + 6 = 7 → 0 points (spinner top/bottom ignored)');
+    console.log('  Actual:', score2, 'points');
+    console.log('  Result:', score2 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 3: Third arm opened (5 on top)
+    // Expected: 1 + 6 + 5 = 12 → 0 points
+    boardEnds = { left: 1, right: 6, top: 5, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score3 = calculateScoreFromEnds('top');
+    console.log('Test 3: Third arm opened (5 on top)');
+    console.log('  Expected: 1 + 6 + 5 = 12 → 0 points');
+    console.log('  Actual:', score3, 'points');
+    console.log('  Result:', score3 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 4: Fourth arm opened (4 on bottom)
+    // Expected: 1 + 6 + 5 + 4 = 16 → 0 points
+    boardEnds = { left: 1, right: 6, top: 5, bottom: 4 };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score4 = calculateScoreFromEnds('bottom');
+    console.log('Test 4: Fourth arm opened (4 on bottom)');
+    console.log('  Expected: 1 + 6 + 5 + 4 = 16 → 0 points');
+    console.log('  Actual:', score4, 'points');
+    console.log('  Result:', score4 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 5: Scoring example 4/3 - 3/3 - 3/1 with 5 on top and bottom
+    // Expected: 4 + 1 + 5 + 5 = 15 → 15 points
+    boardEnds = { left: 4, right: 1, top: 5, bottom: 5 };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score5 = calculateScoreFromEnds('bottom');
+    console.log('Test 5: Scoring example 4 + 1 + 5 + 5 = 15');
+    console.log('  Expected: 15 points');
+    console.log('  Actual:', score5, 'points');
+    console.log('  Result:', score5 === 15 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 6: User's example 4/4 <- 4/6 <- 6/6 (one side arm filled)
+    // In actual game, spinner top/bottom are null until played on
+    // Expected: 8 (double 4) = 8 → 0 points (only left end counts)
+    boardEnds = { left: 4, right: null, top: null, bottom: null };
+    endIsDouble = { left: true, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = false;
+    const score6 = calculateScoreFromEnds('left');
+    console.log('Test 6: User example 4/4 <- 4/6 <- 6/6 (one side arm filled)');
+    console.log('  Expected: 8 (double 4) = 8 → 0 points (spinner top/bottom null until played)');
+    console.log('  Actual:', score6, 'points');
+    console.log('  Result:', score6 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 7: User's example with both side arms filled (4/4 <- 4/6 <- 6/6 -> 3/6)
+    // Expected: 8 (double 4) + 6 = 14 → 0 points (spinner top/bottom ignored)
+    boardEnds = { left: 4, right: 6, top: null, bottom: null };
+    endIsDouble = { left: true, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score7 = calculateScoreFromEnds('right');
+    console.log('Test 7: User example with both side arms filled');
+    console.log('  Expected: 8 (double 4) + 6 = 14 → 0 points (spinner top/bottom ignored)');
+    console.log('  Actual:', score7, 'points');
+    console.log('  Result:', score7 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 8: Double at end - manuscript example "this two becomes a four"
+    // Expected: 4 (double 2) + 6 = 10 → 10 points
+    boardEnds = { left: 2, right: 6, top: null, bottom: null };
+    endIsDouble = { left: true, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score8 = calculateScoreFromEnds('left');
+    console.log('Test 8: Double at end (2 becomes 4) + 6');
+    console.log('  Expected: 4 (double 2) + 6 = 10 → 10 points');
+    console.log('  Actual:', score8, 'points');
+    console.log('  Result:', score8 === 10 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Restore state
+    boardEnds = savedBoardEnds;
+    endIsDouble = savedEndIsDouble;
+    leftArmFilled = savedLeftArmFilled;
+    rightArmFilled = savedRightArmFilled;
+
+    console.log('=== Test Complete ===');
+}
+
+function addScore(isPlayer, points) {
+    if (isPlayer) {
+        playerScore += points;
+    } else {
+        cpuScore += points;
+    }
+    updateScoreDisplay();
+}
+
+function simulateMoveScore(domino, side) {
+    const matchingEnd = boardEnds[side];
+    let newEnd = null;
+    let newIsDouble = false;
+
+    // This logic must match the orientation logic in placeDomino
+    // For horizontal placement (left/right):
+    // - left: right side (bottom) connects to board, left side (top) becomes new open end
+    // - right: left side (top) connects to board, right side (bottom) becomes new open end
+    // For vertical placement (top/bottom):
+    // - top: bottom side (bottom) connects to board, top side (top) becomes new open end
+    // - bottom: top side (top) connects to board, bottom side (bottom) becomes new open end
+
+    if (side === 'left' || side === 'right') {
+        // Horizontal placement
+        if (side === 'left') {
+            // If domino.top matches, it gets flipped so bottom is on right (connecting)
+            // New open end is top (left side after potential flip)
+            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
+        } else {
+            // right placement
+            // If domino.bottom matches, it gets flipped so top is on left (connecting)
+            // New open end is bottom (right side after potential flip)
+            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
+        }
+    } else {
+        // Vertical placement (top/bottom)
+        if (side === 'top') {
+            // If domino.top matches, it gets flipped so bottom is on bottom (connecting)
+            // New open end is top (top side after potential flip)
+            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
+        } else {
+            // bottom placement
+            // If domino.bottom matches, it gets flipped so top is on top (connecting)
+            // New open end is bottom (bottom side after potential flip)
+            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
+        }
+    }
+
+    // Check if the new end is a double
+    newIsDouble = (domino.top === domino.bottom);
+
+    // Simulate the new board ends and double status
+    const simulatedEnds = { ...boardEnds };
+    const simulatedIsDouble = { ...endIsDouble };
+    simulatedEnds[side] = newEnd;
+    simulatedIsDouble[side] = newIsDouble;
+
+    // Simulate arm fill status (but don't open spinner top/bottom - they remain null until played on)
+    let simLeftArmFilled = leftArmFilled;
+    let simRightArmFilled = rightArmFilled;
+    if (side === 'left') simLeftArmFilled = true;
+    if (side === 'right') simRightArmFilled = true;
+
+    // Calculate sum using same logic as calculateScoreFromEnds
+    let sum = 0;
+
+    // Count left end (double if it's a double)
+    if (simulatedEnds.left !== null) {
+        sum += simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+    }
+
+    // Count right end (double if it's a double)
+    if (simulatedEnds.right !== null) {
+        sum += simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
+    }
+
+    // Count top and bottom based on spinner arm fill status
+    const armsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0) +
+                      (simulatedEnds.top !== null ? 1 : 0) + (simulatedEnds.bottom !== null ? 1 : 0);
+
+    if (armsFilled < 2) {
+        // 0 or 1 side arms filled: count both spinner top and bottom
+        if (simulatedEnds.top !== null) {
+            sum += simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
+        }
+        if (simulatedEnds.bottom !== null) {
+            sum += simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
+        }
+    } else if (armsFilled === 2 && simLeftArmFilled && simRightArmFilled) {
+        // Both side arms filled but no top/bottom played: ignore spinner top/bottom
+        // Don't add anything for top/bottom
+    } else {
+        // 3 or 4 arms filled, or top/bottom have been played: count played arms
+        if (simulatedEnds.top !== null) {
+            sum += simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
+        }
+        if (simulatedEnds.bottom !== null) {
+            sum += simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
+        }
+    }
+
+    // Return score if multiple of 5
+    if (sum % 5 === 0) {
+        return sum;
+    }
+    return 0;
 }
 
 function findStarter(playerHand, cpuHand) {
@@ -657,17 +947,32 @@ function showValidPlacementZones(domino) {
         }
     }
     
-    // Check top - use stored top end position
+    // Check top - use stored top end position, or spinner position if both side arms are filled
+    let topPos = null;
+    let topMatchingEnd = null;
+
     if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-        const topPos = endPositions.top;
+        topPos = endPositions.top;
+        topMatchingEnd = boardEnds.top;
+    } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
+        // Both side arms filled, top is now available using spinner position
+        const spinner = boardDominoes[0];
+        const spinnerTop = spinner.domino.top;
+        if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
+            topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+            topMatchingEnd = spinnerTop;
+        }
+    }
+
+    if (topPos) {
         // Calculate center of the domino we're attaching to
         const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
         const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
-        
+
         // Doubles should be placed horizontally (perpendicular to chain direction)
         const isDouble = domino.top === domino.bottom;
         const shouldPlaceHorizontally = isDouble;
-        
+
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on top/bottom
             const newHeight = 50; // Height of horizontal domino being placed
@@ -689,17 +994,32 @@ function showValidPlacementZones(domino) {
         }
     }
     
-    // Check bottom - use stored bottom end position
+    // Check bottom - use stored bottom end position, or spinner position if both side arms are filled
+    let bottomPos = null;
+    let bottomMatchingEnd = null;
+
     if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-        const bottomPos = endPositions.bottom;
+        bottomPos = endPositions.bottom;
+        bottomMatchingEnd = boardEnds.bottom;
+    } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
+        // Both side arms filled, bottom is now available using spinner position
+        const spinner = boardDominoes[0];
+        const spinnerBottom = spinner.domino.bottom;
+        if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
+            bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+            bottomMatchingEnd = spinnerBottom;
+        }
+    }
+
+    if (bottomPos) {
         // Calculate center of the domino we're attaching to
         const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
         const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
-        
+
         // Doubles should be placed horizontally (perpendicular to chain direction)
         const isDouble = domino.top === domino.bottom;
         const shouldPlaceHorizontally = isDouble;
-        
+
         if (shouldPlaceHorizontally) {
             // Horizontal placement for doubles on bottom
             const existingHeight = bottomPos.isHorizontal ? 50 : 100;
@@ -875,32 +1195,46 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     // Update board ends to the NEW exposed number
     lastPlayedSide = side; // Track which side was just played for scoring
     if (side === 'center') {
-        // Starting domino placement - all 4 sides should be open regardless of double/non-double
-        // This allows players to choose placement direction
+        // Starting domino placement (spinner)
+        // Spinner rule: only left and right are open initially
+        // Top and bottom become available after left and right are filled
         boardEnds.left = orientedDomino.top;
         boardEnds.right = orientedDomino.bottom;
-        boardEnds.top = orientedDomino.top;
-        boardEnds.bottom = orientedDomino.bottom;
+        boardEnds.top = null;  // Not available yet
+        boardEnds.bottom = null;  // Not available yet
         endPositions.left = { x, y, isHorizontal };
         endPositions.right = { x, y, isHorizontal };
-        endPositions.top = isHorizontal ? null : { x, y, isHorizontal };
-        endPositions.bottom = isHorizontal ? null : { x, y, isHorizontal };
+        endPositions.top = null;  // Not available yet
+        endPositions.bottom = null;  // Not available yet
+        // Spinner is always a double, so track it
+        endIsDouble.left = true;
+        endIsDouble.right = true;
+        endIsDouble.top = false;
+        endIsDouble.bottom = false;
     } else if (side === 'left') {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
+        leftArmFilled = true;
+        // Top and bottom remain null until a domino is actually placed on them
     } else if (side === 'right') {
         // For right placement, the right side of the domino is the NEW open end
         boardEnds.right = orientedDomino.bottom;
         endPositions.right = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
+        rightArmFilled = true;
+        // Top and bottom remain null until a domino is actually placed on them
     } else if (side === 'top') {
         // For top placement, the top side of the domino is the NEW open end
         boardEnds.top = orientedDomino.top;
         endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
     } else if (side === 'bottom') {
         // For bottom placement, the bottom side of the domino is the NEW open end
         boardEnds.bottom = orientedDomino.bottom;
         endPositions.bottom = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
     }
     
     // In a turning chain, when you place on one side, you might block adjacent sides
@@ -915,12 +1249,29 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     
     updateLastPlayedDomino(orientedDomino);
     recordMove();
-    
+
+    // All Fives scoring: calculate score from open ends
+    const scorePoints = calculateScoreFromEnds(side);
+    if (scorePoints > 0) {
+        addScore(wasPlayerTurn, scorePoints);
+        playScoreSound();
+    }
+
+    // Check if someone reached winning score
+    if (playerScore >= WINNING_SCORE) {
+        endGame('win', `You reached ${WINNING_SCORE} points!`, null, null);
+        return;
+    }
+    if (cpuScore >= WINNING_SCORE) {
+        endGame('lose', `CPU reached ${WINNING_SCORE} points.`, null, null);
+        return;
+    }
+
     renderRacks();
     selectedDomino = null;
-    
+
     isPlayerTurn = !wasPlayerTurn;
-    
+
     updateBoneyardCount();
     updateDrawButton();
     
@@ -999,16 +1350,26 @@ function cpuPlay() {
             }
         }
         
-        // Check top - use actual top end position
+        // Check top - use actual top end position, or spinner position if both side arms are filled
+        let topPos = null;
         if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-            const topPos = endPositions.top;
+            topPos = endPositions.top;
+        } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
+            const spinner = boardDominoes[0];
+            const spinnerTop = spinner.domino.top;
+            if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
+                topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+            }
+        }
+
+        if (topPos) {
             const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
             const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
-            
+
             // Doubles should be placed horizontally (perpendicular to chain direction)
             const isDouble = domino.top === domino.bottom;
             const shouldPlaceHorizontally = isDouble;
-            
+
             if (shouldPlaceHorizontally) {
                 // Horizontal placement for doubles on top
                 const newHeight = 50; // Height of horizontal domino being placed
@@ -1020,16 +1381,26 @@ function cpuPlay() {
             }
         }
         
-        // Check bottom - use actual bottom end position
+        // Check bottom - use actual bottom end position, or spinner position if both side arms are filled
+        let bottomPos = null;
         if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-            const bottomPos = endPositions.bottom;
+            bottomPos = endPositions.bottom;
+        } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
+            const spinner = boardDominoes[0];
+            const spinnerBottom = spinner.domino.bottom;
+            if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
+                bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+            }
+        }
+
+        if (bottomPos) {
             const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
             const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
-            
+
             // Doubles should be placed horizontally (perpendicular to chain direction)
             const isDouble = domino.top === domino.bottom;
             const shouldPlaceHorizontally = isDouble;
-            
+
             if (shouldPlaceHorizontally) {
                 const existingHeight = bottomPos.isHorizontal ? 50 : 100;
                 validMoves.push({ domino, side: 'bottom', x: dominoCenterX - 50, y: bottomPos.y + existingHeight, horizontal: true });
@@ -1042,28 +1413,39 @@ function cpuPlay() {
     });
     
     if (validMoves.length > 0) {
-        // Prioritize highest doubles, then highest total value
+        // Calculate score for each move
+        validMoves.forEach(move => {
+            move.score = simulateMoveScore(move.domino, move.side);
+        });
+
+        // Prioritize scoring moves, then highest doubles, then highest total value
         validMoves.sort((a, b) => {
+            // Prefer moves that score points
+            if (a.score > 0 && b.score === 0) return -1;
+            if (a.score === 0 && b.score > 0) return 1;
+            if (a.score > 0 && b.score > 0) return b.score - a.score;
+
             const aIsDouble = a.domino.top === a.domino.bottom;
             const bIsDouble = b.domino.top === b.domino.bottom;
             const aValue = a.domino.top + a.domino.bottom;
             const bValue = b.domino.top + b.domino.bottom;
-            
+
             // Prefer doubles
             if (aIsDouble && !bIsDouble) return -1;
             if (!aIsDouble && bIsDouble) return 1;
-            
+
             // If both are doubles or both are not doubles, prefer higher value
             return bValue - aValue;
         });
         
-        // Find the highest priority moves (same domino value and double status)
+        // Find the highest priority moves (same score, domino value and double status)
+        const bestScore = validMoves[0].score;
         const bestValue = validMoves[0].domino.top + validMoves[0].domino.bottom;
         const bestIsDouble = validMoves[0].domino.top === validMoves[0].domino.bottom;
         const bestMoves = validMoves.filter(m => {
             const isDouble = m.domino.top === m.domino.bottom;
             const value = m.domino.top + m.domino.bottom;
-            return isDouble === bestIsDouble && value === bestValue;
+            return m.score === bestScore && isDouble === bestIsDouble && value === bestValue;
         });
         
         // Randomly choose from the best moves to avoid always picking the same side
@@ -1453,6 +1835,11 @@ function playLoseSound() {
 function playDrawGameSound() {
     playTone(440, 0.15, 0.16);
     setTimeout(() => playTone(440, 0.15, 0.16), 200);
+}
+
+function playScoreSound() {
+    playTone(880, 0.1, 0.2);
+    setTimeout(() => playTone(1100, 0.1, 0.15), 80);
 }
 
 document.addEventListener('DOMContentLoaded', init);
