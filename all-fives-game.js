@@ -26,7 +26,7 @@ let hintTimeout = null;
 let lastPlayedSide = null;
 let playerScore = 0;
 let cpuScore = 0;
-const WINNING_SCORE = 100;
+const WINNING_SCORE = 150;
 let leftArmFilled = false;
 let rightArmFilled = false;
 
@@ -133,12 +133,29 @@ function calculateScoreFromEnds(playedSide) {
         sum += endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
     }
 
-    // Count top and bottom only if they have been played on (not just opened)
-    if (boardEnds.top !== null) {
-        sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
-    }
-    if (boardEnds.bottom !== null) {
-        sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+    // Count top and bottom based on spinner arm fill status
+    const armsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0) +
+                      (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
+
+    if (armsFilled < 2) {
+        // 0 or 1 side arms filled: count both spinner top and bottom
+        if (boardEnds.top !== null) {
+            sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+        }
+        if (boardEnds.bottom !== null) {
+            sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+        }
+    } else if (armsFilled === 2 && leftArmFilled && rightArmFilled) {
+        // Both side arms filled but no top/bottom played: ignore spinner top/bottom
+        // Don't add anything for top/bottom
+    } else {
+        // 3 or 4 arms filled, or top/bottom have been played: count played arms
+        if (boardEnds.top !== null) {
+            sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+        }
+        if (boardEnds.bottom !== null) {
+            sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+        }
     }
 
     if (sum % 5 === 0) {
@@ -284,6 +301,7 @@ function addScore(isPlayer, points) {
         cpuScore += points;
     }
     updateScoreDisplay();
+    checkScoreWinCondition();
 }
 
 function simulateMoveScore(domino, side) {
@@ -674,9 +692,15 @@ function resolveBlockedGame() {
     const cpuPips = countPipsInHand(cpuDominoes);
 
     if (playerPips < cpuPips) {
-        endGame('win', 'Game blocked — you had fewer pips left!', playerPips, cpuPips);
+        // Player wins blocked game, add CPU's pips to player's score
+        playerScore += cpuPips;
+        updateScoreDisplay();
+        endGame('win', `Game blocked — you had fewer pips! +${cpuPips} points from CPU's remaining pips.`, playerPips, cpuPips);
     } else if (cpuPips < playerPips) {
-        endGame('lose', 'Game blocked — CPU had fewer pips left.', playerPips, cpuPips);
+        // CPU wins blocked game, add player's pips to CPU's score
+        cpuScore += playerPips;
+        updateScoreDisplay();
+        endGame('lose', `Game blocked — CPU had fewer pips. +${playerPips} points from your remaining pips.`, playerPips, cpuPips);
     } else {
         endGame('draw', 'Game blocked — tied on remaining pips.', playerPips, cpuPips);
     }
@@ -686,11 +710,29 @@ function checkGameEndAfterMove(wasPlayerTurn) {
     if (gameOver) return;
 
     if (wasPlayerTurn && playerDominoes.length === 0) {
-        endGame('win', 'You played all your dominoes!', null, null);
+        // Player wins round, add CPU's remaining pips to player's score
+        const cpuPips = countPipsInHand(cpuDominoes);
+        playerScore += cpuPips;
+        updateScoreDisplay();
+        endGame('win', `You played all your dominoes! +${cpuPips} points from CPU's remaining pips.`, null, null);
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.', null, null);
+        // CPU wins round, add player's remaining pips to CPU's score
+        const playerPips = countPipsInHand(playerDominoes);
+        cpuScore += playerPips;
+        updateScoreDisplay();
+        endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
+    }
+}
+
+function checkScoreWinCondition() {
+    if (gameOver) return;
+
+    if (playerScore >= WINNING_SCORE) {
+        endGame('win', `You reached ${playerScore} points!`, null, null);
+    } else if (cpuScore >= WINNING_SCORE) {
+        endGame('lose', `CPU reached ${cpuScore} points.`, null, null);
     }
 }
 
@@ -721,6 +763,7 @@ function endGame(result, message, playerPips, cpuPips) {
     if (playerPips !== null) {
         msg.textContent += ` Your pips: ${playerPips}  ·  CPU pips: ${cpuPips}`;
     }
+    msg.textContent += ` Final Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
 
     overlay.classList.remove('hidden');
 }
