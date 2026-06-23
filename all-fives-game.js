@@ -302,26 +302,26 @@ function simulateMoveScore(domino, side) {
     if (side === 'left' || side === 'right') {
         // Horizontal placement
         if (side === 'left') {
-            // If domino.top matches, it gets flipped so bottom is on right (connecting)
-            // New open end is top (left side after potential flip)
-            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
+            // If domino.bottom matches, no flip needed, new open end is top
+            // If domino.top matches, flip so bottom connects, new open end is bottom
+            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
         } else {
             // right placement
-            // If domino.bottom matches, it gets flipped so top is on left (connecting)
-            // New open end is bottom (right side after potential flip)
-            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
+            // If domino.top matches, no flip needed, new open end is bottom
+            // If domino.bottom matches, flip so top connects, new open end is top
+            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
         }
     } else {
         // Vertical placement (top/bottom)
         if (side === 'top') {
-            // If domino.top matches, it gets flipped so bottom is on bottom (connecting)
-            // New open end is top (top side after potential flip)
-            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
+            // If domino.bottom matches, no flip needed, new open end is top
+            // If domino.top matches, flip so bottom connects, new open end is bottom
+            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
         } else {
             // bottom placement
-            // If domino.bottom matches, it gets flipped so top is on top (connecting)
-            // New open end is bottom (bottom side after potential flip)
-            newEnd = domino.bottom === matchingEnd ? domino.top : domino.bottom;
+            // If domino.top matches, no flip needed, new open end is bottom
+            // If domino.bottom matches, flip so top connects, new open end is top
+            newEnd = domino.top === matchingEnd ? domino.bottom : domino.top;
         }
     }
 
@@ -1140,37 +1140,45 @@ function placeDomino(domino, side, x, y, isHorizontal) {
             if (side === 'left') {
                 // For left placement, the right side of domino (bottom) connects to board
                 // The left side (top) becomes the new open end
-                if (domino.top === matchingEnd) {
-                    // Need to flip so matching number is on the right
+                if (domino.bottom === matchingEnd) {
+                    // bottom already matches, no flip needed
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.top === matchingEnd) {
+                    // Need to flip so matching number is on the right (bottom)
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
-                // If domino.bottom === matchingEnd, no flip needed - bottom is already on right
             } else if (side === 'right') {
                 // For right placement, the left side of domino (top) connects to board
                 // The right side (bottom) becomes the new open end
-                if (domino.bottom === matchingEnd) {
-                    // Need to flip so matching number is on the left
+                if (domino.top === matchingEnd) {
+                    // top already matches, no flip needed
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.bottom === matchingEnd) {
+                    // Need to flip so matching number is on the left (top)
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
-                // If domino.top === matchingEnd, no flip needed - top is already on left
             }
         } else {
             if (side === 'top') {
                 // For top placement, the bottom side of domino (bottom) connects to board
                 // The top side (top) becomes the new open end
-                if (domino.top === matchingEnd) {
+                if (domino.bottom === matchingEnd) {
+                    // bottom already matches, no flip needed
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.top === matchingEnd) {
                     // Need to flip so matching number is on the bottom
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
-                // If domino.bottom === matchingEnd, no flip needed - bottom is already on bottom
             } else if (side === 'bottom') {
                 // For bottom placement, the top side of domino (top) connects to board
                 // The bottom side (bottom) becomes the new open end
-                if (domino.bottom === matchingEnd) {
+                if (domino.top === matchingEnd) {
+                    // top already matches, no flip needed
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.bottom === matchingEnd) {
                     // Need to flip so matching number is on the top
                     orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
                 }
-                // If domino.top === matchingEnd, no flip needed - top is already on top
             }
         }
     }
