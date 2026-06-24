@@ -588,10 +588,6 @@ body {
         overflow: hidden;
     }
 
-    .camera-layer {
-        transform: scale(0.7);
-    }
-
     .board {
         min-width: 800px;
         min-height: 600px;
