@@ -802,6 +802,7 @@ body {
     max-width: 340px;
     width: 100%;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+    position: relative;
 }
 
 .game-over-modal h2 {
@@ -837,4 +838,56 @@ body {
 
 .game-over-btn:hover {
     transform: translateY(-2px);
+}
+
+.game-over-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #8b7765;
+    font-size: 1.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s, color 0.2s;
+    line-height: 1;
+    padding: 0;
+}
+
+.game-over-close-btn:hover {
+    background: rgba(139, 119, 101, 0.15);
+    color: #5c4a3d;
+}
+
+.new-game-mini-btn {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: linear-gradient(145deg, #8b5a2b, #a0522d);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 10;
+}
+
+.new-game-mini-btn.hidden {
+    display: none;
+}
+
+.new-game-mini-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139, 90, 43, 0.4);
 }

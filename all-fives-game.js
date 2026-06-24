@@ -53,6 +53,11 @@ function init() {
     setupHintSystem();
     updateScoreDisplay();
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
+    document.getElementById('closeGameOverBtn').addEventListener('click', () => {
+        document.getElementById('gameOverOverlay').classList.add('hidden');
+        document.getElementById('newGameMiniBtn').classList.remove('hidden');
+    });
+    document.getElementById('newGameMiniBtn').addEventListener('click', () => location.reload());
 
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1500);
@@ -1214,12 +1219,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     const dominoEl = createDominoElement(orientedDomino, isHorizontal, wasPlayerTurn ? 'player' : 'cpu');
     dominoEl.style.left = x + 'px';
     dominoEl.style.top = y + 'px';
-    
-    // Rotate domino 180 degrees when placed on bottom so it faces correctly
-    if (side === 'bottom' && !isHorizontal) {
-        dominoEl.style.transform = 'rotate(180deg)';
-    }
-    
+
     boardEl.appendChild(dominoEl);
     
     // Play placement sound
