@@ -36,7 +36,23 @@
         </div>
         
         <div class="player-rack">
+            <div class="rack-scroll-indicator left hidden" id="rackScrollLeft">
+                <div class="indicator-domino">
+                    <div class="indicator-half"></div>
+                    <div class="indicator-half"></div>
+                </div>
+                <div class="indicator-label" id="rackScrollLeftLabel"></div>
+                <div class="indicator-arrow">◀</div>
+            </div>
             <div class="rack" id="playerRack"></div>
+            <div class="rack-scroll-indicator right hidden" id="rackScrollRight">
+                <div class="indicator-domino">
+                    <div class="indicator-half"></div>
+                    <div class="indicator-half"></div>
+                </div>
+                <div class="indicator-label" id="rackScrollRightLabel"></div>
+                <div class="indicator-arrow">▶</div>
+            </div>
             <button class="new-game-mini-btn hidden" id="newGameMiniBtn">New Game</button>
         </div>
     </div>

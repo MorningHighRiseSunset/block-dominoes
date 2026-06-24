@@ -664,6 +664,60 @@ function renderRacks() {
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });
+
+    // Remove existing scroll listener to avoid duplicates
+    playerRack.removeEventListener('scroll', updateRackScrollIndicators);
+    playerRack.addEventListener('scroll', updateRackScrollIndicators);
+
+    updateRackScrollIndicators();
+}
+
+function updateRackScrollIndicators() {
+    const rack = document.getElementById('playerRack');
+    const leftIndicator = document.getElementById('rackScrollLeft');
+    const rightIndicator = document.getElementById('rackScrollRight');
+    const leftLabel = document.getElementById('rackScrollLeftLabel');
+    const rightLabel = document.getElementById('rackScrollRightLabel');
+
+    if (!rack || playerDominoes.length === 0) {
+        leftIndicator?.classList.add('hidden');
+        rightIndicator?.classList.add('hidden');
+        return;
+    }
+
+    const rackRect = rack.getBoundingClientRect();
+    const dominoElements = rack.querySelectorAll('.domino');
+
+    let firstVisibleIndex = -1;
+    let lastVisibleIndex = -1;
+
+    dominoElements.forEach((el, index) => {
+        const rect = el.getBoundingClientRect();
+        const isVisible = rect.right > rackRect.left && rect.left < rackRect.right;
+
+        if (isVisible) {
+            if (firstVisibleIndex === -1) firstVisibleIndex = index;
+            lastVisibleIndex = index;
+        }
+    });
+
+    // Update left indicator
+    if (firstVisibleIndex > 0) {
+        leftIndicator.classList.remove('hidden');
+        const hiddenDomino = playerDominoes[firstVisibleIndex - 1];
+        leftLabel.textContent = formatDominoLabel(hiddenDomino);
+    } else {
+        leftIndicator.classList.add('hidden');
+    }
+
+    // Update right indicator
+    if (lastVisibleIndex < playerDominoes.length - 1) {
+        rightIndicator.classList.remove('hidden');
+        const hiddenDomino = playerDominoes[lastVisibleIndex + 1];
+        rightLabel.textContent = formatDominoLabel(hiddenDomino);
+    } else {
+        rightIndicator.classList.add('hidden');
+    }
 }
 
 
