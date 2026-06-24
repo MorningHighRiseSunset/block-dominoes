@@ -1711,7 +1711,8 @@ function centerCameraOnBoard() {
         cameraAnimationFrame = null;
     }
     cameraAnimating = false;
-    camera = { x: 0, y: 0, zoom: 1 };
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    camera = { x: 0, y: 0, zoom: isMobile ? 0.7 : 1 };
     requestAnimationFrame(() => applyCamera());
 }
 
