@@ -716,6 +716,43 @@ function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
     return false;
 }
 
+function getSpinnerArmMatch(side) {
+    if (!leftArmFilled || !rightArmFilled || boardDominoes.length === 0) {
+        return null;
+    }
+
+    const spinner = boardDominoes[0];
+    if (side === 'top' && boardEnds.top === null) {
+        return {
+            matchingEnd: spinner.domino.top,
+            x: spinner.x,
+            y: spinner.y,
+            isHorizontal: spinner.isHorizontal
+        };
+    }
+
+    if (side === 'bottom' && boardEnds.bottom === null) {
+        const attachHeight = spinner.isHorizontal ? 50 : 100;
+        return {
+            matchingEnd: spinner.domino.bottom,
+            x: spinner.x,
+            y: spinner.y + attachHeight,
+            isHorizontal: spinner.isHorizontal
+        };
+    }
+
+    return null;
+}
+
+function getMatchingEndForSide(side) {
+    if (boardEnds[side] !== null) {
+        return boardEnds[side];
+    }
+
+    const spinnerArm = getSpinnerArmMatch(side);
+    return spinnerArm ? spinnerArm.matchingEnd : null;
+}
+
 function findValidPlacementsForDomino(domino) {
     if (boardDominoes.length === 0) {
         if (!startingDomino || domino.id !== startingDomino.id) {
@@ -772,11 +809,10 @@ function findValidPlacementsForDomino(domino) {
     let topPos = null;
     if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
         topPos = endPositions.top;
-    } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
-        const spinner = boardDominoes[0];
-        const spinnerTop = spinner.domino.top;
-        if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
-            topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+    } else {
+        const spinnerTop = getSpinnerArmMatch('top');
+        if (spinnerTop && (domino.top === spinnerTop.matchingEnd || domino.bottom === spinnerTop.matchingEnd)) {
+            topPos = spinnerTop;
         }
     }
 
@@ -802,11 +838,10 @@ function findValidPlacementsForDomino(domino) {
     let bottomPos = null;
     if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
         bottomPos = endPositions.bottom;
-    } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
-        const spinner = boardDominoes[0];
-        const spinnerBottom = spinner.domino.bottom;
-        if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
-            bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+    } else {
+        const spinnerBottom = getSpinnerArmMatch('bottom');
+        if (spinnerBottom && (domino.top === spinnerBottom.matchingEnd || domino.bottom === spinnerBottom.matchingEnd)) {
+            bottomPos = spinnerBottom;
         }
     }
 
@@ -1125,7 +1160,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
             isHorizontal = true;
         }
     } else {
-        const matchingEnd = boardEnds[side];
+        const matchingEnd = getMatchingEndForSide(side);
 
         // Orient the domino so the matching number connects to the board
         // The NEW exposed number will be the other side
