@@ -49,7 +49,7 @@ function init() {
     setupTouchScrolling();
     initAudio();
     centerCameraOnBoard();
-    updateDrawButton();
+    handlePlayerTurnStart();
     setupHintSystem();
     updateScoreDisplay();
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
@@ -123,29 +123,28 @@ function calculateScoreFromEnds(playedSide) {
     //    - If 3 or 4 arms filled: count the played arms
     let sum = 0;
 
-    // Count left end (double if it's a double)
-    if (boardEnds.left !== null) {
+    // Count left end (double if it's a double) - only if there's a domino there
+    if (boardEnds.left !== null && leftArmFilled) {
         sum += endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
     }
 
-    // Count right end (double if it's a double)
-    if (boardEnds.right !== null) {
+    // Count right end (double if it's a double) - only if there's a domino there
+    if (boardEnds.right !== null && rightArmFilled) {
         sum += endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
     }
 
     // Count top and bottom based on spinner arm fill status
-    const armsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0) +
-                      (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
+    const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
 
-    if (armsFilled < 2) {
-        // 0 or 1 side arms filled: count both spinner top and bottom
-        if (boardEnds.top !== null) {
-            sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+    if (sideArmsFilled < 2) {
+        // 0 or 1 side arms filled: count both spinner top and bottom (even if not played on)
+        // The spinner's values are stored in the first domino
+        const spinner = boardDominoes[0];
+        if (spinner) {
+            sum += spinner.domino.top;
+            sum += spinner.domino.bottom;
         }
-        if (boardEnds.bottom !== null) {
-            sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
-        }
-    } else if (armsFilled === 2 && leftArmFilled && rightArmFilled) {
+    } else if (sideArmsFilled === 2 && boardEnds.top === null && boardEnds.bottom === null) {
         // Both side arms filled but no top/bottom played: ignore spinner top/bottom
         // Don't add anything for top/bottom
     } else {
@@ -179,10 +178,12 @@ function testScoring() {
     const savedEndIsDouble = { ...endIsDouble };
     const savedLeftArmFilled = leftArmFilled;
     const savedRightArmFilled = rightArmFilled;
+    const savedBoardDominoes = boardDominoes;
 
     // Test 1: 1/3 - 3/3 (one side occupied)
     // Expected: 1 + 3 + 3 = 7 → 0 points
-    boardEnds = { left: 1, right: null, top: 3, bottom: 3 };
+    boardDominoes = [{ domino: { top: 3, bottom: 3 } }];
+    boardEnds = { left: 1, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: true, bottom: true };
     leftArmFilled = true;
     rightArmFilled = false;
@@ -195,6 +196,7 @@ function testScoring() {
 
     // Test 2: 1/3 - 3/3 - 3/6 (both sides occupied)
     // Expected: 1 + 6 = 7 → 0 points (spinner top/bottom ignored)
+    boardDominoes = [{ domino: { top: 3, bottom: 3 } }];
     boardEnds = { left: 1, right: 6, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
     leftArmFilled = true;
@@ -246,17 +248,17 @@ function testScoring() {
     console.log();
 
     // Test 6: User's example 4/4 <- 4/6 <- 6/6 (one side arm filled)
-    // In actual game, spinner top/bottom are null until played on
-    // Expected: 8 (double 4) = 8 → 0 points (only left end counts)
+    // Expected: 8 (double 4) + 6 + 6 (spinner) = 20 → 20 points
+    boardDominoes = [{ domino: { top: 6, bottom: 6 } }];
     boardEnds = { left: 4, right: null, top: null, bottom: null };
     endIsDouble = { left: true, right: false, top: false, bottom: false };
     leftArmFilled = true;
     rightArmFilled = false;
     const score6 = calculateScoreFromEnds('left');
     console.log('Test 6: User example 4/4 <- 4/6 <- 6/6 (one side arm filled)');
-    console.log('  Expected: 8 (double 4) = 8 → 0 points (spinner top/bottom null until played)');
+    console.log('  Expected: 8 + 6 + 6 = 20 → 20 points');
     console.log('  Actual:', score6, 'points');
-    console.log('  Result:', score6 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Result:', score6 === 20 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 7: User's example with both side arms filled (4/4 <- 4/6 <- 6/6 -> 3/6)
@@ -285,11 +287,51 @@ function testScoring() {
     console.log('  Result:', score8 === 10 ? 'PASS' : 'FAIL');
     console.log();
 
+    // Test 9: Opening double 5 scores 10 immediately
+    boardDominoes = [{ domino: { top: 5, bottom: 5 } }];
+    boardEnds = { left: 5, right: 5, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = false;
+    rightArmFilled = false;
+    const score9 = calculateScoreFromEnds('center');
+    console.log('Test 9: Opening double 5');
+    console.log('  Expected: 5 + 5 = 10 → 10 points');
+    console.log('  Actual:', score9, 'points');
+    console.log('  Result:', score9 === 10 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 10: Rules example 3/0 chain with both sides filled = 3 + 6 = 9 → 0 points
+    boardDominoes = [{ domino: { top: 3, bottom: 3 } }];
+    boardEnds = { left: 3, right: 6, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score10 = calculateScoreFromEnds('right');
+    console.log('Test 10: 3/0 chain ends 3 + 6 = 9');
+    console.log('  Expected: 0 points (not a multiple of 5)');
+    console.log('  Actual:', score10, 'points');
+    console.log('  Result:', score10 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 11: 6/2 played on double-2 spinner with one side filled
+    boardDominoes = [{ domino: { top: 2, bottom: 2 } }];
+    boardEnds = { left: 2, right: 6, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = false;
+    rightArmFilled = true;
+    const score11 = calculateScoreFromEnds('right');
+    console.log('Test 11: 6/2 after opponent led double 2');
+    console.log('  Expected: 6 + 2 + 2 = 10 → 10 points');
+    console.log('  Actual:', score11, 'points');
+    console.log('  Result:', score11 === 10 ? 'PASS' : 'FAIL');
+    console.log();
+
     // Restore state
     boardEnds = savedBoardEnds;
     endIsDouble = savedEndIsDouble;
     leftArmFilled = savedLeftArmFilled;
     rightArmFilled = savedRightArmFilled;
+    boardDominoes = savedBoardDominoes;
 
     console.log('=== Test Complete ===');
 }
@@ -361,33 +403,25 @@ function simulateMoveScore(domino, side) {
     // Calculate sum using same logic as calculateScoreFromEnds
     let sum = 0;
 
-    // Count left end (double if it's a double)
-    if (simulatedEnds.left !== null) {
+    if (simulatedEnds.left !== null && simLeftArmFilled) {
         sum += simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
     }
 
-    // Count right end (double if it's a double)
-    if (simulatedEnds.right !== null) {
+    if (simulatedEnds.right !== null && simRightArmFilled) {
         sum += simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
     }
 
-    // Count top and bottom based on spinner arm fill status
-    const armsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0) +
-                      (simulatedEnds.top !== null ? 1 : 0) + (simulatedEnds.bottom !== null ? 1 : 0);
+    const sideArmsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0);
 
-    if (armsFilled < 2) {
-        // 0 or 1 side arms filled: count both spinner top and bottom
-        if (simulatedEnds.top !== null) {
-            sum += simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
+    if (sideArmsFilled < 2) {
+        const spinner = boardDominoes[0];
+        if (spinner) {
+            sum += spinner.domino.top;
+            sum += spinner.domino.bottom;
         }
-        if (simulatedEnds.bottom !== null) {
-            sum += simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
-        }
-    } else if (armsFilled === 2 && simLeftArmFilled && simRightArmFilled) {
+    } else if (sideArmsFilled === 2 && simulatedEnds.top === null && simulatedEnds.bottom === null) {
         // Both side arms filled but no top/bottom played: ignore spinner top/bottom
-        // Don't add anything for top/bottom
     } else {
-        // 3 or 4 arms filled, or top/bottom have been played: count played arms
         if (simulatedEnds.top !== null) {
             sum += simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
         }
@@ -663,20 +697,143 @@ function countPipsInHand(dominoes) {
     return dominoes.reduce((total, domino) => total + domino.top + domino.bottom, 0);
 }
 
-function hasAnyValidMove(dominoes) {
-    if (boardDominoes.length === 0) {
-        return dominoes.some(d => startingDomino && d.id === startingDomino.id);
+function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
+    for (const placed of boardDominoes) {
+        const placedWidth = placed.isHorizontal ? 100 : 50;
+        const placedHeight = placed.isHorizontal ? 50 : 100;
+        const placedRight = placed.x + placedWidth;
+        const placedBottom = placed.y + placedHeight;
+        const zoneRight = zoneX + zoneWidth;
+        const zoneBottom = zoneY + zoneHeight;
+
+        if (!(zoneRight <= placed.x ||
+              zoneX >= placedRight ||
+              zoneBottom <= placed.y ||
+              zoneY >= placedBottom)) {
+            return true;
+        }
     }
-    return dominoes.some(domino =>
-        (boardEnds.left !== null && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) ||
-        (boardEnds.right !== null && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) ||
-        // Top and bottom are only available if both side arms are filled (spinner rule)
-        (leftArmFilled && rightArmFilled && boardEnds.top !== null && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) ||
-        (leftArmFilled && rightArmFilled && boardEnds.bottom !== null && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) ||
-        // Also check if top/bottom can be opened from spinner when both sides are filled
-        (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0 && (domino.top === boardDominoes[0].domino.top || domino.bottom === boardDominoes[0].domino.top)) ||
-        (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0 && (domino.top === boardDominoes[0].domino.bottom || domino.bottom === boardDominoes[0].domino.bottom))
-    );
+    return false;
+}
+
+function findValidPlacementsForDomino(domino) {
+    if (boardDominoes.length === 0) {
+        if (!startingDomino || domino.id !== startingDomino.id) {
+            return [];
+        }
+        const placement = getFirstMovePlacement(domino);
+        return [{ side: 'center', x: placement.x, y: placement.y, width: placement.width, height: placement.height, horizontal: placement.horizontal }];
+    }
+
+    const validZones = [];
+
+    if (boardEnds.left !== null && endPositions.left && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) {
+        const leftPos = endPositions.left;
+        const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
+        const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
+        const isDouble = domino.top === domino.bottom;
+
+        if (isDouble) {
+            const zoneX = leftPos.x - 50;
+            const zoneY = dominoCenterY - 50;
+            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            }
+        } else {
+            const zoneX = leftPos.x - 100;
+            const zoneY = dominoCenterY - 25;
+            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+            }
+        }
+    }
+
+    if (boardEnds.right !== null && endPositions.right && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) {
+        const rightPos = endPositions.right;
+        const dominoCenterX = rightPos.x + (rightPos.isHorizontal ? 50 : 25);
+        const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
+        const isDouble = domino.top === domino.bottom;
+
+        if (isDouble) {
+            const zoneX = rightPos.x;
+            const zoneY = dominoCenterY - 50;
+            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            }
+        } else {
+            const zoneX = rightPos.x;
+            const zoneY = dominoCenterY - 25;
+            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+            }
+        }
+    }
+
+    let topPos = null;
+    if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
+        topPos = endPositions.top;
+    } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
+        const spinner = boardDominoes[0];
+        const spinnerTop = spinner.domino.top;
+        if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
+            topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+        }
+    }
+
+    if (topPos) {
+        const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
+        const isDouble = domino.top === domino.bottom;
+
+        if (isDouble) {
+            const zoneX = dominoCenterX - 50;
+            const zoneY = topPos.y - 50;
+            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+            }
+        } else {
+            const zoneX = dominoCenterX - 25;
+            const zoneY = topPos.y - 100;
+            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            }
+        }
+    }
+
+    let bottomPos = null;
+    if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
+        bottomPos = endPositions.bottom;
+    } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
+        const spinner = boardDominoes[0];
+        const spinnerBottom = spinner.domino.bottom;
+        if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
+            bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
+        }
+    }
+
+    if (bottomPos) {
+        const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
+        const isDouble = domino.top === domino.bottom;
+
+        if (isDouble) {
+            const zoneX = dominoCenterX - 50;
+            const zoneY = bottomPos.y;
+            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+            }
+        } else {
+            const zoneX = dominoCenterX - 25;
+            const zoneY = bottomPos.y;
+            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            }
+        }
+    }
+
+    return validZones;
+}
+
+function hasAnyValidMove(dominoes) {
+    return dominoes.some(domino => findValidPlacementsForDomino(domino).length > 0);
 }
 
 function recordPass() {
@@ -825,8 +982,6 @@ function selectDomino(domino, element) {
 
 function updateBoneyardCount() {
     document.getElementById('boneyardCount').textContent = boneyard.length;
-    const drawBtn = document.getElementById('drawBtn');
-    drawBtn.disabled = boneyard.length === 0 || !isPlayerTurn;
 }
 
 function drawFromBoneyard() {
@@ -842,36 +997,26 @@ function drawFromBoneyard() {
     updateDrawButton();
 }
 
-function checkPlayerValidMoves() {
-    const hasValidMove = hasAnyValidMove(playerDominoes);
-    
-    const drawBtn = document.getElementById('drawBtn');
-    
-    if (!hasValidMove && boneyard.length > 0) {
-        drawBtn.disabled = false;
-    } else if (!hasValidMove && boneyard.length === 0) {
-        isPlayerTurn = false;
-        drawBtn.disabled = true;
-        recordPass();
-        if (!gameOver) setTimeout(cpuPlay, 1000);
-    } else {
-        drawBtn.disabled = true;
-    }
-}
-
 function updateDrawButton() {
     const drawBtn = document.getElementById('drawBtn');
     if (!isPlayerTurn || gameOver) {
         drawBtn.disabled = true;
         return;
     }
-    
+
     const hasValidMove = hasAnyValidMove(playerDominoes);
-    
-    if (!hasValidMove && boneyard.length > 0) {
-        drawBtn.disabled = false;
-    } else {
-        drawBtn.disabled = true;
+    drawBtn.disabled = hasValidMove || boneyard.length === 0;
+}
+
+function handlePlayerTurnStart() {
+    if (!isPlayerTurn || gameOver) return;
+
+    updateDrawButton();
+
+    if (!hasAnyValidMove(playerDominoes) && boneyard.length === 0) {
+        isPlayerTurn = false;
+        recordPass();
+        if (!gameOver) setTimeout(cpuPlay, 1000);
     }
 }
 
@@ -879,215 +1024,16 @@ function showValidPlacementZones(domino) {
     const board = document.getElementById('board');
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
 
+    if (!isPlayerTurn) return;
+
     if (boardDominoes.length === 0) {
-        if (!isPlayerTurn || !startingDomino || domino.id !== startingDomino.id) {
+        if (!startingDomino || domino.id !== startingDomino.id) {
             return;
         }
-
-        const placement = getFirstMovePlacement(domino);
-        ensureBoardBounds(placement.x, placement.y, placement.x + placement.width, placement.y + placement.height, false);
-
-        const zoneEl = document.createElement('div');
-        zoneEl.className = 'placement-zone';
-        zoneEl.dataset.side = 'center';
-        zoneEl.style.left = placement.x + 'px';
-        zoneEl.style.top = placement.y + 'px';
-        zoneEl.style.width = placement.width + 'px';
-        zoneEl.style.height = placement.height + 'px';
-
-        zoneEl.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (selectedDomino) {
-                placeDomino(selectedDomino, 'center', placement.x, placement.y, placement.horizontal);
-            }
-        });
-
-        board.appendChild(zoneEl);
-        requestAnimationFrame(() => updateZoneHintArrows());
-        return;
     }
 
-    const validZones = [];
-    
-    // Helper function to check if a zone overlaps with any placed domino
-    function checkOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
-        for (const placed of boardDominoes) {
-            const placedWidth = placed.isHorizontal ? 100 : 50;
-            const placedHeight = placed.isHorizontal ? 50 : 100;
-            const placedRight = placed.x + placedWidth;
-            const placedBottom = placed.y + placedHeight;
-            const zoneRight = zoneX + zoneWidth;
-            const zoneBottom = zoneY + zoneHeight;
-            
-            // Check if rectangles overlap
-            if (!(zoneRight <= placed.x || 
-                  zoneX >= placedRight || 
-                  zoneBottom <= placed.y || 
-                  zoneY >= placedBottom)) {
-                return true; // Overlap detected
-            }
-        }
-        return false; // No overlap
-    }
-    
-    // Check left - use stored left end position (now stores the OPEN end position)
-    if (boardEnds.left !== null && endPositions.left && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) {
-        const leftPos = endPositions.left;
-        // Calculate center of the domino we're attaching to
-        const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
-        
-        // Doubles should be placed vertically (perpendicular to chain direction)
-        const isDouble = domino.top === domino.bottom;
-        const shouldPlaceVertically = isDouble;
-        
-        if (shouldPlaceVertically) {
-            // Vertical placement for doubles on left/right
-            const newWidth = 50; // Width of vertical domino being placed
-            const zoneX = leftPos.x - newWidth;
-            const zoneY = dominoCenterY - 50;
-            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-            if (!overlaps) {
-                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            // Horizontal placement for non-doubles on left
-            const newWidth = 100; // Width of horizontal domino being placed
-            const zoneX = leftPos.x - newWidth;
-            const zoneY = dominoCenterY - 25;
-            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-            if (!overlaps) {
-                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        }
-    }
-    
-    // Check right - use stored right end position (now stores the OPEN end position)
-    if (boardEnds.right !== null && endPositions.right && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) {
-        const rightPos = endPositions.right;
-        // Calculate center of the domino we're attaching to
-        const dominoCenterX = rightPos.x + (rightPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
-        
-        // Doubles should be placed vertically (perpendicular to chain direction)
-        const isDouble = domino.top === domino.bottom;
-        const shouldPlaceVertically = isDouble;
-        
-        if (shouldPlaceVertically) {
-            // Vertical placement for doubles on right
-            const newWidth = 50; // Width of vertical domino being placed
-            const zoneX = rightPos.x;
-            const zoneY = dominoCenterY - 50;
-            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-            if (!overlaps) {
-                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            // Horizontal placement for non-doubles on right
-            const newWidth = 100; // Width of horizontal domino being placed
-            const zoneX = rightPos.x;
-            const zoneY = dominoCenterY - 25;
-            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-            if (!overlaps) {
-                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        }
-    }
-    
-    // Check top - use stored top end position (now stores the OPEN end position), or spinner position if both side arms are filled
-    let topPos = null;
-    let topMatchingEnd = null;
+    let validZones = findValidPlacementsForDomino(domino);
 
-    if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-        topPos = endPositions.top;
-        topMatchingEnd = boardEnds.top;
-    } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
-        // Both side arms filled, top is now available using spinner position
-        const spinner = boardDominoes[0];
-        const spinnerTop = spinner.domino.top;
-        if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
-            topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
-            topMatchingEnd = spinnerTop;
-        }
-    }
-
-    if (topPos) {
-        // Calculate center of the domino we're attaching to
-        const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
-
-        // Doubles should be placed horizontally (perpendicular to chain direction)
-        const isDouble = domino.top === domino.bottom;
-        const shouldPlaceHorizontally = isDouble;
-
-        if (shouldPlaceHorizontally) {
-            // Horizontal placement for doubles on top/bottom
-            const newHeight = 50; // Height of horizontal domino being placed
-            const zoneX = dominoCenterX - 50;
-            const zoneY = topPos.y - newHeight;
-            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-            if (!overlaps) {
-                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        } else {
-            // Vertical placement for non-doubles on top
-            const newHeight = 100; // Height of vertical domino being placed
-            const zoneX = dominoCenterX - 25;
-            const zoneY = topPos.y - newHeight;
-            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-            if (!overlaps) {
-                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        }
-    }
-    
-    // Check bottom - use stored bottom end position (now stores the OPEN end position), or spinner position if both side arms are filled
-    let bottomPos = null;
-    let bottomMatchingEnd = null;
-
-    if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-        bottomPos = endPositions.bottom;
-        bottomMatchingEnd = boardEnds.bottom;
-    } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
-        // Both side arms filled, bottom is now available using spinner position
-        const spinner = boardDominoes[0];
-        const spinnerBottom = spinner.domino.bottom;
-        if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
-            bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
-            bottomMatchingEnd = spinnerBottom;
-        }
-    }
-
-    if (bottomPos) {
-        // Calculate center of the domino we're attaching to
-        const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
-
-        // Doubles should be placed horizontally (perpendicular to chain direction)
-        const isDouble = domino.top === domino.bottom;
-        const shouldPlaceHorizontally = isDouble;
-
-        if (shouldPlaceHorizontally) {
-            // Horizontal placement for doubles on bottom
-            const newHeight = 50; // Height of horizontal domino being placed
-            const zoneX = dominoCenterX - 50;
-            const zoneY = bottomPos.y;
-            const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-            if (!overlaps) {
-                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        } else {
-            // Vertical placement for non-doubles on bottom
-            const newHeight = 100; // Height of vertical domino being placed
-            const zoneX = dominoCenterX - 25;
-            const zoneY = bottomPos.y;
-            const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-            if (!overlaps) {
-                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        }
-    }
-    
     const contentBounds = getBoardContentBounds(validZones);
     if (contentBounds) {
         const { shiftX, shiftY } = ensureBoardBounds(
@@ -1097,10 +1043,11 @@ function showValidPlacementZones(domino) {
             contentBounds.maxY,
             false
         );
-        validZones.forEach(zone => {
-            zone.x += shiftX;
-            zone.y += shiftY;
-        });
+        validZones = validZones.map(zone => ({
+            ...zone,
+            x: zone.x + shiftX,
+            y: zone.y + shiftY
+        }));
     }
 
     validZones.forEach(zone => {
@@ -1111,18 +1058,17 @@ function showValidPlacementZones(domino) {
         zoneEl.style.top = zone.y + 'px';
         zoneEl.style.width = zone.width + 'px';
         zoneEl.style.height = zone.height + 'px';
-        
+
         zoneEl.addEventListener('click', (e) => {
             e.stopPropagation();
             if (selectedDomino) {
                 placeDomino(selectedDomino, zone.side, zone.x, zone.y, zone.horizontal);
             }
         });
-        
+
         board.appendChild(zoneEl);
     });
-    
-    // If no valid zones for this domino, check if player needs to draw
+
     if (validZones.length === 0) {
         updateDrawButton();
     } else {
@@ -1262,13 +1208,15 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         boardEnds.right = orientedDomino.bottom;
         boardEnds.top = null;  // Not available yet
         boardEnds.bottom = null;  // Not available yet
+        const spinnerWidth = isHorizontal ? 100 : 50;
         endPositions.left = { x, y, isHorizontal };
-        endPositions.right = { x, y, isHorizontal };
+        endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
         endPositions.top = null;  // Not available yet
         endPositions.bottom = null;  // Not available yet
-        // Spinner is always a double, so track it
-        endIsDouble.left = true;
-        endIsDouble.right = true;
+        // Spinner is a double, but it's not at the end of a chain
+        // Double-counting only applies to doubles at chain ends, not the spinner
+        endIsDouble.left = false;
+        endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
     } else if (side === 'left') {
@@ -1341,7 +1289,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     isPlayerTurn = !wasPlayerTurn;
 
     updateBoneyardCount();
-    updateDrawButton();
+    handlePlayerTurnStart();
     
     const placedWidth = isHorizontal ? 100 : 50;
     const placedHeight = isHorizontal ? 50 : 100;
@@ -1372,176 +1320,14 @@ function cpuPlay() {
         return;
     }
     
-    // Helper function to check if a zone overlaps with any placed domino
-    function checkOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
-        for (const placed of boardDominoes) {
-            const placedWidth = placed.isHorizontal ? 100 : 50;
-            const placedHeight = placed.isHorizontal ? 50 : 100;
-            const placedRight = placed.x + placedWidth;
-            const placedBottom = placed.y + placedHeight;
-            const zoneRight = zoneX + zoneWidth;
-            const zoneBottom = zoneY + zoneHeight;
-            
-            // Check if rectangles overlap
-            if (!(zoneRight <= placed.x || 
-                  zoneX >= placedRight || 
-                  zoneBottom <= placed.y || 
-                  zoneY >= placedBottom)) {
-                return true; // Overlap detected
-            }
-        }
-        return false; // No overlap
-    }
-    
-    // Find valid moves for CPU using actual end positions (all 4 directions with turning)
     let validMoves = [];
-    
+
     cpuDominoes.forEach(domino => {
-        // Check left - use actual left end position (now stores the OPEN end position)
-        if (boardEnds.left !== null && endPositions.left && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) {
-            const leftPos = endPositions.left;
-            const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
-            const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
-            
-            // Doubles should be placed vertically (perpendicular to chain direction)
-            const isDouble = domino.top === domino.bottom;
-            const shouldPlaceVertically = isDouble;
-            
-            if (shouldPlaceVertically) {
-                // Vertical placement for doubles on left
-                const newWidth = 50; // Width of vertical domino being placed
-                const zoneX = leftPos.x - newWidth;
-                const zoneY = dominoCenterY - 50;
-                const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'left', x: zoneX, y: zoneY, horizontal: false });
-                }
-            } else {
-                // Horizontal placement for non-doubles on left
-                const newWidth = 100; // Width of horizontal domino being placed
-                const zoneX = leftPos.x - newWidth;
-                const zoneY = dominoCenterY - 25;
-                const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'left', x: zoneX, y: zoneY, horizontal: true });
-                }
-            }
-        }
-        
-        // Check right - use actual right end position (now stores the OPEN end position)
-        if (boardEnds.right !== null && endPositions.right && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) {
-            const rightPos = endPositions.right;
-            const dominoCenterX = rightPos.x + (rightPos.isHorizontal ? 50 : 25);
-            const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
-            
-            // Doubles should be placed vertically (perpendicular to chain direction)
-            const isDouble = domino.top === domino.bottom;
-            const shouldPlaceVertically = isDouble;
-            
-            if (shouldPlaceVertically) {
-                // Vertical placement for doubles on right
-                const newWidth = 50; // Width of vertical domino being placed
-                const zoneX = rightPos.x;
-                const zoneY = dominoCenterY - 50;
-                const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'right', x: zoneX, y: zoneY, horizontal: false });
-                }
-            } else {
-                // Horizontal placement for non-doubles on right
-                const newWidth = 100; // Width of horizontal domino being placed
-                const zoneX = rightPos.x;
-                const zoneY = dominoCenterY - 25;
-                const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'right', x: zoneX, y: zoneY, horizontal: true });
-                }
-            }
-        }
-        
-        // Check top - use actual top end position (now stores the OPEN end position), or spinner position if both side arms are filled
-        let topPos = null;
-        if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-            topPos = endPositions.top;
-        } else if (leftArmFilled && rightArmFilled && boardEnds.top === null && boardDominoes.length > 0) {
-            const spinner = boardDominoes[0];
-            const spinnerTop = spinner.domino.top;
-            if (domino.top === spinnerTop || domino.bottom === spinnerTop) {
-                topPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
-            }
-        }
-
-        if (topPos) {
-            const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
-            const dominoCenterY = topPos.y + (topPos.isHorizontal ? 25 : 50);
-
-            // Doubles should be placed horizontally (perpendicular to chain direction)
-            const isDouble = domino.top === domino.bottom;
-            const shouldPlaceHorizontally = isDouble;
-
-            if (shouldPlaceHorizontally) {
-                // Horizontal placement for doubles on top
-                const newHeight = 50; // Height of horizontal domino being placed
-                const zoneX = dominoCenterX - 50;
-                const zoneY = topPos.y - newHeight;
-                const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-                }
-            } else {
-                // Vertical placement for non-doubles on top
-                const newHeight = 100; // Height of vertical domino being placed
-                const zoneX = dominoCenterX - 25;
-                const zoneY = topPos.y - newHeight;
-                const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'top', x: zoneX, y: zoneY, horizontal: false });
-                }
-            }
-        }
-        
-        // Check bottom - use actual bottom end position (now stores the OPEN end position), or spinner position if both side arms are filled
-        let bottomPos = null;
-        if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-            bottomPos = endPositions.bottom;
-        } else if (leftArmFilled && rightArmFilled && boardEnds.bottom === null && boardDominoes.length > 0) {
-            const spinner = boardDominoes[0];
-            const spinnerBottom = spinner.domino.bottom;
-            if (domino.top === spinnerBottom || domino.bottom === spinnerBottom) {
-                bottomPos = { x: spinner.x, y: spinner.y, isHorizontal: spinner.isHorizontal };
-            }
-        }
-
-        if (bottomPos) {
-            const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
-            const dominoCenterY = bottomPos.y + (bottomPos.isHorizontal ? 25 : 50);
-
-            // Doubles should be placed horizontally (perpendicular to chain direction)
-            const isDouble = domino.top === domino.bottom;
-            const shouldPlaceHorizontally = isDouble;
-
-            if (shouldPlaceHorizontally) {
-                // Horizontal placement for doubles on bottom
-                const newHeight = 50; // Height of horizontal domino being placed
-                const zoneX = dominoCenterX - 50;
-                const zoneY = bottomPos.y;
-                const overlaps = checkOverlap(zoneX, zoneY, 100, 50);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'bottom', x: zoneX, y: zoneY, horizontal: true });
-                }
-            } else {
-                // Vertical placement for non-doubles on bottom
-                const newHeight = 100; // Height of vertical domino being placed
-                const zoneX = dominoCenterX - 25;
-                const zoneY = bottomPos.y;
-                const overlaps = checkOverlap(zoneX, zoneY, 50, 100);
-                if (!overlaps) {
-                    validMoves.push({ domino, side: 'bottom', x: zoneX, y: zoneY, horizontal: false });
-                }
-            }
-        }
+        findValidPlacementsForDomino(domino).forEach(zone => {
+            validMoves.push({ domino, side: zone.side, x: zone.x, y: zone.y, horizontal: zone.horizontal });
+        });
     });
-    
+
     if (validMoves.length > 0) {
         // Calculate score for each move
         validMoves.forEach(move => {
@@ -1593,7 +1379,7 @@ function cpuPlay() {
         } else {
             isPlayerTurn = true;
             updateBoneyardCount();
-            updateDrawButton();
+            handlePlayerTurnStart();
             recordPass();
         }
     }

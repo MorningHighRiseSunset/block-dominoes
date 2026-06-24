@@ -4,17 +4,33 @@
     box-sizing: border-box;
 }
 
+:root {
+    --rack-tile-w: 38px;
+    --rack-tile-h: 76px;
+    --rack-gap: 3px;
+    --rack-pip-grid: 22px;
+    --rack-pip-dot: 5px;
+    --rack-pip-gap: 2px;
+    --player-rack-height: 118px;
+    --player-rack-pad-top: 10px;
+    --player-rack-pad-bottom: 14px;
+}
+
 body {
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #8b5a2b 0%, #a0522d 30%, #cd853f 60%, #deb887 100%);
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 .game-container {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     max-width: 100%;
     overflow: hidden;
     border: none;
@@ -137,13 +153,15 @@ body {
 }
 
 .player-rack {
-    height: 170px;
+    height: var(--player-rack-height);
+    min-height: var(--player-rack-height);
     background: linear-gradient(180deg, #fff8e7 0%, #f5e6d3 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 0 16px;
+    justify-content: flex-end;
+    padding: var(--player-rack-pad-top) 16px var(--player-rack-pad-bottom);
+    padding-bottom: calc(var(--player-rack-pad-bottom) + env(safe-area-inset-bottom, 0px));
     flex-shrink: 0;
     border-top: 3px solid #8b7765;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
@@ -152,10 +170,10 @@ body {
 }
 
 .board-container {
-    height: calc(100vh - 210px);
+    flex: 1;
+    min-height: 0;
     background: radial-gradient(ellipse at center, #fff8e7 0%, #f5e6d3 50%, #e8d4bc 100%);
     position: relative;
-    flex-shrink: 0;
     min-width: 400px;
     overflow: hidden;
     box-shadow: inset 0 0 30px rgba(139, 119, 101, 0.2);
@@ -333,12 +351,15 @@ body {
 
 .rack {
     display: flex;
-    gap: 0;
+    gap: var(--rack-gap);
     flex-wrap: nowrap;
     justify-content: center;
-    min-height: 150px;
-    align-items: flex-start;
-    padding-top: 10px;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 100%;
+    min-height: var(--rack-tile-h);
+    padding: 0;
+    touch-action: manipulation;
 }
 
 .domino {
@@ -366,30 +387,48 @@ body {
 .rack .domino {
     position: relative;
     flex-shrink: 0;
-    margin: 0 2px 0 0;
+    margin: 0;
     padding: 0;
-    border: 1px solid #2d2d2d;
+    border: 2px solid #2d2d2d;
     box-shadow: none;
-    width: 35px;
-    height: 70px;
+    width: var(--rack-tile-w);
+    height: var(--rack-tile-h);
+    transform: none;
+    -webkit-transform: none;
 }
 
-.rack .domino:hover {
-    transform: translateY(-5px);
-}
-
-.rack .pips {
-    width: 20px;
-    height: 20px;
-    margin-left: -3px;
+.rack .domino:hover,
+.rack .domino:active {
     margin-top: -3px;
 }
 
+.rack .pips {
+    width: var(--rack-pip-grid);
+    height: var(--rack-pip-grid);
+    gap: var(--rack-pip-gap);
+    margin-left: 0;
+    margin-top: 0;
+    padding: 2px;
+}
+
 .rack .pip {
-    width: 5px;
-    height: 5px;
+    width: var(--rack-pip-dot);
+    height: var(--rack-pip-dot);
     background: radial-gradient(circle at 30% 30%, #888888 0%, #444446 40%, #1a1a1a 100%);
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6), 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.rack .domino-half {
+    border-bottom-width: 1px;
+}
+
+.rack .domino.horizontal {
+    width: calc(var(--rack-tile-h) * 2);
+    height: var(--rack-tile-w);
+}
+
+.rack .domino.horizontal .domino-half:first-child {
+    border-right-width: 1px;
 }
 
 
@@ -492,20 +531,31 @@ body {
     position: relative;
 }
 
-.selected::after {
+.rack .domino.selected::after {
     content: '';
     position: absolute;
     top: -3px;
     left: -3px;
     right: -3px;
     bottom: -3px;
-    border: 3px solid #8b7765;
+    border: 2px solid #8b7765;
     border-radius: 4px;
     pointer-events: none;
 }
 
-/* Mobile responsiveness */
-@media (max-width: 768px) and (orientation: portrait) {
+/* Mobile responsiveness — same tile sizing logic on all phones/tablets */
+@media (max-width: 768px) {
+    :root {
+        --rack-tile-w: 40px;
+        --rack-tile-h: 80px;
+        --rack-gap: 3px;
+        --rack-pip-grid: 23px;
+        --rack-pip-dot: 5.5px;
+        --player-rack-height: 108px;
+        --player-rack-pad-top: 14px;
+        --player-rack-pad-bottom: 12px;
+    }
+
     .score-bar {
         padding: 6px 8px;
         gap: 4px;
@@ -524,15 +574,7 @@ body {
         padding: 2px 6px;
     }
     
-    .player-rack {
-        height: 280px;
-        padding: 0 8px;
-        justify-content: center;
-        margin-bottom: 0;
-    }
-    
     .board-container {
-        height: calc(100vh - 320px);
         min-width: 100%;
         overflow: hidden;
     }
@@ -555,15 +597,6 @@ body {
     .draw-btn {
         padding: 6px 10px;
         font-size: 0.75rem;
-    }
-    
-    .rack {
-        gap: 0;
-        flex-wrap: nowrap;
-    }
-    
-    .rack .domino {
-        transform: scale(0.38);
     }
     
     .last-played-container {
@@ -589,6 +622,16 @@ body {
 }
 
 @media (max-width: 768px) and (orientation: landscape) {
+    :root {
+        --rack-tile-w: 36px;
+        --rack-tile-h: 72px;
+        --rack-pip-grid: 21px;
+        --rack-pip-dot: 5px;
+        --player-rack-height: 96px;
+        --player-rack-pad-top: 10px;
+        --player-rack-pad-bottom: 10px;
+    }
+
     .score-bar {
         padding: 8px 12px;
         gap: 6px;
@@ -607,24 +650,6 @@ body {
         padding: 3px 8px;
     }
     
-    .player-rack {
-        height: 220px;
-        padding: 0 12px;
-        justify-content: center;
-        margin-bottom: 0;
-    }
-    
-    .board-container {
-        height: calc(100vh - 260px);
-        min-width: 100%;
-        overflow: hidden;
-    }
-    
-    .board {
-        min-width: 800px;
-        min-height: 600px;
-    }
-    
     .boneyard {
         padding: 6px 10px;
         margin-left: 10px;
@@ -638,15 +663,6 @@ body {
     .draw-btn {
         padding: 8px 14px;
         font-size: 0.85rem;
-    }
-    
-    .rack {
-        gap: 0;
-        flex-wrap: nowrap;
-    }
-    
-    .rack .domino {
-        transform: scale(0.48);
     }
     
     .last-played-container {
@@ -671,26 +687,29 @@ body {
     }
 }
 
-/* Extra small screens (older Android phones, iPhone SE, etc.) */
+/* Narrow phones — slightly smaller tiles so 7 fit comfortably */
+@media (max-width: 390px) {
+    :root {
+        --rack-tile-w: 38px;
+        --rack-tile-h: 76px;
+        --rack-gap: 2px;
+        --rack-pip-grid: 22px;
+        --rack-pip-dot: 5px;
+    }
+}
+
 @media (max-width: 375px) {
-    .player-rack {
-        height: 240px;
-        margin-bottom: 0;
+    :root {
+        --rack-tile-w: 36px;
+        --rack-tile-h: 72px;
+        --rack-gap: 2px;
+        --rack-pip-grid: 21px;
+        --rack-pip-dot: 4.5px;
+        --player-rack-height: 104px;
+        --player-rack-pad-top: 12px;
+        --player-rack-pad-bottom: 10px;
     }
-    
-    .board-container {
-        height: calc(100vh - 280px);
-    }
-    
-    .rack .domino {
-        transform: scale(0.36);
-    }
-    
-    .rack {
-        gap: 0;
-        flex-wrap: nowrap;
-    }
-    
+
     .score-bar {
         padding: 4px 6px;
         gap: 3px;
@@ -703,27 +722,6 @@ body {
     .score {
         font-size: 0.75rem;
     }
-}
-
-/* Samsung/Android specific fixes */
-@supports (-webkit-touch-callout: none) {
-    .player-rack {
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-    }
-
-    .rack .domino {
-        -webkit-backface-visibility: hidden;
-        backface-visibility: hidden;
-        -webkit-transform: translateZ(0);
-        transform: translateZ(0);
-        margin: 0 2px 0 0;
-    }
-}
-
-/* Prevent unwanted zooming on mobile */
-.rack {
-    touch-action: manipulation;
 }
 
 .player-rack {
