@@ -5,7 +5,7 @@
 }
 
 :root {
-    --rack-tile-w: 38px;
+    --rack-tile-w: 38px;                                
     --rack-tile-h: 76px;
     --rack-gap: 3px;
     --rack-pip-grid: 22px;
