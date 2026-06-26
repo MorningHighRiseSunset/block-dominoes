@@ -110,15 +110,6 @@ function getDominoRank(domino) {
     return domino.top + domino.bottom;
 }
 
-function calculateOpenEndsSum() {
-    let sum = 0;
-    if (boardEnds.left !== null) sum += boardEnds.left;
-    if (boardEnds.right !== null) sum += boardEnds.right;
-    if (boardEnds.top !== null) sum += boardEnds.top;
-    if (boardEnds.bottom !== null) sum += boardEnds.bottom;
-    return sum;
-}
-
 function calculateScoreFromEnds(playedSide) {
     // Muggins All 5s scoring rules:
     // 1. If an end has a double, count both sides (double the value)
@@ -261,7 +252,7 @@ function testScoring() {
     rightArmFilled = false;
     const score6 = calculateScoreFromEnds('left');
     console.log('Test 6: User example 4/4 <- 4/6 <- 6/6 (one side arm filled)');
-    console.log('  Expected: 8 + 6 + 6 = 20 → 20 points');
+    console.log('  Expected: 8 (double 4) + 6 + 6 (spinner) = 20 → 20 points');
     console.log('  Actual:', score6, 'points');
     console.log('  Result:', score6 === 20 ? 'PASS' : 'FAIL');
     console.log();
@@ -296,8 +287,8 @@ function testScoring() {
     boardDominoes = [{ domino: { top: 5, bottom: 5 } }];
     boardEnds = { left: 5, right: 5, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
-    leftArmFilled = false;
-    rightArmFilled = false;
+    leftArmFilled = true;
+    rightArmFilled = true;
     const score9 = calculateScoreFromEnds('center');
     console.log('Test 9: Opening double 5');
     console.log('  Expected: 5 + 5 = 10 → 10 points');
@@ -330,6 +321,7 @@ function testScoring() {
     console.log('  Actual:', score11, 'points');
     console.log('  Result:', score11 === 10 ? 'PASS' : 'FAIL');
     console.log();
+
 
     // Restore state
     boardEnds = savedBoardEnds;
@@ -950,12 +942,18 @@ function resolveBlockedGame() {
         // Player wins blocked game, add CPU's pips to player's score
         playerScore += cpuPips;
         updateScoreDisplay();
-        endGame('win', `Game blocked — you had fewer pips! +${cpuPips} points from CPU's remaining pips.`, playerPips, cpuPips);
+        checkScoreWinCondition();
+        if (!gameOver) {
+            endGame('win', `Game blocked — you had fewer pips! +${cpuPips} points from CPU's remaining pips.`, playerPips, cpuPips);
+        }
     } else if (cpuPips < playerPips) {
         // CPU wins blocked game, add player's pips to CPU's score
         cpuScore += playerPips;
         updateScoreDisplay();
-        endGame('lose', `Game blocked — CPU had fewer pips. +${playerPips} points from your remaining pips.`, playerPips, cpuPips);
+        checkScoreWinCondition();
+        if (!gameOver) {
+            endGame('lose', `Game blocked — CPU had fewer pips. +${playerPips} points from your remaining pips.`, playerPips, cpuPips);
+        }
     } else {
         endGame('draw', 'Game blocked — tied on remaining pips.', playerPips, cpuPips);
     }
@@ -969,7 +967,10 @@ function checkGameEndAfterMove(wasPlayerTurn) {
         const cpuPips = countPipsInHand(cpuDominoes);
         playerScore += cpuPips;
         updateScoreDisplay();
-        endGame('win', `You played all your dominoes! +${cpuPips} points from CPU's remaining pips.`, null, null);
+        checkScoreWinCondition();
+        if (!gameOver) {
+            endGame('win', `You played all your dominoes! +${cpuPips} points from CPU's remaining pips.`, null, null);
+        }
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
@@ -977,7 +978,10 @@ function checkGameEndAfterMove(wasPlayerTurn) {
         const playerPips = countPipsInHand(playerDominoes);
         cpuScore += playerPips;
         updateScoreDisplay();
-        endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
+        checkScoreWinCondition();
+        if (!gameOver) {
+            endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
+        }
     }
 }
 
@@ -1110,7 +1114,9 @@ function handlePlayerTurnStart() {
     if (!hasAnyValidMove(playerDominoes) && boneyard.length === 0) {
         isPlayerTurn = false;
         recordPass();
-        if (!gameOver) setTimeout(cpuPlay, 1000);
+        if (!gameOver) {
+            setTimeout(cpuPlay, 1000);
+        }
     }
 }
 
@@ -1362,15 +1368,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         playScoreSound();
     }
 
-    // Check if someone reached winning score
-    if (playerScore >= WINNING_SCORE) {
-        endGame('win', `You reached ${WINNING_SCORE} points!`, null, null);
-        return;
-    }
-    if (cpuScore >= WINNING_SCORE) {
-        endGame('lose', `CPU reached ${WINNING_SCORE} points.`, null, null);
-        return;
-    }
+    // Check if game ended from scoring
+    if (gameOver) return;
 
     renderRacks();
     selectedDomino = null;
@@ -1396,7 +1395,13 @@ function cpuPlay() {
     if (gameOver) return;
 
     if (cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.', null, null);
+        const playerPips = countPipsInHand(playerDominoes);
+        cpuScore += playerPips;
+        updateScoreDisplay();
+        checkScoreWinCondition();
+        if (!gameOver) {
+            endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
+        }
         return;
     }
 
