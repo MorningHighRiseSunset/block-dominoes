@@ -906,6 +906,8 @@ body {
     font-weight: bold;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    display: block;
+    margin: 0 auto;
 }
 
 .game-over-btn:hover {

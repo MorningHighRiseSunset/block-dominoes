@@ -24,9 +24,6 @@ let passesInRow = 0;
 let hintIndex = 0;
 let hintTimeout = null;
 let lastPlayedSide = null;
-let playerScore = 0;
-let cpuScore = 0;
-const WINNING_SCORE = 150;
 let leftArmFilled = false;
 let rightArmFilled = false;
 
@@ -48,10 +45,10 @@ function init() {
     showTurnIndicator(starter);
     setupTouchScrolling();
     initAudio();
+    document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
     centerCameraOnBoard();
     handlePlayerTurnStart();
     setupHintSystem();
-    updateScoreDisplay();
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
     document.getElementById('closeGameOverBtn').addEventListener('click', () => {
         document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -159,10 +156,6 @@ function calculateScoreFromEnds(playedSide) {
     return 0;
 }
 
-function updateScoreDisplay() {
-    document.getElementById('playerScore').textContent = playerScore;
-    document.getElementById('cpuScore').textContent = cpuScore;
-}
 
 // Test function to verify scoring against rules examples
 // Call this from browser console: testScoring()
@@ -517,15 +510,6 @@ function testScoring() {
     console.log('=== Test Complete ===');
 }
 
-function addScore(isPlayer, points) {
-    if (isPlayer) {
-        playerScore += points;
-    } else {
-        cpuScore += points;
-    }
-    updateScoreDisplay();
-    checkScoreWinCondition();
-}
 
 function simulateMoveScore(domino, side) {
     const matchingEnd = boardEnds[side];
@@ -783,15 +767,87 @@ function getBoardContentBounds(extraZones = []) {
 }
 
 function dealDominoes() {
-    const allDominoes = createDominoSet();
+    // Gather all dominoes from previous hand (board, hands, boneyard)
+    const allDominoes = [
+        ...boardDominoes.map(d => d.domino),
+        ...playerDominoes,
+        ...cpuDominoes,
+        ...boneyard
+    ];
+    
+    // If this is the first hand (no dominoes yet), create fresh set
+    if (allDominoes.length === 0) {
+        allDominoes.push(...createDominoSet());
+    }
+    
+    // Shuffle the gathered dominoes
+    shuffle(allDominoes);
 
     playerDominoes = allDominoes.slice(0, 7);
     cpuDominoes = allDominoes.slice(7, 14);
     boneyard = allDominoes.slice(14);
 
     updateBoneyardCount();
+}
 
-    document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
+function startNewHand(message) {
+    // Show round result message
+    const overlay = document.getElementById('gameOverOverlay');
+    const title = document.getElementById('gameOverTitle');
+    const msg = document.getElementById('gameOverMessage');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+    
+    title.textContent = 'Round Complete';
+    msg.textContent = message + ` Current Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
+    overlay.classList.remove('hidden');
+    
+    // Hide play again button for round complete (only show for game over)
+    playAgainBtn.style.display = 'none';
+    
+    // Clear board state
+    boardDominoes = [];
+    boardEnds = { left: null, right: null, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    endPositions = { left: null, right: null, top: null, bottom: null };
+    leftArmFilled = false;
+    rightArmFilled = false;
+    passesInRow = 0;
+    selectedDomino = null;
+    lastPlayedSide = null;
+    isShowingZones = false;
+    
+    // Clear visual board
+    const board = getBoardElement();
+    if (board) {
+        board.innerHTML = '';
+    }
+    
+    // Deal new dominoes
+    dealDominoes();
+    
+    // Find starter for new hand
+    const starter = findStarter(playerDominoes, cpuDominoes);
+    startingDomino = starter.domino;
+    isPlayerTurn = starter.owner === 'player';
+    
+    // Hide overlay after delay and continue
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        initializeBoard();
+        renderRacks();
+        updateDrawButton();
+        showTurnIndicator(starter);
+        centerCameraOnBoard();
+        
+        // Small delay to ensure board is ready before CPU plays
+        setTimeout(() => {
+            if (isPlayerTurn) {
+                handlePlayerTurnStart();
+            } else {
+                cpuPlay();
+            }
+        }, 500);
+    }, 2000);
 }
 
 function createDominoElement(domino, isHorizontal, owner = 'player') {
@@ -1123,21 +1179,9 @@ function resolveBlockedGame() {
     const cpuPips = countPipsInHand(cpuDominoes);
 
     if (playerPips < cpuPips) {
-        // Player wins blocked game, add CPU's pips to player's score
-        playerScore += cpuPips;
-        updateScoreDisplay();
-        checkScoreWinCondition();
-        if (!gameOver) {
-            endGame('win', `Game blocked — you had fewer pips! +${cpuPips} points from CPU's remaining pips.`, playerPips, cpuPips);
-        }
+        endGame('win', 'Game blocked — you had fewer pips!', playerPips, cpuPips);
     } else if (cpuPips < playerPips) {
-        // CPU wins blocked game, add player's pips to CPU's score
-        cpuScore += playerPips;
-        updateScoreDisplay();
-        checkScoreWinCondition();
-        if (!gameOver) {
-            endGame('lose', `Game blocked — CPU had fewer pips. +${playerPips} points from your remaining pips.`, playerPips, cpuPips);
-        }
+        endGame('lose', 'Game blocked — CPU had fewer pips.', playerPips, cpuPips);
     } else {
         endGame('draw', 'Game blocked — tied on remaining pips.', playerPips, cpuPips);
     }
@@ -1147,37 +1191,14 @@ function checkGameEndAfterMove(wasPlayerTurn) {
     if (gameOver) return;
 
     if (wasPlayerTurn && playerDominoes.length === 0) {
-        // Player wins round, add CPU's remaining pips to player's score
-        const cpuPips = countPipsInHand(cpuDominoes);
-        playerScore += cpuPips;
-        updateScoreDisplay();
-        checkScoreWinCondition();
-        if (!gameOver) {
-            endGame('win', `You played all your dominoes! +${cpuPips} points from CPU's remaining pips.`, null, null);
-        }
+        endGame('win', 'You played all your dominoes!', 0, countPipsInHand(cpuDominoes));
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
-        // CPU wins round, add player's remaining pips to CPU's score
-        const playerPips = countPipsInHand(playerDominoes);
-        cpuScore += playerPips;
-        updateScoreDisplay();
-        checkScoreWinCondition();
-        if (!gameOver) {
-            endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
-        }
+        endGame('lose', 'CPU played all their dominoes.', countPipsInHand(playerDominoes), 0);
     }
 }
 
-function checkScoreWinCondition() {
-    if (gameOver) return;
-
-    if (playerScore >= WINNING_SCORE) {
-        endGame('win', `You reached ${playerScore} points!`, null, null);
-    } else if (cpuScore >= WINNING_SCORE) {
-        endGame('lose', `CPU reached ${cpuScore} points.`, null, null);
-    }
-}
 
 function endGame(result, message, playerPips, cpuPips) {
     if (gameOver) return;
@@ -1206,8 +1227,9 @@ function endGame(result, message, playerPips, cpuPips) {
     if (playerPips !== null) {
         msg.textContent += ` Your pips: ${playerPips}  ·  CPU pips: ${cpuPips}`;
     }
-    msg.textContent += ` Final Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
 
+    // Show play again button for game over
+    document.getElementById('playAgainBtn').style.display = 'block';
     overlay.classList.remove('hidden');
 }
 
@@ -1561,7 +1583,6 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     isPlayerTurn = !wasPlayerTurn;
 
     updateBoneyardCount();
-    handlePlayerTurnStart();
     
     const placedWidth = isHorizontal ? 100 : 50;
     const placedHeight = isHorizontal ? 50 : 100;
@@ -1570,7 +1591,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     checkGameEndAfterMove(wasPlayerTurn);
     if (gameOver) return;
     
-    if (!isPlayerTurn) {
+    if (isPlayerTurn) {
+        handlePlayerTurnStart();
+    } else {
         setTimeout(cpuPlay, 1000);
     }
 }
@@ -1579,13 +1602,7 @@ function cpuPlay() {
     if (gameOver) return;
 
     if (cpuDominoes.length === 0) {
-        const playerPips = countPipsInHand(playerDominoes);
-        cpuScore += playerPips;
-        updateScoreDisplay();
-        checkScoreWinCondition();
-        if (!gameOver) {
-            endGame('lose', `CPU played all their dominoes. +${playerPips} points from your remaining pips.`, null, null);
-        }
+        endGame('lose', 'CPU played all their dominoes.', countPipsInHand(playerDominoes), 0);
         return;
     }
 
