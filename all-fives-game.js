@@ -322,6 +322,190 @@ function testScoring() {
     console.log('  Result:', score11 === 10 ? 'PASS' : 'FAIL');
     console.log();
 
+    // Test 12: Double on top spinner arm (5/5 on top with both sides filled)
+    boardDominoes = [{ domino: { top: 3, bottom: 3 } }];
+    boardEnds = { left: 4, right: 6, top: 5, bottom: null };
+    endIsDouble = { left: false, right: false, top: true, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score12 = calculateScoreFromEnds('top');
+    console.log('Test 12: Double 5 on top spinner arm');
+    console.log('  Expected: 4 + 6 + 10 (double 5) = 20 → 20 points');
+    console.log('  Actual:', score12, 'points');
+    console.log('  Result:', score12 === 20 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 13: Double on bottom spinner arm
+    boardEnds = { left: 4, right: 6, top: null, bottom: 5 };
+    endIsDouble = { left: false, right: false, top: false, bottom: true };
+    const score13 = calculateScoreFromEnds('bottom');
+    console.log('Test 13: Double 5 on bottom spinner arm');
+    console.log('  Expected: 4 + 6 + 10 (double 5) = 20 → 20 points');
+    console.log('  Actual:', score13, 'points');
+    console.log('  Result:', score13 === 20 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 14: Both top and bottom are doubles
+    boardEnds = { left: 4, right: 6, top: 5, bottom: 5 };
+    endIsDouble = { left: false, right: false, top: true, bottom: true };
+    const score14 = calculateScoreFromEnds('bottom');
+    console.log('Test 14: Both top and bottom are doubles (5/5)');
+    console.log('  Expected: 4 + 6 + 10 + 10 = 30 → 30 points');
+    console.log('  Actual:', score14, 'points');
+    console.log('  Result:', score14 === 30 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 15: All four ends are doubles
+    boardEnds = { left: 2, right: 3, top: 5, bottom: 5 };
+    endIsDouble = { left: true, right: true, top: true, bottom: true };
+    const score15 = calculateScoreFromEnds('bottom');
+    console.log('Test 15: All four ends are doubles');
+    console.log('  Expected: 4 + 6 + 10 + 10 = 30 → 30 points');
+    console.log('  Actual:', score15, 'points');
+    console.log('  Result:', score15 === 30 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 16: Non-double spinner (6/2 as starting domino)
+    boardDominoes = [{ domino: { top: 6, bottom: 2 } }];
+    boardEnds = { left: 6, right: 2, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score16 = calculateScoreFromEnds('center');
+    console.log('Test 16: Non-double spinner 6/2');
+    console.log('  Expected: 6 + 2 = 8 → 0 points (not a multiple of 5)');
+    console.log('  Actual:', score16, 'points');
+    console.log('  Result:', score16 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 17: Non-double spinner with one side filled
+    boardDominoes = [{ domino: { top: 5, bottom: 3 } }];
+    boardEnds = { left: 5, right: null, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = false;
+    const score17 = calculateScoreFromEnds('left');
+    console.log('Test 17: Non-double spinner 5/3 with one side filled');
+    console.log('  Expected: 5 (end) + 5 + 3 (spinner) = 13 → 0 points');
+    console.log('  Actual:', score17, 'points');
+    console.log('  Result:', score17 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 18: Edge case with 0 values
+    boardDominoes = [{ domino: { top: 0, bottom: 0 } }];
+    boardEnds = { left: 0, right: 5, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score18 = calculateScoreFromEnds('right');
+    console.log('Test 18: Edge case with 0 values');
+    console.log('  Expected: 0 + 5 = 5 → 5 points');
+    console.log('  Actual:', score18, 'points');
+    console.log('  Result:', score18 === 5 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 19: Double 0 on end
+    boardEnds = { left: 0, right: 5, top: null, bottom: null };
+    endIsDouble = { left: true, right: false, top: false, bottom: false };
+    const score19 = calculateScoreFromEnds('left');
+    console.log('Test 19: Double 0 on end');
+    console.log('  Expected: 0 (double 0) + 5 = 5 → 5 points');
+    console.log('  Actual:', score19, 'points');
+    console.log('  Result:', score19 === 5 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 20: Large score (all 6s)
+    boardDominoes = [{ domino: { top: 6, bottom: 6 } }];
+    boardEnds = { left: 6, right: 6, top: 6, bottom: 6 };
+    endIsDouble = { left: true, right: true, top: true, bottom: true };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score20 = calculateScoreFromEnds('bottom');
+    console.log('Test 20: All ends are double 6');
+    console.log('  Expected: 12 + 12 + 12 + 12 = 48 → 0 points (not multiple of 5)');
+    console.log('  Actual:', score20, 'points');
+    console.log('  Result:', score20 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 21: SimulateMoveScore consistency test
+    boardDominoes = [{ domino: { top: 3, bottom: 3 } }];
+    boardEnds = { left: 1, right: 6, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const testDomino = { top: 5, bottom: 0 };
+    const simulatedScore = simulateMoveScore(testDomino, 'top');
+    // Manually set up the state after the move
+    boardEnds.top = 5;
+    endIsDouble.top = false;
+    const actualScore = calculateScoreFromEnds('top');
+    console.log('Test 21: SimulateMoveScore consistency check');
+    console.log('  Simulated score:', simulatedScore, 'points');
+    console.log('  Actual score after move:', actualScore, 'points');
+    console.log('  Result:', simulatedScore === actualScore ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 22: Transition from 1 arm to 2 arms filled
+    boardDominoes = [{ domino: { top: 5, bottom: 5 } }];
+    boardEnds = { left: 3, right: null, top: null, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = false;
+    const score22a = calculateScoreFromEnds('left');
+    console.log('Test 22a: One arm filled with spinner 5/5');
+    console.log('  Expected: 3 + 5 + 5 = 13 → 0 points');
+    console.log('  Actual:', score22a, 'points');
+    console.log('  Result:', score22a === 0 ? 'PASS' : 'FAIL');
+    
+    // Now fill second arm
+    boardEnds.right = 4;
+    rightArmFilled = true;
+    const score22b = calculateScoreFromEnds('right');
+    console.log('Test 22b: Both arms filled (spinner top/bottom now ignored)');
+    console.log('  Expected: 3 + 4 = 7 → 0 points');
+    console.log('  Actual:', score22b, 'points');
+    console.log('  Result:', score22b === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 23: Complex real-world scenario from user's game
+    boardDominoes = [{ domino: { top: 5, bottom: 5 } }];
+    boardEnds = { left: 3, right: 4, top: 0, bottom: 4 };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score23 = calculateScoreFromEnds('left');
+    console.log('Test 23: User game scenario (3|1 - 1|2 - 2|6 - 6|6 - 6|3 - 3|4 - 4|6 - 6|5 - 5|5)');
+    console.log('  Expected: 3 + 0 + 4 + 4 = 11 → 0 points');
+    console.log('  Actual:', score23, 'points');
+    console.log('  Result:', score23 === 0 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 24: Double on left, double on right, no top/bottom
+    boardDominoes = [{ domino: { top: 4, bottom: 4 } }];
+    boardEnds = { left: 2, right: 3, top: null, bottom: null };
+    endIsDouble = { left: true, right: true, top: false, bottom: false };
+    leftArmFilled = true;
+    rightArmFilled = true;
+    const score24 = calculateScoreFromEnds('left');
+    console.log('Test 24: Double on both left and right ends');
+    console.log('  Expected: 4 (double 2) + 6 (double 3) = 10 → 10 points');
+    console.log('  Actual:', score24, 'points');
+    console.log('  Result:', score24 === 10 ? 'PASS' : 'FAIL');
+    console.log();
+
+    // Test 25: Only top arm filled (edge case)
+    boardDominoes = [{ domino: { top: 6, bottom: 6 } }];
+    boardEnds = { left: null, right: null, top: 3, bottom: null };
+    endIsDouble = { left: false, right: false, top: false, bottom: false };
+    leftArmFilled = false;
+    rightArmFilled = false;
+    const score25 = calculateScoreFromEnds('top');
+    console.log('Test 25: Only top arm filled (no side arms)');
+    console.log('  Expected: 3 + 6 + 6 (spinner) = 15 → 15 points');
+    console.log('  Actual:', score25, 'points');
+    console.log('  Result:', score25 === 15 ? 'PASS' : 'FAIL');
+    console.log();
+
 
     // Restore state
     boardEnds = savedBoardEnds;
