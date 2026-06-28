@@ -10,6 +10,9 @@ let endIsDouble = { left: false, right: false, top: false, bottom: false };
 let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
 let audioContext = null;
+let isAllFivesMode = false;
+let playerScore = 0;
+let cpuScore = 0;
 let camera = { x: 0, y: 0, zoom: 1 };
 let cameraAnimating = false;
 let cameraAnimationFrame = null;
@@ -36,6 +39,10 @@ const GAME_HINTS = [
 ];
 
 function init() {
+    // Detect game mode from page title
+    const pageTitle = document.title;
+    isAllFivesMode = pageTitle.includes('All 5s');
+
     initializeBoard();
     dealDominoes();
     const starter = findStarter(playerDominoes, cpuDominoes);
@@ -94,6 +101,16 @@ function initializeBoard() {
     board.style.height = '600px';
     leftArmFilled = false;
     rightArmFilled = false;
+    
+    // Only reset scores in Draw mode (not All 5s mode)
+    if (!isAllFivesMode) {
+        playerScore = 0;
+        cpuScore = 0;
+        const playerScoreEl = document.getElementById('playerScore');
+        const cpuScoreEl = document.getElementById('cpuScore');
+        if (playerScoreEl) playerScoreEl.textContent = '0';
+        if (cpuScoreEl) cpuScoreEl.textContent = '0';
+    }
 }
 
 function formatDominoLabel(domino) {
@@ -107,7 +124,18 @@ function getDominoRank(domino) {
     return domino.top + domino.bottom;
 }
 
-/*
+function addScore(isPlayer, points) {
+    if (isPlayer) {
+        playerScore += points;
+        const scoreEl = document.getElementById('playerScore');
+        if (scoreEl) scoreEl.textContent = playerScore;
+    } else {
+        cpuScore += points;
+        const scoreEl = document.getElementById('cpuScore');
+        if (scoreEl) scoreEl.textContent = cpuScore;
+    }
+}
+
 function calculateScoreFromEnds(playedSide) {
     // Muggins All 5s scoring rules:
     // 1. If an end has a double, count both sides (double the value)
@@ -116,15 +144,20 @@ function calculateScoreFromEnds(playedSide) {
     //    - If 2 side arms filled: ignore top and bottom
     //    - If 3 or 4 arms filled: count the played arms
     let sum = 0;
+    let breakdown = [];
 
     // Count left end (double if it's a double) - only if there's a domino there
     if (boardEnds.left !== null && leftArmFilled) {
-        sum += endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
+        const value = endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: endIsDouble.left, counted: value });
     }
 
     // Count right end (double if it's a double) - only if there's a domino there
     if (boardEnds.right !== null && rightArmFilled) {
-        sum += endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
+        const value = endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: endIsDouble.right, counted: value });
     }
 
     // Count top and bottom based on spinner arm fill status
@@ -137,6 +170,8 @@ function calculateScoreFromEnds(playedSide) {
         if (spinner) {
             sum += spinner.domino.top;
             sum += spinner.domino.bottom;
+            breakdown.push({ side: 'spinner-top', value: spinner.domino.top, isDouble: false, counted: spinner.domino.top });
+            breakdown.push({ side: 'spinner-bottom', value: spinner.domino.bottom, isDouble: false, counted: spinner.domino.bottom });
         }
     } else if (sideArmsFilled === 2 && boardEnds.top === null && boardEnds.bottom === null) {
         // Both side arms filled but no top/bottom played: ignore spinner top/bottom
@@ -144,19 +179,22 @@ function calculateScoreFromEnds(playedSide) {
     } else {
         // 3 or 4 arms filled, or top/bottom have been played: count played arms
         if (boardEnds.top !== null) {
-            sum += endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+            const value = endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+            sum += value;
+            breakdown.push({ side: 'top', value: boardEnds.top, isDouble: endIsDouble.top, counted: value });
         }
         if (boardEnds.bottom !== null) {
-            sum += endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+            const value = endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+            sum += value;
+            breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: endIsDouble.bottom, counted: value });
         }
     }
 
     if (sum % 5 === 0) {
-        return sum;
+        return { score: sum, breakdown };
     }
-    return 0;
+    return { score: 0, breakdown: [] };
 }
-*/
 
 
 /*
@@ -182,7 +220,7 @@ function testScoring() {
     const score1 = calculateScoreFromEnds('left');
     console.log('Test 1: 1/3 - 3/3 (one side occupied)');
     console.log('  Expected: 1 + 3 + 3 = 7 → 0 points');
-    console.log('  Actual:', score1, 'points');
+    console.log('  Actual:', score1.score, 'points');
     console.log('  Result:', score1 === 0 ? 'PASS' : 'FAIL');
     console.log();
 
@@ -196,8 +234,8 @@ function testScoring() {
     const score2 = calculateScoreFromEnds('right');
     console.log('Test 2: 1/3 - 3/3 - 3/6 (both sides occupied)');
     console.log('  Expected: 1 + 6 = 7 → 0 points (spinner top/bottom ignored)');
-    console.log('  Actual:', score2, 'points');
-    console.log('  Result:', score2 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score2.score, 'points');
+    console.log('  Result:', score2.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 3: Third arm opened (5 on top)
@@ -209,8 +247,8 @@ function testScoring() {
     const score3 = calculateScoreFromEnds('top');
     console.log('Test 3: Third arm opened (5 on top)');
     console.log('  Expected: 1 + 6 + 5 = 12 → 0 points');
-    console.log('  Actual:', score3, 'points');
-    console.log('  Result:', score3 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score3.score, 'points');
+    console.log('  Result:', score3.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 4: Fourth arm opened (4 on bottom)
@@ -222,8 +260,8 @@ function testScoring() {
     const score4 = calculateScoreFromEnds('bottom');
     console.log('Test 4: Fourth arm opened (4 on bottom)');
     console.log('  Expected: 1 + 6 + 5 + 4 = 16 → 0 points');
-    console.log('  Actual:', score4, 'points');
-    console.log('  Result:', score4 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score4.score, 'points');
+    console.log('  Result:', score4.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 5: Scoring example 4/3 - 3/3 - 3/1 with 5 on top and bottom
@@ -235,8 +273,8 @@ function testScoring() {
     const score5 = calculateScoreFromEnds('bottom');
     console.log('Test 5: Scoring example 4 + 1 + 5 + 5 = 15');
     console.log('  Expected: 15 points');
-    console.log('  Actual:', score5, 'points');
-    console.log('  Result:', score5 === 15 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score5.score, 'points');
+    console.log('  Result:', score5.score === 15 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 6: User's example 4/4 <- 4/6 <- 6/6 (one side arm filled)
@@ -249,8 +287,8 @@ function testScoring() {
     const score6 = calculateScoreFromEnds('left');
     console.log('Test 6: User example 4/4 <- 4/6 <- 6/6 (one side arm filled)');
     console.log('  Expected: 8 (double 4) + 6 + 6 (spinner) = 20 → 20 points');
-    console.log('  Actual:', score6, 'points');
-    console.log('  Result:', score6 === 20 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score6.score, 'points');
+    console.log('  Result:', score6.score === 20 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 7: User's example with both side arms filled (4/4 <- 4/6 <- 6/6 -> 3/6)
@@ -262,8 +300,8 @@ function testScoring() {
     const score7 = calculateScoreFromEnds('right');
     console.log('Test 7: User example with both side arms filled');
     console.log('  Expected: 8 (double 4) + 6 = 14 → 0 points (spinner top/bottom ignored)');
-    console.log('  Actual:', score7, 'points');
-    console.log('  Result:', score7 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score7.score, 'points');
+    console.log('  Result:', score7.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 8: Double at end - manuscript example "this two becomes a four"
@@ -275,8 +313,8 @@ function testScoring() {
     const score8 = calculateScoreFromEnds('left');
     console.log('Test 8: Double at end (2 becomes 4) + 6');
     console.log('  Expected: 4 (double 2) + 6 = 10 → 10 points');
-    console.log('  Actual:', score8, 'points');
-    console.log('  Result:', score8 === 10 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score8.score, 'points');
+    console.log('  Result:', score8.score === 10 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 9: Opening double 5 scores 10 immediately
@@ -288,8 +326,8 @@ function testScoring() {
     const score9 = calculateScoreFromEnds('center');
     console.log('Test 9: Opening double 5');
     console.log('  Expected: 5 + 5 = 10 → 10 points');
-    console.log('  Actual:', score9, 'points');
-    console.log('  Result:', score9 === 10 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score9.score, 'points');
+    console.log('  Result:', score9.score === 10 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 10: Rules example 3/0 chain with both sides filled = 3 + 6 = 9 → 0 points
@@ -301,8 +339,8 @@ function testScoring() {
     const score10 = calculateScoreFromEnds('right');
     console.log('Test 10: 3/0 chain ends 3 + 6 = 9');
     console.log('  Expected: 0 points (not a multiple of 5)');
-    console.log('  Actual:', score10, 'points');
-    console.log('  Result:', score10 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score10.score, 'points');
+    console.log('  Result:', score10.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 11: 6/2 played on double-2 spinner with one side filled
@@ -314,8 +352,8 @@ function testScoring() {
     const score11 = calculateScoreFromEnds('right');
     console.log('Test 11: 6/2 after opponent led double 2');
     console.log('  Expected: 6 + 2 + 2 = 10 → 10 points');
-    console.log('  Actual:', score11, 'points');
-    console.log('  Result:', score11 === 10 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score11.score, 'points');
+    console.log('  Result:', score11.score === 10 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 12: Double on top spinner arm (5/5 on top with both sides filled)
@@ -327,8 +365,8 @@ function testScoring() {
     const score12 = calculateScoreFromEnds('top');
     console.log('Test 12: Double 5 on top spinner arm');
     console.log('  Expected: 4 + 6 + 10 (double 5) = 20 → 20 points');
-    console.log('  Actual:', score12, 'points');
-    console.log('  Result:', score12 === 20 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score12.score, 'points');
+    console.log('  Result:', score12.score === 20 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 13: Double on bottom spinner arm
@@ -337,8 +375,8 @@ function testScoring() {
     const score13 = calculateScoreFromEnds('bottom');
     console.log('Test 13: Double 5 on bottom spinner arm');
     console.log('  Expected: 4 + 6 + 10 (double 5) = 20 → 20 points');
-    console.log('  Actual:', score13, 'points');
-    console.log('  Result:', score13 === 20 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score13.score, 'points');
+    console.log('  Result:', score13.score === 20 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 14: Both top and bottom are doubles
@@ -347,8 +385,8 @@ function testScoring() {
     const score14 = calculateScoreFromEnds('bottom');
     console.log('Test 14: Both top and bottom are doubles (5/5)');
     console.log('  Expected: 4 + 6 + 10 + 10 = 30 → 30 points');
-    console.log('  Actual:', score14, 'points');
-    console.log('  Result:', score14 === 30 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score14.score, 'points');
+    console.log('  Result:', score14.score === 30 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 15: All four ends are doubles
@@ -357,8 +395,8 @@ function testScoring() {
     const score15 = calculateScoreFromEnds('bottom');
     console.log('Test 15: All four ends are doubles');
     console.log('  Expected: 4 + 6 + 10 + 10 = 30 → 30 points');
-    console.log('  Actual:', score15, 'points');
-    console.log('  Result:', score15 === 30 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score15.score, 'points');
+    console.log('  Result:', score15.score === 30 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 16: Non-double spinner (6/2 as starting domino)
@@ -370,8 +408,8 @@ function testScoring() {
     const score16 = calculateScoreFromEnds('center');
     console.log('Test 16: Non-double spinner 6/2');
     console.log('  Expected: 6 + 2 = 8 → 0 points (not a multiple of 5)');
-    console.log('  Actual:', score16, 'points');
-    console.log('  Result:', score16 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score16.score, 'points');
+    console.log('  Result:', score16.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 17: Non-double spinner with one side filled
@@ -383,8 +421,8 @@ function testScoring() {
     const score17 = calculateScoreFromEnds('left');
     console.log('Test 17: Non-double spinner 5/3 with one side filled');
     console.log('  Expected: 5 (end) + 5 + 3 (spinner) = 13 → 0 points');
-    console.log('  Actual:', score17, 'points');
-    console.log('  Result:', score17 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score17.score, 'points');
+    console.log('  Result:', score17.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 18: Edge case with 0 values
@@ -396,8 +434,8 @@ function testScoring() {
     const score18 = calculateScoreFromEnds('right');
     console.log('Test 18: Edge case with 0 values');
     console.log('  Expected: 0 + 5 = 5 → 5 points');
-    console.log('  Actual:', score18, 'points');
-    console.log('  Result:', score18 === 5 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score18.score, 'points');
+    console.log('  Result:', score18.score === 5 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 19: Double 0 on end
@@ -406,8 +444,8 @@ function testScoring() {
     const score19 = calculateScoreFromEnds('left');
     console.log('Test 19: Double 0 on end');
     console.log('  Expected: 0 (double 0) + 5 = 5 → 5 points');
-    console.log('  Actual:', score19, 'points');
-    console.log('  Result:', score19 === 5 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score19.score, 'points');
+    console.log('  Result:', score19.score === 5 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 20: Large score (all 6s)
@@ -419,8 +457,8 @@ function testScoring() {
     const score20 = calculateScoreFromEnds('bottom');
     console.log('Test 20: All ends are double 6');
     console.log('  Expected: 12 + 12 + 12 + 12 = 48 → 0 points (not multiple of 5)');
-    console.log('  Actual:', score20, 'points');
-    console.log('  Result:', score20 === 0 ? 'PASS' : 'FAIL');
+    console.log('  Actual:', score20.score, 'points');
+    console.log('  Result:', score20.score === 0 ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 21: SimulateMoveScore consistency test
@@ -436,9 +474,9 @@ function testScoring() {
     endIsDouble.top = false;
     const actualScore = calculateScoreFromEnds('top');
     console.log('Test 21: SimulateMoveScore consistency check');
-    console.log('  Simulated score:', simulatedScore, 'points');
-    console.log('  Actual score after move:', actualScore, 'points');
-    console.log('  Result:', simulatedScore === actualScore ? 'PASS' : 'FAIL');
+    console.log('  Simulated score:', simulatedScore.score, 'points');
+    console.log('  Actual score after move:', actualScore.score, 'points');
+    console.log('  Result:', simulatedScore.score === actualScore.score ? 'PASS' : 'FAIL');
     console.log();
 
     // Test 22: Transition from 1 arm to 2 arms filled
@@ -514,8 +552,6 @@ function testScoring() {
 }
 */
 
-
-/*
 function simulateMoveScore(domino, side) {
     const matchingEnd = boardEnds[side];
     let newEnd = null;
@@ -572,13 +608,18 @@ function simulateMoveScore(domino, side) {
 
     // Calculate sum using same logic as calculateScoreFromEnds
     let sum = 0;
+    let breakdown = [];
 
     if (simulatedEnds.left !== null && simLeftArmFilled) {
-        sum += simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+        const value = simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: simulatedIsDouble.left, counted: value });
     }
 
     if (simulatedEnds.right !== null && simRightArmFilled) {
-        sum += simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
+        const value = simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: simulatedIsDouble.right, counted: value });
     }
 
     const sideArmsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0);
@@ -588,25 +629,30 @@ function simulateMoveScore(domino, side) {
         if (spinner) {
             sum += spinner.domino.top;
             sum += spinner.domino.bottom;
+            breakdown.push({ side: 'spinner-top', value: spinner.domino.top, isDouble: false, counted: spinner.domino.top });
+            breakdown.push({ side: 'spinner-bottom', value: spinner.domino.bottom, isDouble: false, counted: spinner.domino.bottom });
         }
     } else if (sideArmsFilled === 2 && simulatedEnds.top === null && simulatedEnds.bottom === null) {
         // Both side arms filled but no top/bottom played: ignore spinner top/bottom
     } else {
         if (simulatedEnds.top !== null) {
-            sum += simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
+            const value = simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
+            sum += value;
+            breakdown.push({ side: 'top', value: simulatedEnds.top, isDouble: simulatedIsDouble.top, counted: value });
         }
         if (simulatedEnds.bottom !== null) {
-            sum += simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
+            const value = simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
+            sum += value;
+            breakdown.push({ side: 'bottom', value: simulatedEnds.bottom, isDouble: simulatedIsDouble.bottom, counted: value });
         }
     }
 
     // Return score if multiple of 5
     if (sum % 5 === 0) {
-        return sum;
+        return { score: sum, breakdown };
     }
-    return 0;
+    return { score: 0, breakdown: [] };
 }
-*/
 
 function findStarter(playerHand, cpuHand) {
     let bestDomino = null;
@@ -796,22 +842,48 @@ function dealDominoes() {
     updateBoneyardCount();
 }
 
-/*
-function startNewHand(message) {
+function startNewHand(message, opponentDominoes = []) {
     // Show round result message
     const overlay = document.getElementById('gameOverOverlay');
     const title = document.getElementById('gameOverTitle');
     const msg = document.getElementById('gameOverMessage');
     const playAgainBtn = document.getElementById('playAgainBtn');
+    const continueBtn = document.getElementById('continueBtn');
+    const dominoesContainer = document.getElementById('gameOverDominoes');
     
     title.textContent = 'Round Complete';
     msg.textContent = message + ` Current Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
     overlay.classList.remove('hidden');
     
-    // Hide play again button for round complete (only show for game over)
-    playAgainBtn.style.display = 'none';
+    // Display opponent's remaining dominoes
+    if (opponentDominoes.length > 0) {
+        dominoesContainer.innerHTML = '';
+        opponentDominoes.forEach(domino => {
+            const miniDomino = createMiniDomino(domino);
+            dominoesContainer.appendChild(miniDomino);
+        });
+        dominoesContainer.classList.remove('hidden');
+    } else {
+        dominoesContainer.innerHTML = '';
+        dominoesContainer.classList.add('hidden');
+    }
     
-    // Clear board state
+    // Hide play again button, show continue button for round complete
+    playAgainBtn.style.display = 'none';
+    if (continueBtn) {
+        continueBtn.style.display = 'block';
+        continueBtn.onclick = () => {
+            overlay.classList.add('hidden');
+            continueBtn.style.display = 'none';
+            dominoesContainer.innerHTML = '';
+            dominoesContainer.classList.add('hidden');
+            proceedToNextHand();
+        };
+    }
+}
+
+function proceedToNextHand() {
+    // Clear board state (but keep scores)
     boardDominoes = [];
     boardEnds = { left: null, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
@@ -822,6 +894,10 @@ function startNewHand(message) {
     selectedDomino = null;
     lastPlayedSide = null;
     isShowingZones = false;
+    gameOver = false; // Reset gameOver flag for new hand
+    
+    // Clear scoring breakdown display
+    clearScoringBreakdown();
     
     // Clear visual board
     const board = getBoardElement();
@@ -829,34 +905,32 @@ function startNewHand(message) {
         board.innerHTML = '';
     }
     
-    // Deal new dominoes
+    // Deal new dominoes (this resets boneyard)
     dealDominoes();
+    
+    // Update boneyard count display
+    updateBoneyardCount();
     
     // Find starter for new hand
     const starter = findStarter(playerDominoes, cpuDominoes);
     startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
     
-    // Hide overlay after delay and continue
+    initializeBoard();
+    renderRacks();
+    updateDrawButton();
+    showTurnIndicator(starter);
+    centerCameraOnBoard();
+    
+    // Small delay to ensure board is ready before CPU plays
     setTimeout(() => {
-        overlay.classList.add('hidden');
-        initializeBoard();
-        renderRacks();
-        updateDrawButton();
-        showTurnIndicator(starter);
-        centerCameraOnBoard();
-        
-        // Small delay to ensure board is ready before CPU plays
-        setTimeout(() => {
-            if (isPlayerTurn) {
-                handlePlayerTurnStart();
-            } else {
-                cpuPlay();
-            }
-        }, 500);
-    }, 2000);
+        if (isPlayerTurn) {
+            handlePlayerTurnStart();
+        } else {
+            cpuPlay();
+        }
+    }, 500);
 }
-*/
 
 function createDominoElement(domino, isHorizontal, owner = 'player') {
     const el = document.createElement('div');
@@ -977,10 +1051,36 @@ function updateLastPlayedDomino(domino) {
     lastPlayedContainer.appendChild(bottomHalf);
 }
 
+function updateScoringBreakdown(breakdown, totalScore) {
+    const container = document.getElementById('scoringBreakdown');
+    const textEl = document.getElementById('scoringBreakdownText');
+    
+    if (!container || !textEl) return;
+    
+    if (breakdown.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    
+    // Format the breakdown as a string like "0 , 6 , 2 = 8"
+    const parts = breakdown.map(item => item.counted.toString());
+    
+    textEl.textContent = `${parts.join(' , ')} = ${totalScore}`;
+}
+
+function clearScoringBreakdown() {
+    const container = document.getElementById('scoringBreakdown');
+    if (container) {
+        container.classList.add('hidden');
+    }
+}
+
 function createMiniPips(value) {
     const container = document.createElement('div');
     container.className = 'last-played-pips';
-    container.dataset.value = value;
+    container.setAttribute('data-value', value);
     
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');
@@ -992,11 +1092,16 @@ function createMiniPips(value) {
 }
 
 
-/*
 function countPipsInHand(dominoes) {
     return dominoes.reduce((total, domino) => total + domino.top + domino.bottom, 0);
 }
-*/
+
+function roundDownToMultipleOf5(value) {
+    // Round to nearest multiple of 5
+    const rounded = Math.round(value / 5) * 5;
+    // Ensure minimum of 5 if value > 0
+    return rounded === 0 && value > 0 ? 5 : rounded;
+}
 
 function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
     for (const placed of boardDominoes) {
@@ -1107,60 +1212,63 @@ function findValidPlacementsForDomino(domino) {
         }
     }
 
-    let topPos = null;
-    if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-        topPos = endPositions.top;
-    } else {
-        const spinnerTop = getSpinnerArmMatch('top');
-        if (spinnerTop && (domino.top === spinnerTop.matchingEnd || domino.bottom === spinnerTop.matchingEnd)) {
-            topPos = spinnerTop;
-        }
-    }
-
-    if (topPos) {
-        const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
-        const isDouble = domino.top === domino.bottom;
-
-        if (isDouble) {
-            const zoneX = dominoCenterX - 50;
-            const zoneY = topPos.y - 50;
-            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
+    // Top and bottom placements only in All 5s mode (spinner)
+    if (isAllFivesMode) {
+        let topPos = null;
+        if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
+            topPos = endPositions.top;
         } else {
-            const zoneX = dominoCenterX - 25;
-            const zoneY = topPos.y - 100;
-            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            const spinnerTop = getSpinnerArmMatch('top');
+            if (spinnerTop && (domino.top === spinnerTop.matchingEnd || domino.bottom === spinnerTop.matchingEnd)) {
+                topPos = spinnerTop;
             }
         }
-    }
 
-    let bottomPos = null;
-    if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-        bottomPos = endPositions.bottom;
-    } else {
-        const spinnerBottom = getSpinnerArmMatch('bottom');
-        if (spinnerBottom && (domino.top === spinnerBottom.matchingEnd || domino.bottom === spinnerBottom.matchingEnd)) {
-            bottomPos = spinnerBottom;
-        }
-    }
+        if (topPos) {
+            const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
+            const isDouble = domino.top === domino.bottom;
 
-    if (bottomPos) {
-        const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
-        const isDouble = domino.top === domino.bottom;
-
-        if (isDouble) {
-            const zoneX = dominoCenterX - 50;
-            const zoneY = bottomPos.y;
-            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+            if (isDouble) {
+                const zoneX = dominoCenterX - 50;
+                const zoneY = topPos.y - 50;
+                if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                    validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+                }
+            } else {
+                const zoneX = dominoCenterX - 25;
+                const zoneY = topPos.y - 100;
+                if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                    validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+                }
             }
+        }
+
+        let bottomPos = null;
+        if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
+            bottomPos = endPositions.bottom;
         } else {
-            const zoneX = dominoCenterX - 25;
-            const zoneY = bottomPos.y;
-            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+            const spinnerBottom = getSpinnerArmMatch('bottom');
+            if (spinnerBottom && (domino.top === spinnerBottom.matchingEnd || domino.bottom === spinnerBottom.matchingEnd)) {
+                bottomPos = spinnerBottom;
+            }
+        }
+
+        if (bottomPos) {
+            const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
+            const isDouble = domino.top === domino.bottom;
+
+            if (isDouble) {
+                const zoneX = dominoCenterX - 50;
+                const zoneY = bottomPos.y;
+                if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
+                    validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
+                }
+            } else {
+                const zoneX = dominoCenterX - 25;
+                const zoneY = bottomPos.y;
+                if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
+                    validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
+                }
             }
         }
     }
@@ -1175,40 +1283,49 @@ function hasAnyValidMove(dominoes) {
 function recordPass() {
     passesInRow++;
     playPassSound();
-    // In simple dominoes, game continues until someone empties their hand
-    // No blocked game resolution
+    if (passesInRow >= 2 && boneyard.length === 0) {
+        resolveBlockedGame();
+    }
 }
 
 function recordMove() {
     passesInRow = 0;
 }
 
-/*
 function resolveBlockedGame() {
     const playerPips = countPipsInHand(playerDominoes);
     const cpuPips = countPipsInHand(cpuDominoes);
 
     if (playerPips < cpuPips) {
-        endGame('win', 'Game blocked — you had fewer pips!', playerPips, cpuPips);
+        // Player wins blocked game, gets points equal to CPU's remaining pips (rounded down to multiple of 5)
+        const points = roundDownToMultipleOf5(cpuPips);
+        endGame('win', 'Game blocked — you had fewer pips!', points, 0, cpuDominoes);
     } else if (cpuPips < playerPips) {
-        endGame('lose', 'Game blocked — CPU had fewer pips.', playerPips, cpuPips);
+        // CPU wins blocked game, gets points equal to player's remaining pips (rounded down to multiple of 5)
+        const points = roundDownToMultipleOf5(playerPips);
+        endGame('lose', 'Game blocked — CPU had fewer pips.', 0, points, playerDominoes);
     } else {
-        endGame('draw', 'Game blocked — tied on remaining pips.', playerPips, cpuPips);
+        endGame('draw', 'Game blocked — tied on remaining pips.', 0, 0, []);
     }
 }
-*/
 
 function checkGameEndAfterMove(wasPlayerTurn) {
     if (gameOver) return;
 
     if (wasPlayerTurn && playerDominoes.length === 0) {
         showDominoMessage();
-        endGame('win', 'You played all your dominoes!');
+        // Player gets points equal to CPU's remaining pips (rounded down to multiple of 5)
+        const playerPoints = roundDownToMultipleOf5(countPipsInHand(cpuDominoes));
+        const cpuPoints = 0;
+        endGame('win', 'You played all your dominoes!', playerPoints, cpuPoints, cpuDominoes);
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
         showDominoMessage();
-        endGame('lose', 'CPU played all their dominoes.');
+        // CPU gets points equal to player's remaining pips (rounded down to multiple of 5)
+        const playerPoints = 0;
+        const cpuPoints = roundDownToMultipleOf5(countPipsInHand(playerDominoes));
+        endGame('lose', 'CPU played all their dominoes.', playerPoints, cpuPoints, playerDominoes);
     }
 }
 
@@ -1266,7 +1383,7 @@ function speakWithBestVoice(utterance, voices) {
 }
 
 
-function endGame(result, message) {
+function endGame(result, message, playerPoints = 0, cpuPoints = 0, opponentDominoes = []) {
     if (gameOver) return;
     gameOver = true;
 
@@ -1274,9 +1391,58 @@ function endGame(result, message) {
     clearZoneHintArrows();
     selectedDomino = null;
 
+    // In All 5s mode, check for win condition (150 points) or start new hand
+    if (isAllFivesMode) {
+        // Add points to scores
+        if (playerPoints > 0) {
+            playerScore += playerPoints;
+            const scoreEl = document.getElementById('playerScore');
+            if (scoreEl) scoreEl.textContent = playerScore;
+        }
+        if (cpuPoints > 0) {
+            cpuScore += cpuPoints;
+            const scoreEl = document.getElementById('cpuScore');
+            if (scoreEl) scoreEl.textContent = cpuScore;
+        }
+        
+        // Check for win condition (100 points)
+        if (playerScore >= 100 || cpuScore >= 100) {
+            // Game over - someone reached 100 points
+            const overlay = document.getElementById('gameOverOverlay');
+            const title = document.getElementById('gameOverTitle');
+            const msg = document.getElementById('gameOverMessage');
+            const scores = document.getElementById('gameOverScores');
+            const dominoesContainer = document.getElementById('gameOverDominoes');
+            const playAgainBtn = document.getElementById('playAgainBtn');
+
+            if (playerScore >= 100) {
+                title.textContent = 'You Win!';
+                playWinSound();
+            } else {
+                title.textContent = 'You Lose';
+                playLoseSound();
+            }
+
+            msg.textContent = message + ` Final Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
+            scores.textContent = '';
+            dominoesContainer.innerHTML = '';
+            dominoesContainer.classList.add('hidden');
+            playAgainBtn.style.display = 'block';
+            overlay.classList.remove('hidden');
+            return;
+        }
+        
+        // Start new hand
+        startNewHand(message, opponentDominoes);
+        return;
+    }
+
+    // Draw mode: end game completely
     const overlay = document.getElementById('gameOverOverlay');
     const title = document.getElementById('gameOverTitle');
     const msg = document.getElementById('gameOverMessage');
+    const scores = document.getElementById('gameOverScores');
+    const dominoesContainer = document.getElementById('gameOverDominoes');
 
     if (result === 'win') {
         title.textContent = 'You Win!';
@@ -1290,10 +1456,64 @@ function endGame(result, message) {
     }
 
     msg.textContent = message;
+    if (playerPoints > 0 || cpuPoints > 0) {
+        scores.textContent = `Player Points: ${playerPoints}  ·  CPU Points: ${cpuPoints}`;
+        scores.classList.remove('hidden');
+    } else {
+        scores.textContent = '';
+        scores.classList.add('hidden');
+    }
+
+    // Display opponent's remaining dominoes
+    if (opponentDominoes.length > 0) {
+        dominoesContainer.innerHTML = '';
+        opponentDominoes.forEach(domino => {
+            const miniDomino = createMiniDomino(domino);
+            dominoesContainer.appendChild(miniDomino);
+        });
+        dominoesContainer.classList.remove('hidden');
+    } else {
+        dominoesContainer.innerHTML = '';
+        dominoesContainer.classList.add('hidden');
+    }
 
     // Show play again button for game over
     document.getElementById('playAgainBtn').style.display = 'block';
     overlay.classList.remove('hidden');
+}
+
+function createMiniDomino(domino) {
+    const el = document.createElement('div');
+    el.className = 'mini-domino';
+
+    const topHalf = document.createElement('div');
+    topHalf.className = 'mini-domino-half';
+    const topPips = createMiniPipsForGameOver(domino.top);
+    topHalf.appendChild(topPips);
+
+    const bottomHalf = document.createElement('div');
+    bottomHalf.className = 'mini-domino-half';
+    const bottomPips = createMiniPipsForGameOver(domino.bottom);
+    bottomHalf.appendChild(bottomPips);
+
+    el.appendChild(topHalf);
+    el.appendChild(bottomHalf);
+
+    return el;
+}
+
+function createMiniPipsForGameOver(value) {
+    const container = document.createElement('div');
+    container.className = 'mini-pips';
+    container.setAttribute('data-value', value);
+
+    for (let i = 0; i < 9; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'mini-pip';
+        container.appendChild(pip);
+    }
+
+    return container;
 }
 
 
@@ -1323,6 +1543,27 @@ function showNextHint() {
             }
         }, 600);
     }, 6000);
+}
+
+function showCpuDrawNotification() {
+    const toast = document.getElementById('hintToast');
+    if (!toast) return;
+
+    if (hintTimeout) clearTimeout(hintTimeout);
+
+    toast.textContent = 'CPU drew from boneyard';
+    toast.classList.remove('hidden', 'fade-out');
+
+    hintTimeout = setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('fade-out');
+            if (!gameOver) {
+                hintTimeout = setTimeout(showNextHint, 2000);
+            }
+        }, 600);
+    }, 1500);
 }
 
 function selectDomino(domino, element) {
@@ -1630,6 +1871,18 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     updateLastPlayedDomino(orientedDomino);
     recordMove();
 
+    // Calculate and add score for All 5s mode
+    if (isAllFivesMode && side !== 'center') {
+        const scoreResult = calculateScoreFromEnds(side);
+        if (scoreResult.score > 0) {
+            addScore(wasPlayerTurn, scoreResult.score);
+            playScoreSound();
+            updateScoringBreakdown(scoreResult.breakdown, scoreResult.score);
+        } else {
+            clearScoringBreakdown();
+        }
+    }
+
     // Check if game ended from scoring
     if (gameOver) return;
 
@@ -1658,7 +1911,10 @@ function cpuPlay() {
     if (gameOver) return;
 
     if (cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.');
+        showDominoMessage();
+        const playerPoints = 0;
+        const cpuPoints = roundDownToMultipleOf5(countPipsInHand(playerDominoes));
+        endGame('lose', 'CPU played all their dominoes.', playerPoints, cpuPoints, playerDominoes);
         return;
     }
 
@@ -1680,27 +1936,57 @@ function cpuPlay() {
     });
 
     if (validMoves.length > 0) {
-        // Prioritize highest doubles, then highest total value
-        validMoves.sort((a, b) => {
-            const aIsDouble = a.domino.top === a.domino.bottom;
-            const bIsDouble = b.domino.top === b.domino.bottom;
-            const aValue = a.domino.top + a.domino.bottom;
-            const bValue = b.domino.top + b.domino.bottom;
+        if (isAllFivesMode) {
+            // In All 5s mode, prioritize scoring moves
+            validMoves.forEach(move => {
+                const scoreResult = simulateMoveScore(move.domino, move.side);
+                move.score = scoreResult.score;
+            });
+            
+            // Sort by score first, then by double status, then by value
+            validMoves.sort((a, b) => {
+                if (a.score > 0 && b.score === 0) return -1;
+                if (a.score === 0 && b.score > 0) return 1;
+                if (a.score > 0 && b.score > 0) return b.score - a.score;
+                
+                // No scoring moves, fall back to doubles and value
+                const aIsDouble = a.domino.top === a.domino.bottom;
+                const bIsDouble = b.domino.top === b.domino.bottom;
+                const aValue = a.domino.top + a.domino.bottom;
+                const bValue = b.domino.top + b.domino.bottom;
 
-            // Prefer doubles
-            if (aIsDouble && !bIsDouble) return -1;
-            if (!aIsDouble && bIsDouble) return 1;
+                if (aIsDouble && !bIsDouble) return -1;
+                if (!aIsDouble && bIsDouble) return 1;
+                return bValue - aValue;
+            });
+        } else {
+            // Draw mode: prioritize highest doubles, then highest total value
+            validMoves.sort((a, b) => {
+                const aIsDouble = a.domino.top === a.domino.bottom;
+                const bIsDouble = b.domino.top === b.domino.bottom;
+                const aValue = a.domino.top + a.domino.bottom;
+                const bValue = b.domino.top + b.domino.bottom;
 
-            // If both are doubles or both are not doubles, prefer higher value
-            return bValue - aValue;
-        });
+                // Prefer doubles
+                if (aIsDouble && !bIsDouble) return -1;
+                if (!aIsDouble && bIsDouble) return 1;
+
+                // If both are doubles or both are not doubles, prefer higher value
+                return bValue - aValue;
+            });
+        }
         
-        // Find the highest priority moves (same domino value and double status)
+        // Find the highest priority moves
         const bestValue = validMoves[0].domino.top + validMoves[0].domino.bottom;
         const bestIsDouble = validMoves[0].domino.top === validMoves[0].domino.bottom;
+        const bestScore = validMoves[0].score || 0;
         const bestMoves = validMoves.filter(m => {
             const isDouble = m.domino.top === m.domino.bottom;
             const value = m.domino.top + m.domino.bottom;
+            const score = m.score || 0;
+            if (isAllFivesMode) {
+                return score === bestScore && isDouble === bestIsDouble && value === bestValue;
+            }
             return isDouble === bestIsDouble && value === bestValue;
         });
         
@@ -1715,6 +2001,7 @@ function cpuPlay() {
             updateBoneyardCount();
             playDrawSound();
             recordMove();
+            showCpuDrawNotification();
             setTimeout(cpuPlay, 500);
         } else {
             isPlayerTurn = true;

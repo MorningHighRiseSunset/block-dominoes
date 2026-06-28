@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Dominoes Test</title>
+    <title>All 5s Dominoes</title>
     <link rel="stylesheet" href="all-fives-game.css?v=12">
 </head>
 <body>
@@ -11,10 +11,15 @@
         <div class="score-bar">
             <div class="score-item">
                 <h2>CPU</h2>
+                <div class="score-display" id="cpuScore">0</div>
             </div>
             <div class="last-played-container">
                 <div class="last-played-label">Last:</div>
                 <div class="last-played-domino" id="lastPlayedDomino"></div>
+            </div>
+            <div class="scoring-breakdown-container" id="scoringBreakdown">
+                <div class="scoring-breakdown-label">Points:</div>
+                <div class="scoring-breakdown-text" id="scoringBreakdownText"></div>
             </div>
             <div class="boneyard" id="boneyard">
                 <h3>Boneyard: <span id="boneyardCount">0</span></h3>
@@ -22,6 +27,7 @@
             </div>
             <div class="score-item">
                 <h2>Player</h2>
+                <div class="score-display" id="playerScore">0</div>
             </div>
         </div>
         
@@ -63,6 +69,8 @@
             <h2 id="gameOverTitle">Game Over</h2>
             <p id="gameOverMessage"></p>
             <p class="game-over-scores" id="gameOverScores"></p>
+            <div class="game-over-dominoes" id="gameOverDominoes"></div>
+            <button class="game-over-btn" id="continueBtn" style="display: none;">Continue</button>
             <button class="game-over-btn" id="playAgainBtn">Play Again</button>
         </div>
     </div>

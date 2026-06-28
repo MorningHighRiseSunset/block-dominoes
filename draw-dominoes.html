@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Draw Dominoes</title>
+    <link rel="stylesheet" href="all-fives-game.css?v=12">
+</head>
+<body>
+    <div class="game-container">
+        <div class="score-bar">
+            <div class="score-item">
+                <h2>CPU</h2>
+                <div class="score-display" id="cpuScore">0</div>
+            </div>
+            <div class="last-played-container">
+                <div class="last-played-label">Last:</div>
+                <div class="last-played-domino" id="lastPlayedDomino"></div>
+            </div>
+            <div class="boneyard" id="boneyard">
+                <h3>Boneyard: <span id="boneyardCount">0</span></h3>
+                <button id="drawBtn" class="draw-btn">Draw</button>
+            </div>
+            <div class="score-item">
+                <h2>Player</h2>
+                <div class="score-display" id="playerScore">0</div>
+            </div>
+        </div>
+        
+        <div class="board-container">
+            <div class="camera-layer" id="cameraLayer">
+                <div class="board" id="board"></div>
+            </div>
+            <div class="zone-hint-arrows" id="zoneHintArrows"></div>
+            <div class="turn-indicator hidden" id="turnIndicator"></div>
+        </div>
+        
+        <div class="player-rack">
+            <div class="rack-scroll-indicator left hidden" id="rackScrollLeft">
+                <div class="indicator-domino">
+                    <div class="indicator-half"></div>
+                    <div class="indicator-half"></div>
+                </div>
+                <div class="indicator-label" id="rackScrollLeftLabel"></div>
+                <div class="indicator-arrow">◀</div>
+            </div>
+            <div class="rack" id="playerRack"></div>
+            <div class="rack-scroll-indicator right hidden" id="rackScrollRight">
+                <div class="indicator-domino">
+                    <div class="indicator-half"></div>
+                    <div class="indicator-half"></div>
+                </div>
+                <div class="indicator-label" id="rackScrollRightLabel"></div>
+                <div class="indicator-arrow">▶</div>
+            </div>
+            <button class="new-game-mini-btn hidden" id="newGameMiniBtn">New Game</button>
+        </div>
+    </div>
+
+    <div class="hint-toast hidden" id="hintToast"></div>
+
+    <div class="game-over-overlay hidden" id="gameOverOverlay">
+        <div class="game-over-modal">
+            <button class="game-over-close-btn" id="closeGameOverBtn">×</button>
+            <h2 id="gameOverTitle">Game Over</h2>
+            <p id="gameOverMessage"></p>
+            <p class="game-over-scores" id="gameOverScores"></p>
+            <div class="game-over-dominoes" id="gameOverDominoes"></div>
+            <button class="game-over-btn" id="continueBtn" style="display: none;">Continue</button>
+            <button class="game-over-btn" id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+    
+    <script src="all-fives-game.js"></script>
+</body>
+</html>
