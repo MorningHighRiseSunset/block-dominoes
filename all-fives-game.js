@@ -858,6 +858,16 @@ function startNewHand(message, opponentDominoes = []) {
     // Display opponent's remaining dominoes
     if (opponentDominoes.length > 0) {
         dominoesContainer.innerHTML = '';
+        
+        // Add label
+        const label = document.createElement('div');
+        label.textContent = "Opponent's remaining dominoes:";
+        label.style.color = '#5c4a3d';
+        label.style.fontSize = '0.85rem';
+        label.style.fontWeight = 'bold';
+        label.style.marginBottom = '8px';
+        dominoesContainer.appendChild(label);
+        
         opponentDominoes.forEach(domino => {
             const miniDomino = createMiniDomino(domino);
             dominoesContainer.appendChild(miniDomino);
@@ -904,6 +914,12 @@ function proceedToNextHand() {
     if (board) {
         board.innerHTML = '';
     }
+    
+    // Update score displays to ensure they're current
+    const playerScoreEl = document.getElementById('playerScore');
+    const cpuScoreEl = document.getElementById('cpuScore');
+    if (playerScoreEl) playerScoreEl.textContent = playerScore;
+    if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
     
     // Deal new dominoes (this resets boneyard)
     dealDominoes();
@@ -1097,8 +1113,8 @@ function countPipsInHand(dominoes) {
 }
 
 function roundDownToMultipleOf5(value) {
-    // Round to nearest multiple of 5
-    const rounded = Math.round(value / 5) * 5;
+    // Round down to nearest multiple of 5
+    const rounded = Math.floor(value / 5) * 5;
     // Ensure minimum of 5 if value > 0
     return rounded === 0 && value > 0 ? 5 : rounded;
 }
