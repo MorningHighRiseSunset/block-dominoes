@@ -107,6 +107,7 @@ function getDominoRank(domino) {
     return domino.top + domino.bottom;
 }
 
+/*
 function calculateScoreFromEnds(playedSide) {
     // Muggins All 5s scoring rules:
     // 1. If an end has a double, count both sides (double the value)
@@ -155,8 +156,10 @@ function calculateScoreFromEnds(playedSide) {
     }
     return 0;
 }
+*/
 
 
+/*
 // Test function to verify scoring against rules examples
 // Call this from browser console: testScoring()
 function testScoring() {
@@ -509,8 +512,10 @@ function testScoring() {
 
     console.log('=== Test Complete ===');
 }
+*/
 
 
+/*
 function simulateMoveScore(domino, side) {
     const matchingEnd = boardEnds[side];
     let newEnd = null;
@@ -601,6 +606,7 @@ function simulateMoveScore(domino, side) {
     }
     return 0;
 }
+*/
 
 function findStarter(playerHand, cpuHand) {
     let bestDomino = null;
@@ -790,6 +796,7 @@ function dealDominoes() {
     updateBoneyardCount();
 }
 
+/*
 function startNewHand(message) {
     // Show round result message
     const overlay = document.getElementById('gameOverOverlay');
@@ -849,6 +856,7 @@ function startNewHand(message) {
         }, 500);
     }, 2000);
 }
+*/
 
 function createDominoElement(domino, isHorizontal, owner = 'player') {
     const el = document.createElement('div');
@@ -984,9 +992,11 @@ function createMiniPips(value) {
 }
 
 
+/*
 function countPipsInHand(dominoes) {
     return dominoes.reduce((total, domino) => total + domino.top + domino.bottom, 0);
 }
+*/
 
 function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
     for (const placed of boardDominoes) {
@@ -1165,15 +1175,15 @@ function hasAnyValidMove(dominoes) {
 function recordPass() {
     passesInRow++;
     playPassSound();
-    if (passesInRow >= 2 && boneyard.length === 0) {
-        resolveBlockedGame();
-    }
+    // In simple dominoes, game continues until someone empties their hand
+    // No blocked game resolution
 }
 
 function recordMove() {
     passesInRow = 0;
 }
 
+/*
 function resolveBlockedGame() {
     const playerPips = countPipsInHand(playerDominoes);
     const cpuPips = countPipsInHand(cpuDominoes);
@@ -1186,21 +1196,41 @@ function resolveBlockedGame() {
         endGame('draw', 'Game blocked — tied on remaining pips.', playerPips, cpuPips);
     }
 }
+*/
 
 function checkGameEndAfterMove(wasPlayerTurn) {
     if (gameOver) return;
 
     if (wasPlayerTurn && playerDominoes.length === 0) {
-        endGame('win', 'You played all your dominoes!', 0, countPipsInHand(cpuDominoes));
+        showDominoMessage();
+        endGame('win', 'You played all your dominoes!');
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.', countPipsInHand(playerDominoes), 0);
+        showDominoMessage();
+        endGame('lose', 'CPU played all their dominoes.');
     }
 }
 
+function showDominoMessage() {
+    const toast = document.getElementById('hintToast');
+    if (!toast) return;
+    
+    toast.textContent = 'Domino!';
+    toast.classList.remove('hidden');
+    toast.classList.remove('fade-out');
+    
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+            toast.classList.remove('fade-out');
+        }, 600);
+    }, 1500);
+}
 
-function endGame(result, message, playerPips, cpuPips) {
+
+function endGame(result, message) {
     if (gameOver) return;
     gameOver = true;
 
@@ -1224,9 +1254,6 @@ function endGame(result, message, playerPips, cpuPips) {
     }
 
     msg.textContent = message;
-    if (playerPips !== null) {
-        msg.textContent += ` Your pips: ${playerPips}  ·  CPU pips: ${cpuPips}`;
-    }
 
     // Show play again button for game over
     document.getElementById('playAgainBtn').style.display = 'block';
@@ -1567,13 +1594,6 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     updateLastPlayedDomino(orientedDomino);
     recordMove();
 
-    // All Fives scoring: calculate score from open ends
-    const scorePoints = calculateScoreFromEnds(side);
-    if (scorePoints > 0) {
-        addScore(wasPlayerTurn, scorePoints);
-        playScoreSound();
-    }
-
     // Check if game ended from scoring
     if (gameOver) return;
 
@@ -1602,7 +1622,7 @@ function cpuPlay() {
     if (gameOver) return;
 
     if (cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.', countPipsInHand(playerDominoes), 0);
+        endGame('lose', 'CPU played all their dominoes.');
         return;
     }
 
@@ -1624,18 +1644,8 @@ function cpuPlay() {
     });
 
     if (validMoves.length > 0) {
-        // Calculate score for each move
-        validMoves.forEach(move => {
-            move.score = simulateMoveScore(move.domino, move.side);
-        });
-
-        // Prioritize scoring moves, then highest doubles, then highest total value
+        // Prioritize highest doubles, then highest total value
         validMoves.sort((a, b) => {
-            // Prefer moves that score points
-            if (a.score > 0 && b.score === 0) return -1;
-            if (a.score === 0 && b.score > 0) return 1;
-            if (a.score > 0 && b.score > 0) return b.score - a.score;
-
             const aIsDouble = a.domino.top === a.domino.bottom;
             const bIsDouble = b.domino.top === b.domino.bottom;
             const aValue = a.domino.top + a.domino.bottom;
@@ -1649,14 +1659,13 @@ function cpuPlay() {
             return bValue - aValue;
         });
         
-        // Find the highest priority moves (same score, domino value and double status)
-        const bestScore = validMoves[0].score;
+        // Find the highest priority moves (same domino value and double status)
         const bestValue = validMoves[0].domino.top + validMoves[0].domino.bottom;
         const bestIsDouble = validMoves[0].domino.top === validMoves[0].domino.bottom;
         const bestMoves = validMoves.filter(m => {
             const isDouble = m.domino.top === m.domino.bottom;
             const value = m.domino.top + m.domino.bottom;
-            return m.score === bestScore && isDouble === bestIsDouble && value === bestValue;
+            return isDouble === bestIsDouble && value === bestValue;
         });
         
         // Randomly choose from the best moves to avoid always picking the same side
