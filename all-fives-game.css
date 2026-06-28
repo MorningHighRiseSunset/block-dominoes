@@ -805,7 +805,7 @@ body {
     top: 72px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 100;
+    z-index: 300;
     background: rgba(92, 74, 61, 0.75);
     color: #fff8e7;
     padding: 10px 18px;

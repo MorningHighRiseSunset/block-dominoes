@@ -1213,20 +1213,56 @@ function checkGameEndAfterMove(wasPlayerTurn) {
 }
 
 function showDominoMessage() {
-    const toast = document.getElementById('hintToast');
-    if (!toast) return;
+    // Use speech synthesis to say "Domino!"
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance('Domino!');
+        
+        // Get available voices and select a natural-sounding one
+        let voices = speechSynthesis.getVoices();
+        
+        // If voices aren't loaded yet, wait for them
+        if (voices.length === 0) {
+            speechSynthesis.onvoiceschanged = () => {
+                voices = speechSynthesis.getVoices();
+                speakWithBestVoice(utterance, voices);
+            };
+        } else {
+            speakWithBestVoice(utterance, voices);
+        }
+    }
+}
+
+function speakWithBestVoice(utterance, voices) {
+    let selectedVoice = null;
     
-    toast.textContent = 'Domino!';
-    toast.classList.remove('hidden');
-    toast.classList.remove('fade-out');
+    // Prefer natural-sounding voices (avoid robotic ones)
+    for (const voice of voices) {
+        if (voice.name.includes('Natural') || 
+            voice.name.includes('Google') || 
+            voice.name.includes('Samantha') ||
+            voice.name.includes('Daniel') ||
+            voice.name.includes('Karen') ||
+            voice.name.includes('Moira')) {
+            selectedVoice = voice;
+            break;
+        }
+    }
     
-    setTimeout(() => {
-        toast.classList.add('fade-out');
-        setTimeout(() => {
-            toast.classList.add('hidden');
-            toast.classList.remove('fade-out');
-        }, 600);
-    }, 1500);
+    // Fallback to any English voice
+    if (!selectedVoice) {
+        selectedVoice = voices.find(voice => voice.lang.startsWith('en'));
+    }
+    
+    if (selectedVoice) {
+        utterance.voice = selectedVoice;
+    }
+    
+    // More natural parameters
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 0.9;
+    
+    speechSynthesis.speak(utterance);
 }
 
 
