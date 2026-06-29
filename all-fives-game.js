@@ -1070,26 +1070,28 @@ function updateLastPlayedDomino(domino) {
 function updateScoringBreakdown(breakdown, totalScore) {
     const container = document.getElementById('scoringBreakdown');
     const textEl = document.getElementById('scoringBreakdownText');
-    
+
     if (!container || !textEl) return;
-    
+
+    container.classList.remove('hidden');
+
     if (breakdown.length === 0) {
-        container.classList.add('hidden');
+        textEl.textContent = '-';
         return;
     }
-    
-    container.classList.remove('hidden');
-    
+
     // Format the breakdown as a string like "0 , 6 , 2 = 8"
     const parts = breakdown.map(item => item.counted.toString());
-    
+
     textEl.textContent = `${parts.join(' , ')} = ${totalScore}`;
 }
 
 function clearScoringBreakdown() {
     const container = document.getElementById('scoringBreakdown');
-    if (container) {
-        container.classList.add('hidden');
+    const textEl = document.getElementById('scoringBreakdownText');
+    if (container && textEl) {
+        container.classList.remove('hidden');
+        textEl.textContent = '-';
     }
 }
 
