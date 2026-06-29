@@ -615,8 +615,8 @@ body {
     }
 
     .score-bar {
-        padding: 6px 8px;
-        gap: 4px;
+        padding: 4px 6px;
+        gap: 3px;
     }
     
     .score-item {
@@ -665,17 +665,33 @@ body {
         width: 20px;
         height: 40px;
     }
-    
-    .last-played-pips {
-        width: 10px;
-        height: 10px;
-        padding: 1.5px;
-        gap: 0.5px;
+
+    .last-played-pips,
+    .last-played-domino .pips {
+        width: 14px;
+        height: 14px;
+        padding: 2px;
+        gap: 1px;
     }
-    
-    .last-played-pip {
-        width: 1.5px;
-        height: 1.5px;
+
+    .last-played-pip,
+    .last-played-domino .pip {
+        width: 2.5px;
+        height: 2.5px;
+    }
+
+    .scoring-breakdown-container {
+        padding: 4px 8px;
+        min-width: 60px;
+    }
+
+    .scoring-breakdown-label {
+        font-size: 0.6rem;
+        margin-bottom: 2px;
+    }
+
+    .scoring-breakdown-text {
+        font-size: 0.65rem;
     }
 }
 
@@ -731,17 +747,33 @@ body {
         width: 24px;
         height: 48px;
     }
-    
-    .last-played-pips {
-        width: 10px;
-        height: 10px;
-        padding: 1.5px;
-        gap: 0.5px;
+
+    .last-played-pips,
+    .last-played-domino .pips {
+        width: 14px;
+        height: 14px;
+        padding: 2px;
+        gap: 1px;
     }
-    
-    .last-played-pip {
-        width: 1.5px;
-        height: 1.5px;
+
+    .last-played-pip,
+    .last-played-domino .pip {
+        width: 2.5px;
+        height: 2.5px;
+    }
+
+    .scoring-breakdown-container {
+        padding: 6px 12px;
+        min-width: 60px;
+    }
+
+    .scoring-breakdown-label {
+        font-size: 0.6rem;
+        margin-bottom: 2px;
+    }
+
+    .scoring-breakdown-text {
+        font-size: 0.65rem;
     }
 }
 
