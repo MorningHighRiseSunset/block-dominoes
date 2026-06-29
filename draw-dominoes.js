@@ -626,7 +626,7 @@ function updateLastPlayedDomino(domino) {
 }
 
 function recordMove() {
-    // Could be used for move history or replay
+    passesInRow = 0;
 }
 
 function hasAnyValidMove(dominoes) {
@@ -681,6 +681,14 @@ function endGame(result, message) {
 }
 
 function handlePlayerTurnStart() {
+    // If board is empty and player has the starting domino, don't show "no valid moves"
+    if (boardDominoes.length === 0 && startingDomino) {
+        const hasStarter = playerDominoes.some(d => d.id === startingDomino.id);
+        if (hasStarter) {
+            return; // Player can play the starting domino
+        }
+    }
+    
     if (!hasAnyValidMove(playerDominoes)) {
         if (boneyard.length > 0) {
             showToast('No valid moves. Draw from boneyard.');

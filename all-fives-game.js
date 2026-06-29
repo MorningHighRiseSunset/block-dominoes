@@ -1057,11 +1057,11 @@ function updateLastPlayedDomino(domino) {
     
     const topHalf = document.createElement('div');
     topHalf.className = 'last-played-domino-half';
-    topHalf.appendChild(createMiniPips(domino.top));
+    topHalf.appendChild(createPips(domino.top));
     
     const bottomHalf = document.createElement('div');
     bottomHalf.className = 'last-played-domino-half';
-    bottomHalf.appendChild(createMiniPips(domino.bottom));
+    bottomHalf.appendChild(createPips(domino.bottom));
     
     lastPlayedContainer.appendChild(topHalf);
     lastPlayedContainer.appendChild(bottomHalf);
