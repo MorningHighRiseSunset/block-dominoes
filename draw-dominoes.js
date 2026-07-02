@@ -285,13 +285,24 @@ function drawFromBoneyard() {
     playerDominoes.push(drawnDomino);
     updateBoneyardCount();
     renderRacks();
+    updateDrawButton();
     showToast(`Drew ${formatDominoLabel(drawnDomino)}`);
+}
+
+function updateDrawButton() {
+    const drawBtn = document.getElementById('drawBtn');
+    if (!isPlayerTurn || gameOver) {
+        drawBtn.disabled = true;
+        return;
+    }
+
+    const hasValidMove = hasAnyValidMove(playerDominoes);
+    drawBtn.disabled = hasValidMove || boneyard.length === 0;
 }
 
 function createDominoElement(domino, isHorizontal, owner) {
     const dominoEl = document.createElement('div');
-    dominoEl.className = 'domino';
-    if (owner) dominoEl.classList.add(owner);
+    dominoEl.className = 'domino' + (isHorizontal ? ' horizontal' : '') + (owner === 'player' ? ' player-domino' : owner === 'cpu' ? ' cpu-domino' : '');
 
     if (isHorizontal) {
         dominoEl.classList.add('horizontal');
@@ -644,15 +655,21 @@ function checkGameEndAfterMove(wasPlayerTurn) {
     if (gameOver) return;
 
     if (wasPlayerTurn && playerDominoes.length === 0) {
-        endGame('win', 'You played all your dominoes!');
+        // Player gets points equal to CPU's remaining pips
+        const playerPoints = countPipsInHand(cpuDominoes);
+        const cpuPoints = 0;
+        endGame('win', 'You played all your dominoes!', playerPoints, cpuPoints, cpuDominoes);
         return;
     }
     if (!wasPlayerTurn && cpuDominoes.length === 0) {
-        endGame('lose', 'CPU played all their dominoes.');
+        // CPU gets points equal to player's remaining pips
+        const playerPoints = 0;
+        const cpuPoints = countPipsInHand(playerDominoes);
+        endGame('lose', 'CPU played all their dominoes.', playerPoints, cpuPoints, playerDominoes);
     }
 }
 
-function endGame(result, message) {
+function endGame(result, message, playerPoints = 0, cpuPoints = 0, opponentDominoes = []) {
     if (gameOver) return;
     gameOver = true;
 
@@ -663,6 +680,8 @@ function endGame(result, message) {
     const overlay = document.getElementById('gameOverOverlay');
     const title = document.getElementById('gameOverTitle');
     const msg = document.getElementById('gameOverMessage');
+    const scores = document.getElementById('gameOverScores');
+    const dominoesContainer = document.getElementById('gameOverDominoes');
     const playAgainBtn = document.getElementById('playAgainBtn');
 
     if (result === 'win') {
@@ -676,11 +695,82 @@ function endGame(result, message) {
     }
 
     msg.textContent = message;
+
+    // Display scores if points were awarded
+    if (playerPoints > 0 || cpuPoints > 0) {
+        scores.textContent = `Points — You: ${playerPoints}  ·  CPU: ${cpuPoints}`;
+    } else {
+        scores.textContent = '';
+    }
+
+    // Display opponent's remaining dominoes
+    if (opponentDominoes.length > 0) {
+        dominoesContainer.innerHTML = '';
+
+        // Add label
+        const label = document.createElement('div');
+        label.textContent = "Opponent's remaining dominoes:";
+        label.style.color = '#5c4a3d';
+        label.style.fontSize = '0.85rem';
+        label.style.fontWeight = 'bold';
+        label.style.marginBottom = '8px';
+        dominoesContainer.appendChild(label);
+
+        opponentDominoes.forEach(domino => {
+            const miniDomino = createMiniDomino(domino);
+            dominoesContainer.appendChild(miniDomino);
+        });
+        dominoesContainer.classList.remove('hidden');
+    } else {
+        dominoesContainer.innerHTML = '';
+        dominoesContainer.classList.add('hidden');
+    }
+
     playAgainBtn.style.display = 'block';
     overlay.classList.remove('hidden');
 }
 
+function countPipsInHand(dominoes) {
+    return dominoes.reduce((total, domino) => total + domino.top + domino.bottom, 0);
+}
+
+function createMiniDomino(domino) {
+    const el = document.createElement('div');
+    el.className = 'mini-domino';
+
+    const topHalf = document.createElement('div');
+    topHalf.className = 'mini-domino-half';
+    const topPips = createMiniPipsForGameOver(domino.top);
+    topHalf.appendChild(topPips);
+
+    const bottomHalf = document.createElement('div');
+    bottomHalf.className = 'mini-domino-half';
+    const bottomPips = createMiniPipsForGameOver(domino.bottom);
+    bottomHalf.appendChild(bottomPips);
+
+    el.appendChild(topHalf);
+    el.appendChild(bottomHalf);
+
+    return el;
+}
+
+function createMiniPipsForGameOver(value) {
+    const container = document.createElement('div');
+    container.className = 'mini-pips';
+    container.setAttribute('data-value', value);
+
+    for (let i = 0; i < 9; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'mini-pip';
+        container.appendChild(pip);
+    }
+
+    return container;
+}
+
 function handlePlayerTurnStart() {
+    updateDrawButton();
+
     // If board is empty and player has the starting domino, don't show "no valid moves"
     if (boardDominoes.length === 0 && startingDomino) {
         const hasStarter = playerDominoes.some(d => d.id === startingDomino.id);
@@ -688,7 +778,7 @@ function handlePlayerTurnStart() {
             return; // Player can play the starting domino
         }
     }
-    
+
     if (!hasAnyValidMove(playerDominoes)) {
         if (boneyard.length > 0) {
             showToast('No valid moves. Draw from boneyard.');
