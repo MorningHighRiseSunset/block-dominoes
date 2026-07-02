@@ -63,6 +63,13 @@ function init() {
     });
     document.getElementById('newGameMiniBtn').addEventListener('click', () => location.reload());
 
+    // Add keyboard shortcut for new game (x key)
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'x' || e.key === 'X') {
+            location.reload();
+        }
+    });
+
     if (!isPlayerTurn) {
         setTimeout(cpuPlay, 1500);
     }
@@ -146,19 +153,7 @@ function calculateScoreFromEnds(playedSide) {
     let sum = 0;
     let breakdown = [];
 
-    // Count left end (double if it's a double) - only if there's a domino there
-    if (boardEnds.left !== null && leftArmFilled) {
-        const value = endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
-        sum += value;
-        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: endIsDouble.left, counted: value });
-    }
-
-    // Count right end (double if it's a double) - only if there's a domino there
-    if (boardEnds.right !== null && rightArmFilled) {
-        const value = endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
-        sum += value;
-        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: endIsDouble.right, counted: value });
-    }
+    const isFirstMove = boardDominoes.length === 1;
 
     // Count top and bottom based on spinner arm fill status
     const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
@@ -188,6 +183,22 @@ function calculateScoreFromEnds(playedSide) {
             sum += value;
             breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: endIsDouble.bottom, counted: value });
         }
+    }
+
+    // Count left end (double if it's a double) - only if there's a domino there
+    // Don't count on first move since spinner top/bottom already covers it
+    if (boardEnds.left !== null && leftArmFilled) {
+        const value = endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: endIsDouble.left, counted: value });
+    }
+
+    // Count right end (double if it's a double) - only if there's a domino there
+    // Don't count on first move since spinner top/bottom already covers it
+    if (boardEnds.right !== null && rightArmFilled) {
+        const value = endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: endIsDouble.right, counted: value });
     }
 
     if (sum % 5 === 0) {
@@ -819,20 +830,29 @@ function getBoardContentBounds(extraZones = []) {
 }
 
 function dealDominoes() {
-    // Gather all dominoes from previous hand (board, hands, boneyard)
-    const allDominoes = [
-        ...boardDominoes.map(d => d.domino),
-        ...playerDominoes,
-        ...cpuDominoes,
-        ...boneyard
-    ];
-    
-    // If this is the first hand (no dominoes yet), create fresh set
-    if (allDominoes.length === 0) {
-        allDominoes.push(...createDominoSet());
+    // In All 5s mode, always use a fresh domino set for each hand
+    // In Draw mode, reuse dominoes from previous hand
+    let allDominoes;
+
+    if (isAllFivesMode) {
+        // Always create a fresh set for All 5s
+        allDominoes = createDominoSet();
+    } else {
+        // Gather all dominoes from previous hand (board, hands, boneyard)
+        allDominoes = [
+            ...boardDominoes.map(d => d.domino),
+            ...playerDominoes,
+            ...cpuDominoes,
+            ...boneyard
+        ];
+
+        // If this is the first hand (no dominoes yet), create fresh set
+        if (allDominoes.length === 0) {
+            allDominoes.push(...createDominoSet());
+        }
     }
-    
-    // Shuffle the gathered dominoes
+
+    // Shuffle the dominoes
     shuffle(allDominoes);
 
     playerDominoes = allDominoes.slice(0, 7);
@@ -1080,8 +1100,11 @@ function updateScoringBreakdown(breakdown, totalScore) {
         return;
     }
 
-    // Format the breakdown as a string like "0 , 6 , 2 = 8"
-    const parts = breakdown.map(item => item.counted.toString());
+    // Filter out zero values from breakdown to avoid confusion
+    const nonZeroBreakdown = breakdown.filter(item => item.counted > 0);
+
+    // Format the breakdown as a string like "5 , 5 = 10"
+    const parts = nonZeroBreakdown.map(item => item.counted.toString());
 
     textEl.textContent = `${parts.join(' , ')} = ${totalScore}`;
 }
@@ -1411,17 +1434,14 @@ function endGame(result, message, playerPoints = 0, cpuPoints = 0, opponentDomin
 
     // In All 5s mode, check for win condition (150 points) or start new hand
     if (isAllFivesMode) {
-        // Add points to scores
-        if (playerPoints > 0) {
-            playerScore += playerPoints;
-            const scoreEl = document.getElementById('playerScore');
-            if (scoreEl) scoreEl.textContent = playerScore;
-        }
-        if (cpuPoints > 0) {
-            cpuScore += cpuPoints;
-            const scoreEl = document.getElementById('cpuScore');
-            if (scoreEl) scoreEl.textContent = cpuScore;
-        }
+        // Add points to scores (always add, even if 0, to ensure scoring happens)
+        playerScore += playerPoints;
+        cpuScore += cpuPoints;
+
+        const playerScoreEl = document.getElementById('playerScore');
+        const cpuScoreEl = document.getElementById('cpuScore');
+        if (playerScoreEl) playerScoreEl.textContent = playerScore;
+        if (cpuScoreEl) cpuScoreEl.textContent = cpuScore;
         
         // Check for win condition (100 points)
         if (playerScore >= 100 || cpuScore >= 100) {
@@ -1890,7 +1910,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     recordMove();
 
     // Calculate and add score for All 5s mode
-    if (isAllFivesMode && side !== 'center') {
+    if (isAllFivesMode) {
         const scoreResult = calculateScoreFromEnds(side);
         if (scoreResult.score > 0) {
             addScore(wasPlayerTurn, scoreResult.score);
