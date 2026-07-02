@@ -59,9 +59,21 @@ function init() {
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
     document.getElementById('closeGameOverBtn').addEventListener('click', () => {
         document.getElementById('gameOverOverlay').classList.add('hidden');
-        document.getElementById('newGameMiniBtn').classList.remove('hidden');
+        const newGameMiniBtn = document.getElementById('newGameMiniBtn');
+        if (isAllFivesMode) {
+            newGameMiniBtn.textContent = 'Continue';
+            newGameMiniBtn.onclick = () => {
+                // In All 5s mode, continue to next hand instead of reloading
+                gameOver = false;
+                proceedToNextHand();
+                newGameMiniBtn.classList.add('hidden');
+            };
+        } else {
+            newGameMiniBtn.textContent = 'New Game';
+            newGameMiniBtn.onclick = () => location.reload();
+        }
+        newGameMiniBtn.classList.remove('hidden');
     });
-    document.getElementById('newGameMiniBtn').addEventListener('click', () => location.reload());
 
     // Add keyboard shortcut for new game (x key)
     document.addEventListener('keydown', (e) => {
