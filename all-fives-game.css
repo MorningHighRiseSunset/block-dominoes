@@ -26,6 +26,103 @@ body {
     text-size-adjust: 100%;
 }
 
+/* Lobby Screen Styles */
+.lobby-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    height: 100dvh;
+}
+
+.lobby-container {
+    background: linear-gradient(180deg, #fff8e7 0%, #f5e6d3 100%);
+    padding: 40px;
+    border-radius: 20px;
+    border: 3px solid #8b7765;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.lobby-container h1 {
+    color: #5c4a3d;
+    margin-bottom: 8px;
+    font-size: 2rem;
+}
+
+.lobby-container .subtitle {
+    color: #8b7765;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+}
+
+.lobby-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.lobby-btn {
+    background: linear-gradient(145deg, #8b5a2b, #a0522d);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.lobby-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.lobby-btn:active {
+    transform: translateY(0);
+}
+
+.join-section {
+    margin-bottom: 20px;
+}
+
+.lobby-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #8b7765;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    background: white;
+}
+
+.lobby-info {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid #d4c4a8;
+}
+
+.lobby-info p {
+    color: #5c4a3d;
+    margin: 8px 0;
+    font-size: 0.95rem;
+}
+
+.lobby-info strong {
+    font-size: 1.2rem;
+    color: #8b5a2b;
+}
+
+.hidden {
+    display: none !important;
+}
+
 .game-container {
     display: flex;
     flex-direction: column;
