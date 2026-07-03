@@ -1471,8 +1471,6 @@ function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
         endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
-        leftArmFilled = true;
-        rightArmFilled = true;
     } else if (side === 'left') {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
@@ -1506,11 +1504,9 @@ function playDomino(domino, side, x, y, isHorizontal) {
 
     clearActivePlacement();
     
+    // Zones are already shifted in showValidPlacementZones, don't shift again
     const dominoWidth = isHorizontal ? 100 : 50;
     const dominoHeight = isHorizontal ? 50 : 100;
-    const { shiftX, shiftY } = ensureBoardBounds(x, y, x + dominoWidth, y + dominoHeight, true);
-    x += shiftX;
-    y += shiftY;
     
     for (const placed of boardDominoes) {
         const placedWidth = placed.isHorizontal ? 100 : 50;
