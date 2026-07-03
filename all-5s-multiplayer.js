@@ -30,6 +30,7 @@ const FOCUS_ZOOM = 1.35;
 const MOBILE_FOCUS_ZOOM = 1.22;
 const BOARD_EDGE_MARGIN = 150;
 let startingDomino = null;
+let openingDomino = null;
 let gameOver = false;
 let passesInRow = 0;
 let hintIndex = 0;
@@ -210,8 +211,7 @@ function startGame() {
     updateBoneyardCount();
     
     const starter = findStarter(playerDominoes, opponentDominoes);
-    isPlayerTurn = starter.owner === 'player';
-    startingDomino = playerDominoes.some(d => d.id === starter.domino.id) ? starter.domino : null;
+    setupOpeningTurn(starter.domino, starter.owner === 'player');
     
     const message = {
         type: 'START_GAME',
@@ -225,7 +225,7 @@ function startGame() {
     
     showGameScreen();
     renderRacks();
-    showTurnIndicator(starter);
+    showTurnIndicator();
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
@@ -245,19 +245,11 @@ function initializeGameState(data) {
     boneyard = allDominoes.slice(14);
     updateBoneyardCount();
     
-    // Only set startingDomino if this player actually has it
-    const starterDomino = data.starter.domino;
-    if (playerDominoes.some(d => d.id === starterDomino.id)) {
-        startingDomino = starterDomino;
-    } else {
-        startingDomino = null;
-    }
-    
-    isPlayerTurn = !data.isHostTurn;
+    setupOpeningTurn(data.starter.domino, data.isHostTurn);
     
     showGameScreen();
     renderRacks();
-    showTurnIndicator(data.starter);
+    showTurnIndicator();
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
@@ -513,6 +505,13 @@ function simulateMoveScore(domino, side) {
     return { score: 0, breakdown: [] };
 }
 
+function setupOpeningTurn(openingTile, hostGoesFirst) {
+    openingDomino = openingTile;
+    const tileInHand = playerDominoes.find(d => d.id === openingTile.id);
+    startingDomino = tileInHand || null;
+    isPlayerTurn = isHost ? hostGoesFirst : !hostGoesFirst;
+}
+
 function findStarter(playerHand, opponentHand) {
     let bestDomino = null;
     let bestOwner = null;
@@ -536,14 +535,8 @@ function getFirstMovePlacement(domino) {
     const isDouble = domino.top === domino.bottom;
     const width = isDouble ? 50 : 100;
     const height = isDouble ? 100 : 50;
-    
-    // Center the domino on the board
-    const board = getBoardElement();
-    const boardWidth = board ? board.offsetWidth : boardDimensions.width;
-    const boardHeight = board ? board.offsetHeight : boardDimensions.height;
-    
-    const x = (boardWidth - width) / 2;
-    const y = (boardHeight - height) / 2;
+    const x = (boardDimensions.width - width) / 2;
+    const y = (boardDimensions.height - height) / 2;
 
     return {
         side: 'center',
@@ -555,17 +548,16 @@ function getFirstMovePlacement(domino) {
     };
 }
 
-function showTurnIndicator(starter) {
+function showTurnIndicator() {
     const indicator = document.getElementById('turnIndicator');
-    if (!indicator || boardDominoes.length > 0) return;
+    if (!indicator || boardDominoes.length > 0 || !openingDomino) return;
 
-    const dominoLabel = formatDominoLabel(starter.domino);
     if (isPlayerTurn && startingDomino) {
+        const dominoLabel = formatDominoLabel(startingDomino);
         indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
-    } else if (boardDominoes.length === 0) {
-        indicator.innerHTML = `<strong>Opponent goes first</strong>They have the <span class="starter-domino-label">${dominoLabel}</span>`;
     } else {
-        return;
+        const dominoLabel = formatDominoLabel(openingDomino);
+        indicator.innerHTML = `<strong>Opponent goes first</strong>They have the <span class="starter-domino-label">${dominoLabel}</span>`;
     }
     indicator.classList.remove('hidden');
 }
@@ -1041,10 +1033,6 @@ function findValidPlacementsForDomino(domino) {
 }
 
 function hasAnyValidMove(dominoes) {
-    if (boardDominoes.length === 0) {
-        if (!isPlayerTurn || !startingDomino) return false;
-        return dominoes.some(d => d.id === startingDomino.id);
-    }
     return dominoes.some(domino => findValidPlacementsForDomino(domino).length > 0);
 }
 
@@ -1258,7 +1246,7 @@ function selectDomino(domino, element) {
     playSelectSound();
     
     requestAnimationFrame(() => {
-        if (!isShowingZones && isPlayerTurn) {
+        if (!isShowingZones) {
             isShowingZones = true;
             showValidPlacementZones(domino);
             isShowingZones = false;
@@ -1314,11 +1302,6 @@ function updateDrawButton() {
 
 function handlePlayerTurnStart() {
     if (!isPlayerTurn || gameOver) return;
-
-    if (boardDominoes.length === 0 && startingDomino) {
-        updateDrawButton();
-        return;
-    }
 
     updateDrawButton();
 
@@ -1386,11 +1369,119 @@ function showValidPlacementZones(domino) {
     }
 }
 
+function orientDominoForPlacement(domino, side, isHorizontal) {
+    let orientedDomino = { ...domino };
+    let horizontal = isHorizontal;
+
+    if (side === 'center') {
+        if (domino.top === domino.bottom) {
+            orientedDomino = { ...domino };
+            horizontal = false;
+        } else {
+            const high = Math.max(domino.top, domino.bottom);
+            const low = Math.min(domino.top, domino.bottom);
+            orientedDomino = { top: high, bottom: low, id: domino.id };
+            horizontal = true;
+        }
+        return { orientedDomino, isHorizontal: horizontal };
+    }
+
+    const matchingEnd = getMatchingEndForSide(side);
+
+    if (horizontal) {
+        if (side === 'left') {
+            if (domino.bottom === matchingEnd) {
+                orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+            } else if (domino.top === matchingEnd) {
+                orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+            }
+        } else if (side === 'right') {
+            if (domino.top === matchingEnd) {
+                orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+            } else if (domino.bottom === matchingEnd) {
+                orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+            }
+        }
+    } else {
+        if (side === 'top') {
+            if (domino.bottom === matchingEnd) {
+                orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+            } else if (domino.top === matchingEnd) {
+                orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+            }
+        } else if (side === 'bottom') {
+            if (domino.top === matchingEnd) {
+                orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+            } else if (domino.bottom === matchingEnd) {
+                orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+            }
+        }
+    }
+
+    return { orientedDomino, isHorizontal: horizontal };
+}
+
+function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
+    const board = getBoardElement();
+    const dominoWidth = isHorizontal ? 100 : 50;
+    const dominoHeight = isHorizontal ? 50 : 100;
+
+    const el = createDominoElement(orientedDomino, isHorizontal, owner);
+    el.style.position = 'absolute';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    board.appendChild(el);
+
+    boardDominoes.push({
+        domino: orientedDomino,
+        x,
+        y,
+        isHorizontal,
+        element: owner === 'player' ? el : undefined
+    });
+
+    lastPlayedSide = side;
+    if (side === 'center') {
+        boardEnds.left = orientedDomino.top;
+        boardEnds.right = orientedDomino.bottom;
+        boardEnds.top = null;
+        boardEnds.bottom = null;
+        const spinnerWidth = isHorizontal ? 100 : 50;
+        endPositions.left = { x, y, isHorizontal };
+        endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
+        endPositions.top = null;
+        endPositions.bottom = null;
+        endIsDouble.left = false;
+        endIsDouble.right = false;
+        endIsDouble.top = false;
+        endIsDouble.bottom = false;
+    } else if (side === 'left') {
+        boardEnds.left = orientedDomino.top;
+        endPositions.left = { x, y, isHorizontal };
+        endIsDouble.left = orientedDomino.top === orientedDomino.bottom;
+        leftArmFilled = true;
+    } else if (side === 'right') {
+        boardEnds.right = orientedDomino.bottom;
+        endPositions.right = { x: x + dominoWidth, y, isHorizontal };
+        endIsDouble.right = orientedDomino.top === orientedDomino.bottom;
+        rightArmFilled = true;
+    } else if (side === 'top') {
+        boardEnds.top = orientedDomino.top;
+        endPositions.top = { x, y, isHorizontal };
+        endIsDouble.top = orientedDomino.top === orientedDomino.bottom;
+    } else if (side === 'bottom') {
+        boardEnds.bottom = orientedDomino.bottom;
+        endPositions.bottom = { x, y: y + dominoHeight, isHorizontal };
+        endIsDouble.bottom = orientedDomino.top === orientedDomino.bottom;
+    }
+
+    updateLastPlayedDomino(orientedDomino);
+    return el;
+}
+
 function playDomino(domino, side, x, y, isHorizontal) {
     if (!isPlayerTurn || gameOver) return;
 
-    const boardEl = document.getElementById('board');
-    
     clearActivePlacement();
     
     const dominoWidth = isHorizontal ? 100 : 50;
@@ -1416,112 +1507,20 @@ function playDomino(domino, side, x, y, isHorizontal) {
         }
     }
     
-    let orientedDomino = { ...domino };
+    const oriented = orientDominoForPlacement(domino, side, isHorizontal);
+    let orientedDomino = oriented.orientedDomino;
+    isHorizontal = oriented.isHorizontal;
 
     if (side === 'center') {
         hideTurnIndicator();
-        startingDomino = null; // Clear starting domino after first move
-        if (domino.top === domino.bottom) {
-            orientedDomino = { ...domino };
-            isHorizontal = false;
-        } else {
-            const high = Math.max(domino.top, domino.bottom);
-            const low = Math.min(domino.top, domino.bottom);
-            orientedDomino = { top: high, bottom: low, id: domino.id };
-            isHorizontal = true;
-        }
-    } else {
-        const matchingEnd = getMatchingEndForSide(side);
-
-        if (isHorizontal) {
-            if (side === 'left') {
-                if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            } else if (side === 'right') {
-                if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            }
-        } else {
-            if (side === 'top') {
-                if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            } else if (side === 'bottom') {
-                if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            }
-        }
+        startingDomino = null;
     }
-    
-    const dominoEl = createDominoElement(orientedDomino, isHorizontal, 'player');
-    dominoEl.style.left = x + 'px';
-    dominoEl.style.top = y + 'px';
 
-    boardEl.appendChild(dominoEl);
-    
+    mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, 'player');
     playDominoSound();
-    
-    boardDominoes.push({
-        domino: orientedDomino,
-        x: x,
-        y: y,
-        isHorizontal: isHorizontal,
-        element: dominoEl
-    });
-    
-    lastPlayedSide = side;
-    if (side === 'center') {
-        boardEnds.left = orientedDomino.top;
-        boardEnds.right = orientedDomino.bottom;
-        boardEnds.top = null;
-        boardEnds.bottom = null;
-        const spinnerWidth = isHorizontal ? 100 : 50;
-        endPositions.left = { x, y, isHorizontal };
-        endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
-        endPositions.top = null;
-        endPositions.bottom = null;
-        endIsDouble.left = false;
-        endIsDouble.right = false;
-        endIsDouble.top = false;
-        endIsDouble.bottom = false;
-    } else if (side === 'left') {
-        boardEnds.left = orientedDomino.top;
-        const dominoWidth = isHorizontal ? 100 : 50;
-        endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
-        endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
-        leftArmFilled = true;
-    } else if (side === 'right') {
-        boardEnds.right = orientedDomino.bottom;
-        const dominoWidth = isHorizontal ? 100 : 50;
-        endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
-        endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
-        rightArmFilled = true;
-    } else if (side === 'top') {
-        boardEnds.top = orientedDomino.top;
-        const dominoHeight = isHorizontal ? 50 : 100;
-        endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
-        endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
-    } else if (side === 'bottom') {
-        boardEnds.bottom = orientedDomino.bottom;
-        const dominoHeight = isHorizontal ? 50 : 100;
-        endPositions.bottom = { x: x, y: y + dominoHeight, isHorizontal: isHorizontal };
-        endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
-    }
     
     playerDominoes = playerDominoes.filter(d => d.id !== domino.id);
     
-    updateLastPlayedDomino(orientedDomino);
     recordMove();
 
     const scoreResult = calculateScoreFromEnds(side);
@@ -1554,7 +1553,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
     
     sendToOpponent({
         type: 'PLAY_DOMINO',
-        domino: domino,
+        domino: orientedDomino,
         side: side,
         x: x,
         y: y,
@@ -1563,107 +1562,11 @@ function playDomino(domino, side, x, y, isHorizontal) {
     });
 }
 
-function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
-    const board = getBoardElement();
-    
-    const dominoWidth = isHorizontal ? 100 : 50;
-    const dominoHeight = isHorizontal ? 50 : 100;
-    
-    let orientedDomino = { ...domino };
-
+function placeDominoOnBoard(orientedDomino, side, x, y, isHorizontal) {
     if (side === 'center') {
-        if (domino.top === domino.bottom) {
-            orientedDomino = { ...domino };
-            isHorizontal = false;
-        } else {
-            const high = Math.max(domino.top, domino.bottom);
-            const low = Math.min(domino.top, domino.bottom);
-            orientedDomino = { top: high, bottom: low, id: domino.id };
-            isHorizontal = true;
-        }
-    } else {
-        const matchingEnd = getMatchingEndForSide(side);
-
-        if (isHorizontal) {
-            if (side === 'left') {
-                if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            } else if (side === 'right') {
-                if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            }
-        } else {
-            if (side === 'top') {
-                if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            } else if (side === 'bottom') {
-                if (domino.top === matchingEnd) {
-                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
-                } else if (domino.bottom === matchingEnd) {
-                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
-                }
-            }
-        }
+        startingDomino = null;
     }
-    
-    const el = createDominoElement(orientedDomino, isHorizontal, 'cpu');
-    el.style.position = 'absolute';
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
-    board.appendChild(el);
-    
-    boardDominoes.push({
-        domino: orientedDomino,
-        x: x,
-        y: y,
-        isHorizontal: isHorizontal
-    });
-    
-    // Update board ends and positions to match single-player logic
-    if (side === 'center') {
-        boardEnds.left = orientedDomino.top;
-        boardEnds.right = orientedDomino.bottom;
-        boardEnds.top = null;
-        boardEnds.bottom = null;
-        const spinnerWidth = isHorizontal ? 100 : 50;
-        endPositions.left = { x, y, isHorizontal };
-        endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
-        endPositions.top = null;
-        endPositions.bottom = null;
-        endIsDouble.left = false;
-        endIsDouble.right = false;
-        endIsDouble.top = false;
-        endIsDouble.bottom = false;
-    } else if (side === 'left') {
-        boardEnds.left = orientedDomino.top;
-        endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
-        endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
-        leftArmFilled = true;
-    } else if (side === 'right') {
-        boardEnds.right = orientedDomino.bottom;
-        endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
-        endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
-        rightArmFilled = true;
-    } else if (side === 'top') {
-        boardEnds.top = orientedDomino.top;
-        endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
-        endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
-    } else if (side === 'bottom') {
-        boardEnds.bottom = orientedDomino.bottom;
-        endPositions.bottom = { x: x, y: y + dominoHeight, isHorizontal: isHorizontal };
-        endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
-    }
-    
-    updateLastPlayedDomino(orientedDomino);
+    mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, 'cpu');
     dismissStarterOverlay();
 }
 
@@ -1745,13 +1648,12 @@ function proceedToNextHand() {
     updateBoneyardCount();
     
     const starter = findStarter(playerDominoes, opponentDominoes);
-    isPlayerTurn = starter.owner === 'player';
-    startingDomino = playerDominoes.some(d => d.id === starter.domino.id) ? starter.domino : null;
+    setupOpeningTurn(starter.domino, starter.owner === 'player');
     
     initializeBoard();
     renderRacks();
     updateDrawButton();
-    showTurnIndicator(starter);
+    showTurnIndicator();
     centerCameraOnBoard();
     
     const gameState = {
