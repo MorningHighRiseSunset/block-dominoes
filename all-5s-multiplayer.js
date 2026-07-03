@@ -1461,6 +1461,7 @@ function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
         endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
+        // Don't set leftArmFilled/rightArmFilled here - they're set when dominoes are actually placed
     } else if (side === 'left') {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
