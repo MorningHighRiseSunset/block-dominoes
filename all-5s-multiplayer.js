@@ -533,8 +533,14 @@ function getFirstMovePlacement(domino) {
     const isDouble = domino.top === domino.bottom;
     const width = isDouble ? 50 : 100;
     const height = isDouble ? 100 : 50;
-    const x = (boardDimensions.width - width) / 2;
-    const y = (boardDimensions.height - height) / 2;
+    
+    // Center the domino on the board
+    const board = getBoardElement();
+    const boardWidth = board ? board.offsetWidth : boardDimensions.width;
+    const boardHeight = board ? board.offsetHeight : boardDimensions.height;
+    
+    const x = (boardWidth - width) / 2;
+    const y = (boardHeight - height) / 2;
 
     return {
         side: 'center',
@@ -717,9 +723,6 @@ function renderRacks() {
 
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
-        if (boardDominoes.length === 0 && isPlayerTurn && startingDomino && domino.id === startingDomino.id) {
-            el.classList.add('starter-domino');
-        }
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });
