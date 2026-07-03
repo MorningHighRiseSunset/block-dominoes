@@ -487,6 +487,8 @@ body {
     overflow: visible;
     width: 800px;
     height: 600px;
+    min-width: 800px;
+    min-height: 600px;
     user-select: none;
     -webkit-user-select: none;
 }
