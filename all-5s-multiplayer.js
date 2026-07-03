@@ -210,8 +210,8 @@ function startGame() {
     updateBoneyardCount();
     
     const starter = findStarter(playerDominoes, opponentDominoes);
-    startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
+    startingDomino = playerDominoes.some(d => d.id === starter.domino.id) ? starter.domino : null;
     
     const message = {
         type: 'START_GAME',
@@ -233,10 +233,6 @@ function startGame() {
     handlePlayerTurnStart();
     setupHintSystem();
     setupGameOverHandlers();
-    
-    if (!isPlayerTurn) {
-        document.getElementById('turnIndicator').textContent = "Opponent's turn";
-    }
 }
 
 function initializeGameState(data) {
@@ -269,10 +265,6 @@ function initializeGameState(data) {
     handlePlayerTurnStart();
     setupHintSystem();
     setupGameOverHandlers();
-    
-    if (!isPlayerTurn) {
-        document.getElementById('turnIndicator').textContent = "Opponent's turn";
-    }
 }
 
 function showGameScreen() {
@@ -296,7 +288,8 @@ function handleOpponentPlay(data) {
     placeDominoOnBoard(domino, side, x, y, isHorizontal);
     
     if (side === 'center') {
-        startingDomino = null; // Clear starting domino after opponent's first move
+        startingDomino = null;
+        hideTurnIndicator();
     }
     
     if (score > 0) {
@@ -308,6 +301,7 @@ function handleOpponentPlay(data) {
     document.getElementById('turnIndicator').textContent = "Your turn";
     document.getElementById('turnIndicator').classList.remove('hidden');
     
+    renderRacks();
     updateRackState();
     handlePlayerTurnStart();
 }
@@ -571,10 +565,12 @@ function showTurnIndicator(starter) {
     if (!indicator) return;
 
     const dominoLabel = formatDominoLabel(starter.domino);
-    if (starter.owner === 'player') {
+    if (isPlayerTurn && startingDomino) {
         indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
+    } else if (boardDominoes.length === 0) {
+        indicator.innerHTML = `<strong>Opponent goes first</strong>They have the <span class="starter-domino-label">${dominoLabel}</span>`;
     } else {
-        indicator.innerHTML = `<strong>Opponent goes first</strong>`;
+        return;
     }
     indicator.classList.remove('hidden');
 }
@@ -737,6 +733,9 @@ function renderRacks() {
 
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
+        if (boardDominoes.length === 0 && isPlayerTurn && startingDomino && domino.id === startingDomino.id) {
+            el.classList.add('starter-domino');
+        }
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });
@@ -1740,8 +1739,8 @@ function proceedToNextHand() {
     updateBoneyardCount();
     
     const starter = findStarter(playerDominoes, opponentDominoes);
-    startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
+    startingDomino = playerDominoes.some(d => d.id === starter.domino.id) ? starter.domino : null;
     
     initializeBoard();
     renderRacks();
