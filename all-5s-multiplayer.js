@@ -295,6 +295,10 @@ function handleOpponentPlay(data) {
     
     placeDominoOnBoard(domino, side, x, y, isHorizontal);
     
+    if (side === 'center') {
+        startingDomino = null; // Clear starting domino after opponent's first move
+    }
+    
     if (score > 0) {
         opponentScore += score;
         document.getElementById('opponentScore').textContent = opponentScore;
@@ -567,7 +571,7 @@ function showTurnIndicator(starter) {
     if (starter.owner === 'player') {
         indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
     } else {
-        indicator.innerHTML = `<strong>Opponent goes first</strong>Opponent has the <span class="starter-domino-label">${dominoLabel}</span>`;
+        indicator.innerHTML = `<strong>Opponent goes first</strong>`;
     }
     indicator.classList.remove('hidden');
 }
@@ -1381,6 +1385,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
 
     if (side === 'center') {
         hideTurnIndicator();
+        startingDomino = null; // Clear starting domino after first move
         if (domino.top === domino.bottom) {
             orientedDomino = { ...domino };
             isHorizontal = false;
