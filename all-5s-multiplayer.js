@@ -308,6 +308,7 @@ function handleOpponentPlay(data) {
     document.getElementById('turnIndicator').textContent = "Your turn";
     document.getElementById('turnIndicator').classList.remove('hidden');
     
+    updateRackState();
     handlePlayerTurnStart();
 }
 
@@ -319,6 +320,7 @@ function handleOpponentDraw() {
     document.getElementById('turnIndicator').textContent = "Your turn";
     document.getElementById('turnIndicator').classList.remove('hidden');
     
+    updateRackState();
     handlePlayerTurnStart();
 }
 
@@ -327,6 +329,7 @@ function handleOpponentPass() {
     document.getElementById('turnIndicator').textContent = "Your turn";
     document.getElementById('turnIndicator').classList.remove('hidden');
     
+    updateRackState();
     handlePlayerTurnStart();
 }
 
@@ -742,6 +745,7 @@ function renderRacks() {
     playerRack.addEventListener('scroll', updateRackScrollIndicators);
 
     updateRackScrollIndicators();
+    updateRackState();
 }
 
 function updateRackScrollIndicators() {
@@ -1241,13 +1245,28 @@ function selectDomino(domino, element) {
     playSelectSound();
     
     requestAnimationFrame(() => {
-        if (!isShowingZones) {
+        if (!isShowingZones && isPlayerTurn) {
             isShowingZones = true;
             showValidPlacementZones(domino);
             isShowingZones = false;
             requestAnimationFrame(() => updateZoneHintArrows());
         }
     });
+}
+
+function updateRackState() {
+    const rack = document.getElementById('playerRack');
+    if (!rack) return;
+    
+    if (isPlayerTurn) {
+        rack.classList.remove('disabled');
+        rack.style.pointerEvents = 'auto';
+        rack.style.opacity = '1';
+    } else {
+        rack.classList.add('disabled');
+        rack.style.pointerEvents = 'none';
+        rack.style.opacity = '0.5';
+    }
 }
 
 function updateBoneyardCount() {
@@ -1504,6 +1523,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
     selectedDomino = null;
 
     isPlayerTurn = false;
+    updateRackState();
 
     updateBoneyardCount();
     
