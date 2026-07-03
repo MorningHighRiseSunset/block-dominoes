@@ -68,11 +68,14 @@ function createLobby() {
         conn = connection;
         opponentPeerId = conn.peer;
         setupConnectionHandlers();
-        document.getElementById('connectionStatus').textContent = 'Opponent connected! Starting game...';
         
-        setTimeout(() => {
-            startGame();
-        }, 1000);
+        conn.on('open', () => {
+            document.getElementById('connectionStatus').textContent = 'Opponent connected! Starting game...';
+            
+            setTimeout(() => {
+                startGame();
+            }, 1000);
+        });
     });
     
     peer.on('error', (err) => {
@@ -129,9 +132,14 @@ function setupConnectionHandlers() {
 }
 
 function handleNetworkMessage(data) {
+    console.log('Received message:', data);
     switch (data.type) {
         case 'START_GAME':
-            initializeGameState(data.gameState);
+            if (data.gameState) {
+                initializeGameState(data.gameState);
+            } else {
+                console.error('Invalid START_GAME message:', data);
+            }
             break;
         case 'PLAY_DOMINO':
             handleOpponentPlay(data);
@@ -175,6 +183,7 @@ function startGame() {
         isHostTurn: isPlayerTurn
     };
     
+    console.log('Sending START_GAME:', gameState);
     sendToOpponent({ type: 'START_GAME', gameState });
     
     showGameScreen();
@@ -223,8 +232,15 @@ function initializeGameState(data) {
 }
 
 function showGameScreen() {
-    document.getElementById('lobbyScreen').classList.add('hidden');
-    document.getElementById('gameScreen').classList.remove('hidden');
+    const lobbyScreen = document.getElementById('lobbyScreen');
+    const gameScreen = document.getElementById('gameScreen');
+    const domino3d = document.querySelectorAll('.domino-3d');
+    
+    if (lobbyScreen) lobbyScreen.classList.add('hidden');
+    if (gameScreen) gameScreen.classList.remove('hidden');
+    
+    // Hide 3D background dominoes
+    domino3d.forEach(el => el.classList.add('hidden'));
 }
 
 // Game Logic (adapted from all-fives-game.js)
