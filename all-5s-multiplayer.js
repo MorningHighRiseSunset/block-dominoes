@@ -135,10 +135,12 @@ function handleNetworkMessage(data) {
     console.log('Received message:', data);
     switch (data.type) {
         case 'START_GAME':
-            if (data.gameState) {
-                initializeGameState(data.gameState);
+            console.log('START_GAME data:', data);
+            // Data is now flattened: { type, dominoSet, starter, isHostTurn }
+            if (data && data.dominoSet && data.starter) {
+                initializeGameState(data);
             } else {
-                console.error('Invalid START_GAME message:', data);
+                console.error('Invalid START_GAME message - missing required fields:', data);
             }
             break;
         case 'PLAY_DOMINO':
@@ -153,12 +155,17 @@ function handleNetworkMessage(data) {
         case 'GAME_OVER':
             handleGameOver(data);
             break;
+        default:
+            console.log('Unknown message type:', data.type);
     }
 }
 
 function sendToOpponent(data) {
     if (conn && conn.open) {
+        console.log('Sending to opponent:', data);
         conn.send(data);
+    } else {
+        console.error('Cannot send - connection not open:', conn);
     }
 }
 
@@ -176,15 +183,16 @@ function startGame() {
     startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
     
-    // Send game state to opponent
-    const gameState = {
+    // Send game state to opponent (flatten to avoid serialization issues)
+    const message = {
+        type: 'START_GAME',
         dominoSet: allDominoes,
         starter: starter,
         isHostTurn: isPlayerTurn
     };
     
-    console.log('Sending START_GAME:', gameState);
-    sendToOpponent({ type: 'START_GAME', gameState });
+    console.log('Sending START_GAME:', message);
+    sendToOpponent(message);
     
     showGameScreen();
     renderRacks();
@@ -203,21 +211,22 @@ function startGame() {
 }
 
 function initializeGameState(data) {
+    console.log('initializeGameState called with:', data);
     initializeBoard();
     
     // Use the same domino set as host
-    const allDominoes = data.gameState.dominoSet;
+    const allDominoes = data.dominoSet;
     playerDominoes = allDominoes.slice(7, 14); // Client gets second 7 dominoes
     opponentDominoes = []; // Will be updated as opponent plays
     boneyard = allDominoes.slice(14);
     updateBoneyardCount();
     
-    startingDomino = data.gameState.starter.domino;
-    isPlayerTurn = !data.gameState.isHostTurn; // Opposite of host's turn
+    startingDomino = data.starter.domino;
+    isPlayerTurn = !data.isHostTurn; // Opposite of host's turn
     
     showGameScreen();
     renderRacks();
-    showTurnIndicator(data.gameState.starter);
+    showTurnIndicator(data.starter);
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
