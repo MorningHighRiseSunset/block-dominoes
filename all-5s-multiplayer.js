@@ -557,15 +557,52 @@ function handleOpponentPlay(data) {
 function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
     const board = getBoardElement();
     
-    // Orient domino to match the end
+    const dominoWidth = isHorizontal ? 100 : 50;
+    const dominoHeight = isHorizontal ? 50 : 100;
+    
     let orientedDomino = { ...domino };
-    if (side === 'left' && boardEnds.left !== null) {
-        if (domino.bottom === boardEnds.left) {
-            orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+
+    if (side === 'center') {
+        if (domino.top === domino.bottom) {
+            orientedDomino = { ...domino };
+            isHorizontal = false;
+        } else {
+            const high = Math.max(domino.top, domino.bottom);
+            const low = Math.min(domino.top, domino.bottom);
+            orientedDomino = { top: high, bottom: low, id: domino.id };
+            isHorizontal = true;
         }
-    } else if (side === 'right' && boardEnds.right !== null) {
-        if (domino.top === boardEnds.right) {
-            orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+    } else {
+        const matchingEnd = getMatchingEndForSide(side);
+
+        if (isHorizontal) {
+            if (side === 'left') {
+                if (domino.bottom === matchingEnd) {
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.top === matchingEnd) {
+                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+                }
+            } else if (side === 'right') {
+                if (domino.top === matchingEnd) {
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.bottom === matchingEnd) {
+                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+                }
+            }
+        } else {
+            if (side === 'top') {
+                if (domino.bottom === matchingEnd) {
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.top === matchingEnd) {
+                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+                }
+            } else if (side === 'bottom') {
+                if (domino.top === matchingEnd) {
+                    orientedDomino = { top: domino.top, bottom: domino.bottom, id: domino.id };
+                } else if (domino.bottom === matchingEnd) {
+                    orientedDomino = { top: domino.bottom, bottom: domino.top, id: domino.id };
+                }
+            }
         }
     }
     
@@ -575,7 +612,6 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
     el.style.top = y + 'px';
     board.appendChild(el);
     
-    // Update board state
     boardDominoes.push({
         domino: orientedDomino,
         x: x,
@@ -583,7 +619,6 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
         isHorizontal: isHorizontal
     });
     
-    // Update ends
     if (side === 'center') {
         boardEnds.left = orientedDomino.top;
         boardEnds.right = orientedDomino.bottom;
@@ -599,9 +634,25 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
         boardEnds.right = orientedDomino.bottom;
         endPositions.right = { x: x + (isHorizontal ? 100 : 50), y: y + 50 };
         rightArmFilled = true;
+    } else if (side === 'top') {
+        boardEnds.top = orientedDomino.top;
+        endPositions.top = { x: x, y: y };
+    } else if (side === 'bottom') {
+        boardEnds.bottom = orientedDomino.bottom;
+        endPositions.bottom = { x: x, y: y + 50 };
     }
     
     updateLastPlayedDomino(orientedDomino);
+}
+
+function getMatchingEndForSide(side) {
+    switch (side) {
+        case 'left': return boardEnds.left;
+        case 'right': return boardEnds.right;
+        case 'top': return boardEnds.top;
+        case 'bottom': return boardEnds.bottom;
+        default: return null;
+    }
 }
 
 function calculateScoreFromEnds(playedSide) {
