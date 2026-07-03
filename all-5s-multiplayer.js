@@ -556,8 +556,7 @@ function showTurnIndicator() {
         const dominoLabel = formatDominoLabel(startingDomino);
         indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
     } else {
-        const dominoLabel = formatDominoLabel(openingDomino);
-        indicator.innerHTML = `<strong>Opponent goes first</strong>They have the <span class="starter-domino-label">${dominoLabel}</span>`;
+        indicator.innerHTML = `<strong>Opponent goes first</strong>`;
     }
     indicator.classList.remove('hidden');
 }
