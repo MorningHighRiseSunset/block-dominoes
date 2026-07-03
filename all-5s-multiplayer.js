@@ -61,7 +61,7 @@ function createLobby() {
         myPeerId = id;
         document.getElementById('lobbyIdDisplay').textContent = id;
         document.getElementById('lobbyInfo').classList.remove('hidden');
-        document.getElementById('lobbyButtons').classList.add('hidden');
+        document.querySelector('.lobby-buttons').classList.add('hidden');
     });
     
     peer.on('connection', (connection) => {
@@ -156,7 +156,13 @@ function sendToOpponent(data) {
 
 function startGame() {
     initializeBoard();
-    dealDominoes();
+    
+    // Create and shuffle domino set
+    const allDominoes = createDominoSet();
+    playerDominoes = allDominoes.slice(0, 7);
+    opponentDominoes = allDominoes.slice(7, 14);
+    boneyard = allDominoes.slice(14);
+    updateBoneyardCount();
     
     const starter = findStarter(playerDominoes, opponentDominoes);
     startingDomino = starter.domino;
@@ -164,15 +170,12 @@ function startGame() {
     
     // Send game state to opponent
     const gameState = {
-        dominoSet: createDominoSet(),
+        dominoSet: allDominoes,
         starter: starter,
         isHostTurn: isPlayerTurn
     };
     
     sendToOpponent({ type: 'START_GAME', gameState });
-    
-    // Initialize opponent's hand from the deal
-    opponentDominoes = gameState.dominoSet.slice(7, 14);
     
     showGameScreen();
     renderRacks();
@@ -194,9 +197,11 @@ function initializeGameState(data) {
     initializeBoard();
     
     // Use the same domino set as host
-    const dominoSet = data.gameState.dominoSet;
-    playerDominoes = dominoSet.slice(7, 14); // Client gets second 7 dominoes
+    const allDominoes = data.gameState.dominoSet;
+    playerDominoes = allDominoes.slice(7, 14); // Client gets second 7 dominoes
     opponentDominoes = []; // Will be updated as opponent plays
+    boneyard = allDominoes.slice(14);
+    updateBoneyardCount();
     
     startingDomino = data.gameState.starter.domino;
     isPlayerTurn = !data.gameState.isHostTurn; // Opposite of host's turn
@@ -257,6 +262,7 @@ function initializeBoard() {
     board.style.height = '600px';
 }
 
+// dealDominoes is no longer used - dominoes are dealt in startGame
 function dealDominoes() {
     const allDominoes = createDominoSet();
     playerDominoes = allDominoes.slice(0, 7);
