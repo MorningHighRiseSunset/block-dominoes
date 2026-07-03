@@ -285,12 +285,13 @@ function handleOpponentPlay(data) {
     
     opponentDominoes = opponentDominoes.filter(d => d.id !== domino.id);
     
+    clearActivePlacement();
     placeDominoOnBoard(domino, side, x, y, isHorizontal);
     
     if (side === 'center') {
         startingDomino = null;
-        hideTurnIndicator();
     }
+    dismissStarterOverlay();
     
     if (score > 0) {
         opponentScore += score;
@@ -298,8 +299,6 @@ function handleOpponentPlay(data) {
     }
     
     isPlayerTurn = true;
-    document.getElementById('turnIndicator').textContent = "Your turn";
-    document.getElementById('turnIndicator').classList.remove('hidden');
     
     renderRacks();
     updateRackState();
@@ -311,18 +310,14 @@ function handleOpponentDraw() {
     updateBoneyardCount();
     
     isPlayerTurn = true;
-    document.getElementById('turnIndicator').textContent = "Your turn";
-    document.getElementById('turnIndicator').classList.remove('hidden');
-    
+    dismissStarterOverlay();
     updateRackState();
     handlePlayerTurnStart();
 }
 
 function handleOpponentPass() {
     isPlayerTurn = true;
-    document.getElementById('turnIndicator').textContent = "Your turn";
-    document.getElementById('turnIndicator').classList.remove('hidden');
-    
+    dismissStarterOverlay();
     updateRackState();
     handlePlayerTurnStart();
 }
@@ -562,7 +557,7 @@ function getFirstMovePlacement(domino) {
 
 function showTurnIndicator(starter) {
     const indicator = document.getElementById('turnIndicator');
-    if (!indicator) return;
+    if (!indicator || boardDominoes.length > 0) return;
 
     const dominoLabel = formatDominoLabel(starter.domino);
     if (isPlayerTurn && startingDomino) {
@@ -578,6 +573,20 @@ function showTurnIndicator(starter) {
 function hideTurnIndicator() {
     const indicator = document.getElementById('turnIndicator');
     if (indicator) indicator.classList.add('hidden');
+}
+
+function clearActivePlacement() {
+    document.querySelectorAll('.placement-zone').forEach(z => z.remove());
+    clearZoneHintArrows();
+    document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
+    selectedDomino = null;
+    isShowingZones = false;
+}
+
+function dismissStarterOverlay() {
+    if (boardDominoes.length > 0) {
+        hideTurnIndicator();
+    }
 }
 
 function shiftBoardContent(shiftX, shiftY) {
@@ -1032,6 +1041,10 @@ function findValidPlacementsForDomino(domino) {
 }
 
 function hasAnyValidMove(dominoes) {
+    if (boardDominoes.length === 0) {
+        if (!isPlayerTurn || !startingDomino) return false;
+        return dominoes.some(d => d.id === startingDomino.id);
+    }
     return dominoes.some(domino => findValidPlacementsForDomino(domino).length > 0);
 }
 
@@ -1133,6 +1146,7 @@ function endGame(result, message, playerPoints = 0, opponentPoints = 0, opponent
 
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
     clearZoneHintArrows();
+    hideTurnIndicator();
     selectedDomino = null;
 
     playerScore += playerPoints;
@@ -1301,6 +1315,11 @@ function updateDrawButton() {
 function handlePlayerTurnStart() {
     if (!isPlayerTurn || gameOver) return;
 
+    if (boardDominoes.length === 0 && startingDomino) {
+        updateDrawButton();
+        return;
+    }
+
     updateDrawButton();
 
     if (!hasAnyValidMove(playerDominoes) && boneyard.length === 0) {
@@ -1372,9 +1391,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
 
     const boardEl = document.getElementById('board');
     
-    document.querySelectorAll('.placement-zone').forEach(z => z.remove());
-    clearZoneHintArrows();
-    document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
+    clearActivePlacement();
     
     const dominoWidth = isHorizontal ? 100 : 50;
     const dominoHeight = isHorizontal ? 50 : 100;
@@ -1533,7 +1550,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
     checkGameEndAfterMove(true);
     if (gameOver) return;
     
-    document.getElementById('turnIndicator').textContent = "Opponent's turn";
+    dismissStarterOverlay();
     
     sendToOpponent({
         type: 'PLAY_DOMINO',
@@ -1626,8 +1643,6 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
         endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
-        leftArmFilled = true;
-        rightArmFilled = true;
     } else if (side === 'left') {
         boardEnds.left = orientedDomino.top;
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
@@ -1649,16 +1664,7 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
     }
     
     updateLastPlayedDomino(orientedDomino);
-}
-
-function getMatchingEndForSide(side) {
-    switch (side) {
-        case 'left': return boardEnds.left;
-        case 'right': return boardEnds.right;
-        case 'top': return boardEnds.top;
-        case 'bottom': return boardEnds.bottom;
-        default: return null;
-    }
+    dismissStarterOverlay();
 }
 
 function startNewHand(message, opponentDominoes = []) {
