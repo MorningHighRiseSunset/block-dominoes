@@ -249,7 +249,14 @@ function initializeGameState(data) {
     boneyard = allDominoes.slice(14);
     updateBoneyardCount();
     
-    startingDomino = data.starter.domino;
+    // Only set startingDomino if this player actually has it
+    const starterDomino = data.starter.domino;
+    if (playerDominoes.some(d => d.id === starterDomino.id)) {
+        startingDomino = starterDomino;
+    } else {
+        startingDomino = null;
+    }
+    
     isPlayerTurn = !data.isHostTurn;
     
     showGameScreen();
@@ -1288,6 +1295,7 @@ function showValidPlacementZones(domino) {
     if (!isPlayerTurn) return;
 
     if (boardDominoes.length === 0) {
+        // In PvP, if board is empty, only the player with the starting domino can play
         if (!startingDomino || domino.id !== startingDomino.id) {
             return;
         }
@@ -1579,27 +1587,41 @@ function placeDominoOnBoard(domino, side, x, y, isHorizontal) {
         isHorizontal: isHorizontal
     });
     
+    // Update board ends and positions to match single-player logic
     if (side === 'center') {
         boardEnds.left = orientedDomino.top;
         boardEnds.right = orientedDomino.bottom;
-        endPositions.left = { x: x, y: y + 50 };
-        endPositions.right = { x: x + (isHorizontal ? 100 : 50), y: y + 50 };
+        boardEnds.top = null;
+        boardEnds.bottom = null;
+        const spinnerWidth = isHorizontal ? 100 : 50;
+        endPositions.left = { x, y, isHorizontal };
+        endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
+        endPositions.top = null;
+        endPositions.bottom = null;
+        endIsDouble.left = false;
+        endIsDouble.right = false;
+        endIsDouble.top = false;
+        endIsDouble.bottom = false;
         leftArmFilled = true;
         rightArmFilled = true;
     } else if (side === 'left') {
         boardEnds.left = orientedDomino.top;
-        endPositions.left = { x: x, y: y + 50 };
+        endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
         leftArmFilled = true;
     } else if (side === 'right') {
         boardEnds.right = orientedDomino.bottom;
-        endPositions.right = { x: x + (isHorizontal ? 100 : 50), y: y + 50 };
+        endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
+        endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
         rightArmFilled = true;
     } else if (side === 'top') {
         boardEnds.top = orientedDomino.top;
-        endPositions.top = { x: x, y: y };
+        endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
+        endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
     } else if (side === 'bottom') {
         boardEnds.bottom = orientedDomino.bottom;
-        endPositions.bottom = { x: x, y: y + 50 };
+        endPositions.bottom = { x: x, y: y + dominoHeight, isHorizontal: isHorizontal };
+        endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
     }
     
     updateLastPlayedDomino(orientedDomino);
