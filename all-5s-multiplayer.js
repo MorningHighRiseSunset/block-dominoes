@@ -48,34 +48,18 @@ const GAME_HINTS = [
 
 // Lobby Management
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, setting up lobby buttons');
-    
     const createBtn = document.getElementById('createLobbyBtn');
     const joinBtn = document.getElementById('joinLobbyBtn');
     const joinGameBtn = document.getElementById('joinGameBtn');
     
-    console.log('createLobbyBtn:', createBtn);
-    console.log('joinLobbyBtn:', joinBtn);
-    console.log('joinGameBtn:', joinGameBtn);
-    
-    if (createBtn) {
-        createBtn.addEventListener('click', createLobby);
-        console.log('Added click listener to createLobbyBtn');
-    }
-    if (joinBtn) {
-        joinBtn.addEventListener('click', showJoinSection);
-        console.log('Added click listener to joinLobbyBtn');
-    }
+    if (createBtn) createBtn.addEventListener('click', createLobby);
+    if (joinBtn) joinBtn.addEventListener('click', showJoinSection);
     if (joinGameBtn) {
         joinGameBtn.addEventListener('click', () => {
             const lobbyId = document.getElementById('lobbyIdInput').value.trim();
-            if (lobbyId) {
-                joinLobby();
-            } else {
-                alert('Please enter a Lobby ID');
-            }
+            if (lobbyId) joinLobby();
+            else alert('Please enter a Lobby ID');
         });
-        console.log('Added click listener to joinGameBtn');
     }
 });
 
@@ -84,15 +68,29 @@ function showJoinSection() {
 }
 
 function createLobby() {
-    console.log('createLobby called');
+    if (typeof Peer === 'undefined') {
+        alert('PeerJS not loaded. Please refresh the page.');
+        return;
+    }
+    
     isHost = true;
-    console.log('Creating PeerJS peer...');
-    peer = new Peer();
+    
+    peer = new Peer(null, {
+        debug: 1
+    });
     
     peer.on('open', (id) => {
+        console.log('Peer opened with ID:', id);
         myPeerId = id;
         document.getElementById('lobbyIdDisplay').textContent = myPeerId;
         document.getElementById('connectionStatus').textContent = 'Waiting for opponent...';
+        document.getElementById('lobbyInfo').classList.remove('hidden');
+    });
+    
+    peer.on('disconnected', () => {
+        console.log('Peer disconnected from server');
+        document.getElementById('connectionStatus').textContent = 'Disconnected from server. Reconnecting...';
+        peer.reconnect();
     });
     
     peer.on('connection', (connection) => {
@@ -102,39 +100,52 @@ function createLobby() {
         
         conn.on('open', () => {
             document.getElementById('connectionStatus').textContent = 'Opponent connected! Starting game...';
-            
-            setTimeout(() => {
-                startGame();
-            }, 1000);
+            setTimeout(() => startGame(), 1000);
         });
     });
     
     peer.on('error', (err) => {
         console.error('PeerJS error:', err);
-        document.getElementById('connectionStatus').textContent = 'Error: ' + err.message;
+        document.getElementById('connectionStatus').textContent = 'Error: ' + err.type + ' - ' + err.message;
     });
 }
 
 function joinLobby() {
     const lobbyId = document.getElementById('lobbyIdInput').value.trim();
+    
     if (!lobbyId) {
         alert('Please enter a Lobby ID');
         return;
     }
     
+    if (typeof Peer === 'undefined') {
+        alert('PeerJS not loaded. Please refresh the page.');
+        return;
+    }
+    
     isHost = false;
     opponentPeerId = lobbyId;
-    peer = new Peer();
+    
+    peer = new Peer(null, {
+        debug: 1
+    });
     
     peer.on('open', (id) => {
+        console.log('Peer opened with ID:', id);
         myPeerId = id;
         conn = peer.connect(opponentPeerId);
         setupConnectionHandlers();
     });
     
+    peer.on('disconnected', () => {
+        console.log('Peer disconnected from server');
+        document.getElementById('connectionStatus').textContent = 'Disconnected from server. Reconnecting...';
+        peer.reconnect();
+    });
+    
     peer.on('error', (err) => {
         console.error('PeerJS error:', err);
-        document.getElementById('connectionStatus').textContent = 'Error: ' + err.message;
+        document.getElementById('connectionStatus').textContent = 'Error: ' + err.type + ' - ' + err.message;
     });
 }
 
