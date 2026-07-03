@@ -48,16 +48,35 @@ const GAME_HINTS = [
 
 // Lobby Management
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('createLobbyBtn').addEventListener('click', createLobby);
-    document.getElementById('joinLobbyBtn').addEventListener('click', showJoinSection);
-    document.getElementById('joinGameBtn').addEventListener('click', () => {
-        const lobbyId = document.getElementById('lobbyIdInput').value.trim();
-        if (lobbyId) {
-            joinLobby();
-        } else {
-            alert('Please enter a Lobby ID');
-        }
-    });
+    console.log('DOM loaded, setting up lobby buttons');
+    
+    const createBtn = document.getElementById('createLobbyBtn');
+    const joinBtn = document.getElementById('joinLobbyBtn');
+    const joinGameBtn = document.getElementById('joinGameBtn');
+    
+    console.log('createLobbyBtn:', createBtn);
+    console.log('joinLobbyBtn:', joinBtn);
+    console.log('joinGameBtn:', joinGameBtn);
+    
+    if (createBtn) {
+        createBtn.addEventListener('click', createLobby);
+        console.log('Added click listener to createLobbyBtn');
+    }
+    if (joinBtn) {
+        joinBtn.addEventListener('click', showJoinSection);
+        console.log('Added click listener to joinLobbyBtn');
+    }
+    if (joinGameBtn) {
+        joinGameBtn.addEventListener('click', () => {
+            const lobbyId = document.getElementById('lobbyIdInput').value.trim();
+            if (lobbyId) {
+                joinLobby();
+            } else {
+                alert('Please enter a Lobby ID');
+            }
+        });
+        console.log('Added click listener to joinGameBtn');
+    }
 });
 
 function showJoinSection() {
@@ -65,7 +84,9 @@ function showJoinSection() {
 }
 
 function createLobby() {
+    console.log('createLobby called');
     isHost = true;
+    console.log('Creating PeerJS peer...');
     peer = new Peer();
     
     peer.on('open', (id) => {
