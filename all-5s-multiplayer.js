@@ -250,6 +250,9 @@ function showGameScreen() {
     
     // Hide 3D background dominoes
     domino3d.forEach(el => el.classList.add('hidden'));
+    
+    // Remove lobby-mode class to use game CSS
+    document.body.classList.remove('lobby-mode');
 }
 
 // Game Logic (adapted from all-fives-game.js)
