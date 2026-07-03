@@ -47,8 +47,22 @@ const GAME_HINTS = [
 ];
 
 // Lobby Management
-document.getElementById('createLobbyBtn').addEventListener('click', createLobby);
-document.getElementById('joinLobbyBtn').addEventListener('click', joinLobby);
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('createLobbyBtn').addEventListener('click', createLobby);
+    document.getElementById('joinLobbyBtn').addEventListener('click', showJoinSection);
+    document.getElementById('joinGameBtn').addEventListener('click', () => {
+        const lobbyId = document.getElementById('lobbyIdInput').value.trim();
+        if (lobbyId) {
+            joinLobby();
+        } else {
+            alert('Please enter a Lobby ID');
+        }
+    });
+});
+
+function showJoinSection() {
+    document.getElementById('joinSection').classList.remove('hidden');
+}
 
 function createLobby() {
     isHost = true;
