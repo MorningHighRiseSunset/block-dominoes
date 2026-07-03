@@ -1390,6 +1390,16 @@ function orientDominoForPlacement(domino, side, isHorizontal) {
     }
 
     const matchingEnd = getMatchingEndForSide(side);
+    const isDouble = domino.top === domino.bottom;
+
+    // Doubles are always vertical on left/right, horizontal on top/bottom
+    if (isDouble) {
+        if (side === 'left' || side === 'right') {
+            horizontal = false;
+        } else if (side === 'top' || side === 'bottom') {
+            horizontal = true;
+        }
+    }
 
     if (horizontal) {
         if (side === 'left') {
@@ -1461,7 +1471,8 @@ function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
         endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
-        // Don't set leftArmFilled/rightArmFilled here - they're set when dominoes are actually placed
+        leftArmFilled = true;
+        rightArmFilled = true;
     } else if (side === 'left') {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
