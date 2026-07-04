@@ -1,5 +1,27 @@
 // Multiplayer All 5s Dominoes using PeerJS
 
+const ADJECTIVES = [
+    'drooping', 'jumping', 'sleepy', 'happy', 'angry', 'brave', 'calm', 'eager', 'fancy', 'gentle',
+    'hasty', 'jolly', 'kind', 'lively', 'merry', 'noble', 'proud', 'quiet', 'rapid', 'silly',
+    'swift', 'tiny', 'vivid', 'witty', 'young', 'zany', 'bold', 'bright', 'clever', 'daring',
+    'elegant', 'fierce', 'graceful', 'humble', 'jolly', 'keen', 'lucky', 'mighty', 'neat',
+    'polite', 'quick', 'royal', 'smart', 'tough', 'vivid', 'wise', 'zealous'
+];
+
+const NOUNS = [
+    'dog', 'typhoon', 'eagle', 'tiger', 'lion', 'bear', 'wolf', 'fox', 'hawk', 'shark',
+    'panther', 'leopard', 'cheetah', 'dolphin', 'whale', 'octopus', 'penguin', 'owl', 'raven',
+    'cobra', 'python', 'falcon', 'stallion', 'mustang', 'badger', 'beaver', 'coyote', 'deer',
+    'elk', 'moose', 'otter', 'seal', 'walrus', 'bison', 'caribou', 'antelope', 'gazelle',
+    'lynx', 'bobcat', 'cougar', 'jaguar', 'ocelot', 'serval', 'caracal', 'sandcat', 'puma'
+];
+
+function generateLobbyCode() {
+    const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+    const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+    return `${adj}-${noun}`;
+}
+
 let peer = null;
 let conn = null;
 let myPeerId = null;
@@ -75,8 +97,9 @@ function createLobby() {
     }
     
     isHost = true;
+    const customLobbyCode = generateLobbyCode();
     
-    peer = new Peer(null, {
+    peer = new Peer(customLobbyCode, {
         debug: 1
     });
     
