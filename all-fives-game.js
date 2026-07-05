@@ -118,6 +118,8 @@ function initializeBoard() {
     boardDimensions.height = 600;
     board.style.width = '800px';
     board.style.height = '600px';
+    board.style.minWidth = '800px';
+    board.style.minHeight = '600px';
     leftArmFilled = false;
     rightArmFilled = false;
     
@@ -804,6 +806,8 @@ function ensureBoardBounds(minX, minY, maxX, maxY, adjustCamera = true) {
     if (needsUpdate) {
         board.style.width = width + 'px';
         board.style.height = height + 'px';
+        board.style.minWidth = width + 'px';
+        board.style.minHeight = height + 'px';
         boardDimensions.width = width;
         boardDimensions.height = height;
     }
