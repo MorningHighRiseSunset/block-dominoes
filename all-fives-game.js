@@ -947,6 +947,10 @@ function proceedToNextHand() {
         board.innerHTML = '';
     }
     
+    // Clear any remaining placement zones from previous round
+    document.querySelectorAll('.placement-zone').forEach(z => z.remove());
+    clearZoneHintArrows();
+    
     // Update score displays to ensure they're current
     const playerScoreEl = document.getElementById('playerScore');
     const cpuScoreEl = document.getElementById('cpuScore');
