@@ -752,7 +752,60 @@
         /* Mobile responsive */
         @media (max-width: 768px) {
             .game-container {
-                padding-top: calc(16px + env(safe-area-inset-top));
+                padding-top: calc(60px + env(safe-area-inset-top));
+            }
+
+            .score-bar {
+                flex-wrap: wrap;
+                gap: 8px;
+                padding: 8px;
+            }
+
+            .score-item {
+                flex: 1 1 auto;
+                min-width: 80px;
+            }
+
+            .score-item h2 {
+                font-size: 0.9rem;
+            }
+
+            .score-display {
+                font-size: 1.2rem;
+            }
+
+            .last-played-container,
+            .scoring-breakdown-container {
+                flex: 1 1 auto;
+                min-width: 100px;
+            }
+
+            .last-played-label,
+            .scoring-breakdown-label {
+                font-size: 0.8rem;
+            }
+
+            .last-played-domino {
+                width: 40px;
+                height: 80px;
+            }
+
+            .scoring-breakdown-text {
+                font-size: 0.9rem;
+            }
+
+            .boneyard {
+                flex: 1 1 auto;
+                min-width: 100px;
+            }
+
+            .boneyard h3 {
+                font-size: 0.9rem;
+            }
+
+            .draw-btn {
+                padding: 6px 12px;
+                font-size: 0.9rem;
             }
 
             .burger-menu-btn {
@@ -808,7 +861,60 @@
 
         @media (max-width: 480px) {
             .game-container {
-                padding-top: calc(12px + env(safe-area-inset-top));
+                padding-top: calc(80px + env(safe-area-inset-top));
+            }
+
+            .score-bar {
+                flex-wrap: wrap;
+                gap: 6px;
+                padding: 6px;
+            }
+
+            .score-item {
+                flex: 1 1 auto;
+                min-width: 70px;
+            }
+
+            .score-item h2 {
+                font-size: 0.8rem;
+            }
+
+            .score-display {
+                font-size: 1rem;
+            }
+
+            .last-played-container,
+            .scoring-breakdown-container {
+                flex: 1 1 auto;
+                min-width: 90px;
+            }
+
+            .last-played-label,
+            .scoring-breakdown-label {
+                font-size: 0.75rem;
+            }
+
+            .last-played-domino {
+                width: 35px;
+                height: 70px;
+            }
+
+            .scoring-breakdown-text {
+                font-size: 0.85rem;
+            }
+
+            .boneyard {
+                flex: 1 1 auto;
+                min-width: 90px;
+            }
+
+            .boneyard h3 {
+                font-size: 0.8rem;
+            }
+
+            .draw-btn {
+                padding: 5px 10px;
+                font-size: 0.85rem;
             }
 
             .burger-menu-btn {
