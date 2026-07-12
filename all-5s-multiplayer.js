@@ -33,6 +33,7 @@ let localStream = null;
 let remoteStream = null;
 let videoCall = null;
 let chatVideoPanelOpen = false;
+let iceCandidates = [];
 
 let playerDominoes = [];
 let opponentDominoes = [];
@@ -2290,16 +2291,23 @@ async function startVideoCall() {
 
         // Handle remote stream
         videoCall.ontrack = (event) => {
+            console.log('Received remote track', event);
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) {
+                console.log('Setting remote video srcObject');
                 remoteVideo.srcObject = event.streams[0];
                 remoteVideo.playsInline = true;
+                remoteVideo.muted = false;
+
+                // Force video to play
+                remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
             }
         };
 
         // Handle ICE candidates
         videoCall.onicecandidate = (event) => {
             if (event.candidate) {
+                console.log('Sending ICE candidate');
                 sendToOpponent({
                     type: 'VIDEO_CALL_ICE',
                     candidate: event.candidate
@@ -2307,11 +2315,22 @@ async function startVideoCall() {
             }
         };
 
+        // Handle ICE connection state changes
+        videoCall.oniceconnectionstatechange = () => {
+            console.log('ICE connection state:', videoCall.iceConnectionState);
+        };
+
+        // Handle connection state changes
+        videoCall.onconnectionstatechange = () => {
+            console.log('Connection state:', videoCall.connectionState);
+        };
+
         // Create offer if host
         if (isHost) {
             const offer = await videoCall.createOffer();
             await videoCall.setLocalDescription(offer);
 
+            console.log('Sending video call offer');
             sendToOpponent({
                 type: 'VIDEO_CALL_OFFER',
                 offer: offer
@@ -2333,6 +2352,7 @@ async function startVideoCall() {
 
 async function handleVideoCallOffer(data) {
     try {
+        console.log('Received video call offer');
         if (!videoCall) {
             // Get local stream first with mobile-friendly constraints
             const constraints = {
@@ -2381,30 +2401,68 @@ async function handleVideoCallOffer(data) {
 
             // Handle remote stream
             videoCall.ontrack = (event) => {
+                console.log('Received remote track', event);
                 const remoteVideo = document.getElementById('remoteVideo');
                 if (remoteVideo) {
+                    console.log('Setting remote video srcObject');
                     remoteVideo.srcObject = event.streams[0];
+                    remoteVideo.playsInline = true;
+                    remoteVideo.muted = false;
+
+                    // Force video to play
+                    remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
                 }
             };
 
             // Handle ICE candidates
             videoCall.onicecandidate = (event) => {
                 if (event.candidate) {
+                    console.log('Sending ICE candidate');
                     sendToOpponent({
                         type: 'VIDEO_CALL_ICE',
                         candidate: event.candidate
                     });
                 }
             };
+
+            // Handle ICE connection state changes
+            videoCall.oniceconnectionstatechange = () => {
+                console.log('ICE connection state:', videoCall.iceConnectionState);
+            };
+
+            // Handle connection state changes
+            videoCall.onconnectionstatechange = () => {
+                console.log('Connection state:', videoCall.connectionState);
+            };
+        } else {
+            // videoCall already exists, just set up handlers if not already set
+            if (!videoCall.ontrack) {
+                videoCall.ontrack = (event) => {
+                    console.log('Received remote track (existing call)', event);
+                    const remoteVideo = document.getElementById('remoteVideo');
+                    if (remoteVideo) {
+                        console.log('Setting remote video srcObject (existing call)');
+                        remoteVideo.srcObject = event.streams[0];
+                        remoteVideo.playsInline = true;
+                        remoteVideo.muted = false;
+
+                        // Force video to play
+                        remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
+                    }
+                };
+            }
         }
 
         // Set remote description (offer)
+        console.log('Setting remote description');
         await videoCall.setRemoteDescription(new RTCSessionDescription(data.offer));
 
         // Create answer
+        console.log('Creating answer');
         const answer = await videoCall.createAnswer();
         await videoCall.setLocalDescription(answer);
 
+        console.log('Sending answer');
         sendToOpponent({
             type: 'VIDEO_CALL_ANSWER',
             answer: answer
@@ -2420,8 +2478,10 @@ async function handleVideoCallOffer(data) {
 
 async function handleVideoCallAnswer(data) {
     try {
+        console.log('Received video call answer');
         if (videoCall) {
             await videoCall.setRemoteDescription(new RTCSessionDescription(data.answer));
+            console.log('Remote description set from answer');
         }
     } catch (error) {
         console.error('Error handling video call answer:', error);
@@ -2430,8 +2490,10 @@ async function handleVideoCallAnswer(data) {
 
 async function handleVideoCallIce(data) {
     try {
+        console.log('Received ICE candidate');
         if (videoCall && data.candidate) {
             await videoCall.addIceCandidate(new RTCIceCandidate(data.candidate));
+            console.log('ICE candidate added');
         }
     } catch (error) {
         console.error('Error handling ICE candidate:', error);
