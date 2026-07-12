@@ -28,6 +28,12 @@ let myPeerId = null;
 let opponentPeerId = null;
 let isHost = false;
 
+// Chat and Video variables
+let localStream = null;
+let remoteStream = null;
+let videoCall = null;
+let chatVideoPanelOpen = false;
+
 let playerDominoes = [];
 let opponentDominoes = [];
 let boardDominoes = [];
@@ -83,6 +89,48 @@ document.addEventListener('DOMContentLoaded', () => {
             if (lobbyId) joinLobby();
             else alert('Please enter a Lobby ID');
         });
+    }
+
+    // Chat/Video Panel event listeners
+    const burgerBtn = document.getElementById('burgerBtn');
+    const closePanelBtn = document.getElementById('closePanelBtn');
+    const panelTabs = document.querySelectorAll('.panel-tab');
+    const chatSendBtn = document.getElementById('chatSendBtn');
+    const chatInput = document.getElementById('chatInput');
+    const startVideoBtn = document.getElementById('startVideoBtn');
+    const endVideoBtn = document.getElementById('endVideoBtn');
+
+    if (burgerBtn) {
+        burgerBtn.addEventListener('click', toggleChatVideoPanel);
+    }
+
+    if (closePanelBtn) {
+        closePanelBtn.addEventListener('click', toggleChatVideoPanel);
+    }
+
+    panelTabs.forEach(tab => {
+        tab.addEventListener('click', () => switchPanelTab(tab.dataset.tab));
+    });
+
+    if (chatSendBtn) {
+        chatSendBtn.addEventListener('click', sendChatMessage);
+    }
+
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        });
+    }
+
+    if (startVideoBtn) {
+        startVideoBtn.addEventListener('click', startVideoCall);
+    }
+
+    if (endVideoBtn) {
+        endVideoBtn.addEventListener('click', endVideoCall);
     }
 });
 
@@ -210,6 +258,21 @@ function handleNetworkMessage(data) {
         case 'GAME_OVER':
             handleGameOver(data);
             break;
+        case 'CHAT_MESSAGE':
+            receiveChatMessage(data);
+            break;
+        case 'VIDEO_CALL_OFFER':
+            handleVideoCallOffer(data);
+            break;
+        case 'VIDEO_CALL_ANSWER':
+            handleVideoCallAnswer(data);
+            break;
+        case 'VIDEO_CALL_ICE':
+            handleVideoCallIce(data);
+            break;
+        case 'VIDEO_CALL_END':
+            handleVideoCallEnd();
+            break;
         default:
             console.log('Unknown message type:', data.type);
     }
@@ -286,13 +349,20 @@ function showGameScreen() {
     const lobbyScreen = document.getElementById('lobbyScreen');
     const gameScreen = document.getElementById('gameScreen');
     const domino3d = document.querySelectorAll('.domino-3d');
-    
+    const burgerBtn = document.getElementById('burgerBtn');
+
     if (lobbyScreen) lobbyScreen.classList.add('hidden');
     if (gameScreen) gameScreen.classList.remove('hidden');
-    
+
     domino3d.forEach(el => el.classList.add('hidden'));
-    
+
     document.body.classList.remove('lobby-mode');
+
+    // Show burger button when game starts
+    if (burgerBtn) burgerBtn.classList.remove('hidden');
+
+    // Update chat/video connection status
+    updateChatVideoConnectionStatus(true);
 }
 
 function handleOpponentPlay(data) {
@@ -2072,6 +2142,302 @@ function resumeAudio() {
     if (audioContext && audioContext.state === 'suspended') {
         audioContext.resume();
     }
+}
+
+// Chat/Video Panel Functions
+function toggleChatVideoPanel() {
+    const panel = document.getElementById('chatVideoPanel');
+    if (!panel) return;
+
+    chatVideoPanelOpen = !chatVideoPanelOpen;
+    panel.classList.toggle('open', chatVideoPanelOpen);
+}
+
+function switchPanelTab(tabName) {
+    const tabs = document.querySelectorAll('.panel-tab');
+    const sections = document.querySelectorAll('.panel-section');
+
+    tabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    sections.forEach(section => {
+        section.classList.toggle('active', section.id === `${tabName}Section`);
+    });
+}
+
+function sendChatMessage() {
+    const chatInput = document.getElementById('chatInput');
+    const message = chatInput.value.trim();
+
+    if (!message || !conn || !conn.open) {
+        return;
+    }
+
+    const chatData = {
+        type: 'CHAT_MESSAGE',
+        message: message,
+        sender: 'You',
+        timestamp: new Date().toISOString()
+    };
+
+    sendToOpponent(chatData);
+
+    // Display message locally
+    displayChatMessage(message, 'You', true);
+
+    chatInput.value = '';
+}
+
+function receiveChatMessage(data) {
+    displayChatMessage(data.message, 'Opponent', false);
+}
+
+function displayChatMessage(message, sender, isSent) {
+    const chatMessages = document.getElementById('chatMessages');
+    if (!chatMessages) return;
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isSent ? 'sent' : 'received'}`;
+
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    messageDiv.innerHTML = `
+        <div class="sender">${sender}</div>
+        <div>${escapeHtml(message)}</div>
+        <div class="time">${time}</div>
+    `;
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function updateChatVideoConnectionStatus(connected) {
+    const chatStatus = document.getElementById('chatConnectionStatus');
+    const videoStatus = document.getElementById('videoConnectionStatus');
+
+    if (chatStatus) {
+        chatStatus.textContent = connected ? 'Connected' : 'Not connected';
+        chatStatus.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+    }
+
+    if (videoStatus) {
+        videoStatus.textContent = connected ? 'Connected' : 'Not connected';
+        videoStatus.className = `connection-status ${connected ? 'connected' : 'disconnected'}`;
+    }
+}
+
+// Video Call Functions
+async function startVideoCall() {
+    try {
+        const startVideoBtn = document.getElementById('startVideoBtn');
+        const endVideoBtn = document.getElementById('endVideoBtn');
+
+        if (startVideoBtn) startVideoBtn.disabled = true;
+
+        // Get local media stream
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo) {
+            localVideo.srcObject = localStream;
+        }
+
+        // Create WebRTC peer connection
+        videoCall = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        });
+
+        // Add local stream to peer connection
+        localStream.getTracks().forEach(track => {
+            videoCall.addTrack(track, localStream);
+        });
+
+        // Handle remote stream
+        videoCall.ontrack = (event) => {
+            const remoteVideo = document.getElementById('remoteVideo');
+            if (remoteVideo) {
+                remoteVideo.srcObject = event.streams[0];
+            }
+        };
+
+        // Handle ICE candidates
+        videoCall.onicecandidate = (event) => {
+            if (event.candidate) {
+                sendToOpponent({
+                    type: 'VIDEO_CALL_ICE',
+                    candidate: event.candidate
+                });
+            }
+        };
+
+        // Create offer if host
+        if (isHost) {
+            const offer = await videoCall.createOffer();
+            await videoCall.setLocalDescription(offer);
+
+            sendToOpponent({
+                type: 'VIDEO_CALL_OFFER',
+                offer: offer
+            });
+
+            if (endVideoBtn) endVideoBtn.disabled = false;
+        } else {
+            // Wait for offer from host
+            if (endVideoBtn) endVideoBtn.disabled = false;
+        }
+
+    } catch (error) {
+        console.error('Error starting video call:', error);
+        alert('Could not access camera/microphone. Please check permissions.');
+        const startVideoBtn = document.getElementById('startVideoBtn');
+        if (startVideoBtn) startVideoBtn.disabled = false;
+    }
+}
+
+async function handleVideoCallOffer(data) {
+    try {
+        if (!videoCall) {
+            // Get local stream first
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true
+            });
+
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = localStream;
+            }
+
+            // Create WebRTC peer connection
+            videoCall = new RTCPeerConnection({
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            });
+
+            // Add local stream to peer connection
+            localStream.getTracks().forEach(track => {
+                videoCall.addTrack(track, localStream);
+            });
+
+            // Handle remote stream
+            videoCall.ontrack = (event) => {
+                const remoteVideo = document.getElementById('remoteVideo');
+                if (remoteVideo) {
+                    remoteVideo.srcObject = event.streams[0];
+                }
+            };
+
+            // Handle ICE candidates
+            videoCall.onicecandidate = (event) => {
+                if (event.candidate) {
+                    sendToOpponent({
+                        type: 'VIDEO_CALL_ICE',
+                        candidate: event.candidate
+                    });
+                }
+            };
+        }
+
+        // Set remote description (offer)
+        await videoCall.setRemoteDescription(new RTCSessionDescription(data.offer));
+
+        // Create answer
+        const answer = await videoCall.createAnswer();
+        await videoCall.setLocalDescription(answer);
+
+        sendToOpponent({
+            type: 'VIDEO_CALL_ANSWER',
+            answer: answer
+        });
+
+        const endVideoBtn = document.getElementById('endVideoBtn');
+        if (endVideoBtn) endVideoBtn.disabled = false;
+
+    } catch (error) {
+        console.error('Error handling video call offer:', error);
+    }
+}
+
+async function handleVideoCallAnswer(data) {
+    try {
+        if (videoCall) {
+            await videoCall.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+    } catch (error) {
+        console.error('Error handling video call answer:', error);
+    }
+}
+
+async function handleVideoCallIce(data) {
+    try {
+        if (videoCall && data.candidate) {
+            await videoCall.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+    } catch (error) {
+        console.error('Error handling ICE candidate:', error);
+    }
+}
+
+function endVideoCall() {
+    if (videoCall) {
+        videoCall.close();
+        videoCall = null;
+    }
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const startVideoBtn = document.getElementById('startVideoBtn');
+    const endVideoBtn = document.getElementById('endVideoBtn');
+
+    if (localVideo) localVideo.srcObject = null;
+    if (remoteVideo) remoteVideo.srcObject = null;
+    if (startVideoBtn) startVideoBtn.disabled = false;
+    if (endVideoBtn) endVideoBtn.disabled = true;
+
+    // Notify opponent
+    sendToOpponent({ type: 'VIDEO_CALL_END' });
+}
+
+function handleVideoCallEnd() {
+    if (videoCall) {
+        videoCall.close();
+        videoCall = null;
+    }
+
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+    const startVideoBtn = document.getElementById('startVideoBtn');
+    const endVideoBtn = document.getElementById('endVideoBtn');
+
+    if (localVideo) localVideo.srcObject = null;
+    if (remoteVideo) remoteVideo.srcObject = null;
+    if (startVideoBtn) startVideoBtn.disabled = false;
+    if (endVideoBtn) endVideoBtn.disabled = true;
 }
 
 function playTone(frequency, duration, volume, type = 'sine') {
