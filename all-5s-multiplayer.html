@@ -751,6 +751,10 @@
 
         /* Mobile responsive */
         @media (max-width: 768px) {
+            .game-container {
+                padding-top: calc(16px + env(safe-area-inset-top));
+            }
+
             .burger-menu-btn {
                 padding: 10px 14px;
             }
@@ -803,6 +807,10 @@
         }
 
         @media (max-width: 480px) {
+            .game-container {
+                padding-top: calc(12px + env(safe-area-inset-top));
+            }
+
             .burger-menu-btn {
                 padding: 8px 12px;
             }
