@@ -2212,20 +2212,20 @@ function updateChatVideoConnectionStatus(connected) {
     }
 }
 
-// Video Chat Functions (brie.fi/ng)
+// Video Chat Functions (Jitsi Meet)
 function initializeVideoChat() {
-    // Generate a random room ID based on the lobby code
+    // Use the lobby ID as the video room ID so both players join the same room
     const roomId = myPeerId || generateLobbyCode();
     videoRoomId = roomId;
 
-    // Set up the brie.fi/ng embed
+    // Set up the Jitsi Meet embed
     const embed = document.getElementById('brieFiEmbed');
     const videoRoomIdDisplay = document.getElementById('videoRoomId');
     const videoStatus = document.getElementById('videoConnectionStatus');
 
     if (embed) {
-        // Use the brie.fi/ng embed URL with the room ID
-        embed.src = `https://brie.fi/ng/${roomId}`;
+        // Use Jitsi Meet which allows embedding
+        embed.src = `https://meet.jit.si/${roomId}`;
     }
 
     if (videoRoomIdDisplay) {
