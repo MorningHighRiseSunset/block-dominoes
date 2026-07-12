@@ -422,6 +422,94 @@
             font-size: 1.2rem;
         }
 
+        /* Game Info Section */
+        .game-info-section {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .game-info-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .game-info-label {
+            color: #5c4a3d;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .game-info-domino {
+            width: 60px;
+            height: 120px;
+            background: linear-gradient(145deg, #ffffff 0%, #f8f8f0 50%, #f0ebe0 100%);
+            border: 2px solid #2d2d2d;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .game-info-domino .domino-half {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid #888;
+        }
+
+        .game-info-domino .domino-half:last-child {
+            border-bottom: none;
+        }
+
+        .game-info-domino .pips {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 3px;
+            width: 40px;
+            height: 40px;
+            padding: 4px;
+            margin: auto;
+        }
+
+        .game-info-domino .pip {
+            width: 8px;
+            height: 8px;
+            background: radial-gradient(circle at 30% 30%, #888888 0%, #444446 40%, #1a1a1a 100%);
+            border-radius: 50%;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6), 0 1px 1px rgba(255, 255, 255, 0.3);
+        }
+
+        .game-info-domino .pips[data-value="0"] .pip { visibility: hidden; }
+        .game-info-domino .pips[data-value="1"] .pip:nth-child(5) { visibility: visible; }
+        .game-info-domino .pips[data-value="1"] .pip:not(:nth-child(5)) { visibility: hidden; }
+        .game-info-domino .pips[data-value="2"] .pip:nth-child(1), .game-info-domino .pips[data-value="2"] .pip:nth-child(9) { visibility: visible; }
+        .game-info-domino .pips[data-value="2"] .pip:not(:nth-child(1)):not(:nth-child(9)) { visibility: hidden; }
+        .game-info-domino .pips[data-value="3"] .pip:nth-child(1), .game-info-domino .pips[data-value="3"] .pip:nth-child(5), .game-info-domino .pips[data-value="3"] .pip:nth-child(9) { visibility: visible; }
+        .game-info-domino .pips[data-value="3"] .pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { visibility: hidden; }
+        .game-info-domino .pips[data-value="4"] .pip:nth-child(1), .game-info-domino .pips[data-value="4"] .pip:nth-child(3), .game-info-domino .pips[data-value="4"] .pip:nth-child(7), .game-info-domino .pips[data-value="4"] .pip:nth-child(9) { visibility: visible; }
+        .game-info-domino .pips[data-value="4"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+        .game-info-domino .pips[data-value="5"] .pip:nth-child(1), .game-info-domino .pips[data-value="5"] .pip:nth-child(3), .game-info-domino .pips[data-value="5"] .pip:nth-child(5), .game-info-domino .pips[data-value="5"] .pip:nth-child(7), .game-info-domino .pips[data-value="5"] .pip:nth-child(9) { visibility: visible; }
+        .game-info-domino .pips[data-value="5"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+        .game-info-domino .pips[data-value="6"] .pip:nth-child(1), .game-info-domino .pips[data-value="6"] .pip:nth-child(3), .game-info-domino .pips[data-value="6"] .pip:nth-child(4), .game-info-domino .pips[data-value="6"] .pip:nth-child(6), .game-info-domino .pips[data-value="6"] .pip:nth-child(7), .game-info-domino .pips[data-value="6"] .pip:nth-child(9) { visibility: visible; }
+        .game-info-domino .pips[data-value="6"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+
+        .game-info-text {
+            color: #8b5a2b;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #d4c4a8;
+        }
+
         .close-panel-btn {
             background: rgba(255, 255, 255, 0.2);
             border: none;
@@ -490,36 +578,72 @@
             overflow-y: auto;
         }
 
-        .video-embed-container {
-            width: 100%;
-            height: 400px;
+        .video-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            background: #5c4a3d;
             border-radius: 12px;
             overflow: hidden;
+            aspect-ratio: 4/3;
             border: 2px solid #8b5a2b;
-            background: #5c4a3d;
         }
 
-        .video-info {
-            text-align: center;
-            padding: 12px;
-            background: rgba(139, 90, 43, 0.1);
-            border-radius: 8px;
+        .video-wrapper video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        .video-info p {
-            color: #5c4a3d;
-            margin: 8px 0;
-            font-size: 0.9rem;
-        }
-
-        .video-info strong {
-            color: #8b5a2b;
-            font-size: 1.1rem;
-        }
-
-        .video-instruction {
+        .video-label {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
             font-size: 0.85rem;
-            opacity: 0.8;
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .video-btn {
+            padding: 10px 20px;
+            background: linear-gradient(145deg, #8b5a2b, #a0522d);
+            border: 2px solid #5c4a3d;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-btn:hover {
+            background: linear-gradient(145deg, #a0522d, #cd853f);
+            transform: translateY(-2px);
+        }
+
+        .video-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .video-btn.end-call {
+            background: linear-gradient(145deg, #8b2d2d, #a33);
+            border-color: #5c2d2d;
+        }
+
+        .video-btn.end-call:hover {
+            background: linear-gradient(145deg, #a33, #c44);
         }
 
         /* Chat Section */
@@ -633,9 +757,9 @@
         /* Mobile responsive */
         @media (max-width: 768px) {
             .chat-video-btn {
-                top: auto;
-                bottom: 16px;
+                top: 16px;
                 right: 16px;
+                bottom: auto;
                 padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.98);
             }
@@ -679,8 +803,9 @@
 
         @media (max-width: 480px) {
             .chat-video-btn {
-                bottom: 12px;
+                top: 12px;
                 right: 12px;
+                bottom: auto;
                 padding: 10px 14px;
             }
 
@@ -693,8 +818,9 @@
                 max-width: 90%;
             }
 
-            .video-embed-container {
-                height: 300px;
+            .video-btn {
+                padding: 8px 16px;
+                font-size: 0.9rem;
             }
         }
     </style>
@@ -782,29 +908,40 @@
         </div>
     </div>
 
-    <!-- Chat/Video Button (hidden initially) -->
+    <!-- Burger Menu Button (hidden initially) -->
     <button id="burgerBtn" class="chat-video-btn hidden">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-        </svg>
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
         </svg>
     </button>
 
     <!-- Chat/Video Panel -->
     <div id="chatVideoPanel" class="chat-video-panel">
         <div class="panel-header">
-            <h3>Chat & Video</h3>
+            <h3>Menu</h3>
             <button id="closePanelBtn" class="close-panel-btn">×</button>
         </div>
         <div class="panel-tabs">
-            <button class="panel-tab active" data-tab="chat">Chat</button>
+            <button class="panel-tab active" data-tab="game-info">Game Info</button>
+            <button class="panel-tab" data-tab="chat">Chat</button>
             <button class="panel-tab" data-tab="video">Video</button>
         </div>
         <div class="panel-content">
+            <!-- Game Info Section -->
+            <div id="gameInfoSection" class="panel-section active">
+                <div class="game-info-section">
+                    <div class="game-info-item">
+                        <div class="game-info-label">Last Played:</div>
+                        <div class="game-info-domino" id="panelLastPlayedDomino"></div>
+                    </div>
+                    <div class="game-info-item">
+                        <div class="game-info-label">Points:</div>
+                        <div class="game-info-text" id="panelScoringBreakdownText"></div>
+                    </div>
+                </div>
+            </div>
             <!-- Chat Section -->
-            <div id="chatSection" class="panel-section active">
+            <div id="chatSection" class="panel-section">
                 <div class="connection-status" id="chatConnectionStatus">Not connected</div>
                 <div class="chat-section">
                     <div class="chat-messages" id="chatMessages"></div>
@@ -816,14 +953,21 @@
             </div>
             <!-- Video Section -->
             <div id="videoSection" class="panel-section">
-                <div class="connection-status" id="videoConnectionStatus">Connecting...</div>
+                <div class="connection-status" id="videoConnectionStatus">Not connected</div>
                 <div class="video-section">
-                    <div class="video-embed-container">
-                        <iframe id="videoEmbed" src="" width="100%" height="100%" allow="camera; microphone; fullscreen; display-capture" style="border: none; border-radius: 12px;"></iframe>
+                    <div class="video-container">
+                        <div class="video-wrapper">
+                            <video id="localVideo" autoplay muted playsinline></video>
+                            <div class="video-label">You</div>
+                        </div>
+                        <div class="video-wrapper">
+                            <video id="remoteVideo" autoplay playsinline></video>
+                            <div class="video-label">Opponent</div>
+                        </div>
                     </div>
-                    <div class="video-info">
-                        <p>Video chat room: <strong id="videoRoomId"></strong></p>
-                        <p class="video-instruction">Both players use the same room ID</p>
+                    <div class="video-controls">
+                        <button id="startVideoBtn" class="video-btn">Start Video</button>
+                        <button id="endVideoBtn" class="video-btn end-call" disabled>End Call</button>
                     </div>
                 </div>
             </div>
@@ -836,14 +980,6 @@
             <div class="score-item">
                 <h2>Opponent</h2>
                 <div class="score-display" id="opponentScore">0</div>
-            </div>
-            <div class="last-played-container">
-                <div class="last-played-label">Last:</div>
-                <div class="last-played-domino" id="lastPlayedDomino"></div>
-            </div>
-            <div class="scoring-breakdown-container" id="scoringBreakdown">
-                <div class="scoring-breakdown-label">Points:</div>
-                <div class="scoring-breakdown-text" id="scoringBreakdownText"></div>
             </div>
             <div class="boneyard" id="boneyard">
                 <h3>Boneyard: <span id="boneyardCount">0</span></h3>
