@@ -261,6 +261,9 @@ function handleNetworkMessage(data) {
         case 'CHAT_MESSAGE':
             receiveChatMessage(data);
             break;
+        case 'VIDEO_CALL_REQUEST':
+            handleVideoCallRequest();
+            break;
         case 'VIDEO_CALL_OFFER':
             handleVideoCallOffer(data);
             break;
@@ -2266,12 +2269,22 @@ function updateChatVideoConnectionStatus(connected) {
 }
 
 // Video Call Functions
+async function handleVideoCallRequest() {
+    // Host receives request from non-host to start video
+    if (isHost && !videoCall) {
+        console.log('Received video call request from opponent - starting call');
+        await startVideoCall();
+    }
+}
+
 async function startVideoCall() {
     try {
         const startVideoBtn = document.getElementById('startVideoBtn');
         const endVideoBtn = document.getElementById('endVideoBtn');
+        const videoStatus = document.getElementById('videoConnectionStatus');
 
         if (startVideoBtn) startVideoBtn.disabled = true;
+        if (videoStatus) videoStatus.textContent = 'Connecting...';
 
         // Get local media stream
         const constraints = {
@@ -2315,6 +2328,10 @@ async function startVideoCall() {
                 remoteVideo.muted = false;
                 remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
             }
+            if (videoStatus) {
+                videoStatus.textContent = 'Connected';
+                videoStatus.classList.add('connected');
+            }
         };
 
         // Handle ICE candidates
@@ -2339,7 +2356,11 @@ async function startVideoCall() {
 
             if (endVideoBtn) endVideoBtn.disabled = false;
         } else {
-            // Wait for offer from host
+            // Non-host: send request to host to start video
+            sendToOpponent({
+                type: 'VIDEO_CALL_REQUEST'
+            });
+            if (videoStatus) videoStatus.textContent = 'Waiting for host...';
             if (endVideoBtn) endVideoBtn.disabled = false;
         }
 
@@ -2353,7 +2374,9 @@ async function startVideoCall() {
 
 async function handleVideoCallOffer(data) {
     try {
-        console.log('Received video call offer');
+        console.log('Received video call offer - auto-accepting');
+        
+        // Auto-start local video when receiving offer
         if (!videoCall) {
             // Get local stream first
             const constraints = {
@@ -2422,11 +2445,21 @@ async function handleVideoCallOffer(data) {
             answer: answer
         });
 
+        // Update UI
+        const startVideoBtn = document.getElementById('startVideoBtn');
         const endVideoBtn = document.getElementById('endVideoBtn');
+        const videoStatus = document.getElementById('videoConnectionStatus');
+        
+        if (startVideoBtn) startVideoBtn.disabled = true;
         if (endVideoBtn) endVideoBtn.disabled = false;
+        if (videoStatus) {
+            videoStatus.textContent = 'Connected';
+            videoStatus.classList.add('connected');
+        }
 
     } catch (error) {
         console.error('Error handling video call offer:', error);
+        alert('Could not start video call. Please check camera permissions.');
     }
 }
 

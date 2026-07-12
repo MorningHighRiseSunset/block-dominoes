@@ -757,11 +757,12 @@
         /* Mobile responsive */
         @media (max-width: 768px) {
             .chat-video-btn {
-                top: 16px;
+                top: calc(16px + env(safe-area-inset-top));
                 right: 16px;
                 bottom: auto;
                 padding: 12px 16px;
                 background: rgba(255, 255, 255, 0.98);
+                z-index: 2000;
             }
 
             .chat-video-btn svg {
@@ -790,6 +791,16 @@
 
             .video-wrapper {
                 aspect-ratio: 16/9;
+                min-height: 150px;
+            }
+
+            .video-section {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .video-controls {
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
             }
 
             .chat-input {
@@ -803,10 +814,11 @@
 
         @media (max-width: 480px) {
             .chat-video-btn {
-                top: 12px;
+                top: calc(12px + env(safe-area-inset-top));
                 right: 12px;
                 bottom: auto;
                 padding: 10px 14px;
+                z-index: 2000;
             }
 
             .panel-tab {
