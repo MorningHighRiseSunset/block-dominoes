@@ -357,31 +357,33 @@
             }
         }
 
-        /* Chat/Video button */
-        .chat-video-btn {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 1000;
+        /* Game header for burger button */
+        .game-header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 8px;
+        }
+
+        /* Burger menu button */
+        .burger-menu-btn {
             background: rgba(255, 255, 255, 0.95);
             border: 2px solid #8b5a2b;
             border-radius: 8px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
         }
 
-        .chat-video-btn:hover {
+        .burger-menu-btn:hover {
             background: #fff;
             transform: scale(1.05);
         }
 
-        .chat-video-btn svg {
+        .burger-menu-btn svg {
             width: 24px;
             height: 24px;
             fill: #8b5a2b;
@@ -756,16 +758,11 @@
 
         /* Mobile responsive */
         @media (max-width: 768px) {
-            .chat-video-btn {
-                top: calc(16px + env(safe-area-inset-top));
-                right: 16px;
-                bottom: auto;
-                padding: 12px 16px;
-                background: rgba(255, 255, 255, 0.98);
-                z-index: 2000;
+            .burger-menu-btn {
+                padding: 10px 14px;
             }
 
-            .chat-video-btn svg {
+            .burger-menu-btn svg {
                 width: 22px;
                 height: 22px;
             }
@@ -813,12 +810,13 @@
         }
 
         @media (max-width: 480px) {
-            .chat-video-btn {
-                top: calc(12px + env(safe-area-inset-top));
-                right: 12px;
-                bottom: auto;
-                padding: 10px 14px;
-                z-index: 2000;
+            .burger-menu-btn {
+                padding: 8px 12px;
+            }
+
+            .burger-menu-btn svg {
+                width: 20px;
+                height: 20px;
             }
 
             .panel-tab {
@@ -920,12 +918,6 @@
         </div>
     </div>
 
-    <!-- Burger Menu Button (hidden initially) -->
-    <button id="burgerBtn" class="chat-video-btn hidden">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
-        </svg>
-    </button>
 
     <!-- Chat/Video Panel -->
     <div id="chatVideoPanel" class="chat-video-panel">
@@ -934,26 +926,12 @@
             <button id="closePanelBtn" class="close-panel-btn">×</button>
         </div>
         <div class="panel-tabs">
-            <button class="panel-tab active" data-tab="game-info">Game Info</button>
-            <button class="panel-tab" data-tab="chat">Chat</button>
+            <button class="panel-tab active" data-tab="chat">Chat</button>
             <button class="panel-tab" data-tab="video">Video</button>
         </div>
         <div class="panel-content">
-            <!-- Game Info Section -->
-            <div id="gameInfoSection" class="panel-section active">
-                <div class="game-info-section">
-                    <div class="game-info-item">
-                        <div class="game-info-label">Last Played:</div>
-                        <div class="game-info-domino" id="panelLastPlayedDomino"></div>
-                    </div>
-                    <div class="game-info-item">
-                        <div class="game-info-label">Points:</div>
-                        <div class="game-info-text" id="panelScoringBreakdownText"></div>
-                    </div>
-                </div>
-            </div>
             <!-- Chat Section -->
-            <div id="chatSection" class="panel-section">
+            <div id="chatSection" class="panel-section active">
                 <div class="connection-status" id="chatConnectionStatus">Not connected</div>
                 <div class="chat-section">
                     <div class="chat-messages" id="chatMessages"></div>
@@ -988,10 +966,25 @@
 
     <!-- Game Screen (hidden initially) -->
     <div id="gameScreen" class="game-container hidden">
+        <div class="game-header">
+            <button id="burgerBtn" class="burger-menu-btn hidden">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                </svg>
+            </button>
+        </div>
         <div class="score-bar">
             <div class="score-item">
                 <h2>Opponent</h2>
                 <div class="score-display" id="opponentScore">0</div>
+            </div>
+            <div class="last-played-container">
+                <div class="last-played-label">Last:</div>
+                <div class="last-played-domino" id="lastPlayedDomino"></div>
+            </div>
+            <div class="scoring-breakdown-container" id="scoringBreakdown">
+                <div class="scoring-breakdown-label">Points:</div>
+                <div class="scoring-breakdown-text" id="scoringBreakdownText"></div>
             </div>
             <div class="boneyard" id="boneyard">
                 <h3>Boneyard: <span id="boneyardCount">0</span></h3>
