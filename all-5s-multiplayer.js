@@ -29,11 +29,8 @@ let opponentPeerId = null;
 let isHost = false;
 
 // Chat and Video variables
-let localStream = null;
-let remoteStream = null;
-let videoCall = null;
 let chatVideoPanelOpen = false;
-let iceCandidates = [];
+let videoRoomId = null;
 
 let playerDominoes = [];
 let opponentDominoes = [];
@@ -98,8 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const panelTabs = document.querySelectorAll('.panel-tab');
     const chatSendBtn = document.getElementById('chatSendBtn');
     const chatInput = document.getElementById('chatInput');
-    const startVideoBtn = document.getElementById('startVideoBtn');
-    const endVideoBtn = document.getElementById('endVideoBtn');
 
     if (burgerBtn) {
         burgerBtn.addEventListener('click', toggleChatVideoPanel);
@@ -124,14 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 sendChatMessage();
             }
         });
-    }
-
-    if (startVideoBtn) {
-        startVideoBtn.addEventListener('click', startVideoCall);
-    }
-
-    if (endVideoBtn) {
-        endVideoBtn.addEventListener('click', endVideoCall);
     }
 });
 
@@ -262,18 +249,6 @@ function handleNetworkMessage(data) {
         case 'CHAT_MESSAGE':
             receiveChatMessage(data);
             break;
-        case 'VIDEO_CALL_OFFER':
-            handleVideoCallOffer(data);
-            break;
-        case 'VIDEO_CALL_ANSWER':
-            handleVideoCallAnswer(data);
-            break;
-        case 'VIDEO_CALL_ICE':
-            handleVideoCallIce(data);
-            break;
-        case 'VIDEO_CALL_END':
-            handleVideoCallEnd();
-            break;
         default:
             console.log('Unknown message type:', data.type);
     }
@@ -361,6 +336,9 @@ function showGameScreen() {
 
     // Show burger button when game starts
     if (burgerBtn) burgerBtn.classList.remove('hidden');
+
+    // Initialize video chat room
+    initializeVideoChat();
 
     // Update chat/video connection status
     updateChatVideoConnectionStatus(true);
@@ -2234,317 +2212,30 @@ function updateChatVideoConnectionStatus(connected) {
     }
 }
 
-// Video Call Functions
-async function startVideoCall() {
-    try {
-        const startVideoBtn = document.getElementById('startVideoBtn');
-        const endVideoBtn = document.getElementById('endVideoBtn');
+// Video Chat Functions (brie.fi/ng)
+function initializeVideoChat() {
+    // Generate a random room ID based on the lobby code
+    const roomId = myPeerId || generateLobbyCode();
+    videoRoomId = roomId;
 
-        if (startVideoBtn) startVideoBtn.disabled = true;
+    // Set up the brie.fi/ng embed
+    const embed = document.getElementById('brieFiEmbed');
+    const videoRoomIdDisplay = document.getElementById('videoRoomId');
+    const videoStatus = document.getElementById('videoConnectionStatus');
 
-        // Get local media stream with mobile-friendly constraints
-        const constraints = {
-            audio: {
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl: true
-            },
-            video: {
-                facingMode: 'user',
-                width: { ideal: 640 },
-                height: { ideal: 480 }
-            }
-        };
-
-        // Check if mobile and adjust constraints
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        if (isMobile) {
-            constraints.video.width = { ideal: 320 };
-            constraints.video.height = { ideal: 240 };
-        }
-
-        localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        const localVideo = document.getElementById('localVideo');
-        if (localVideo) {
-            localVideo.srcObject = localStream;
-            // Ensure video plays inline on iOS
-            localVideo.playsInline = true;
-            localVideo.muted = true;
-        }
-
-        // Create WebRTC peer connection with mobile-friendly ICE servers
-        videoCall = new RTCPeerConnection({
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
-            ]
-        });
-
-        // Add local stream to peer connection
-        localStream.getTracks().forEach(track => {
-            videoCall.addTrack(track, localStream);
-        });
-
-        // Handle remote stream
-        videoCall.ontrack = (event) => {
-            console.log('Received remote track', event);
-            const remoteVideo = document.getElementById('remoteVideo');
-            if (remoteVideo) {
-                console.log('Setting remote video srcObject');
-                remoteVideo.srcObject = event.streams[0];
-                remoteVideo.playsInline = true;
-                remoteVideo.muted = false;
-
-                // Force video to play
-                remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
-            }
-        };
-
-        // Handle ICE candidates
-        videoCall.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('Sending ICE candidate');
-                sendToOpponent({
-                    type: 'VIDEO_CALL_ICE',
-                    candidate: event.candidate
-                });
-            }
-        };
-
-        // Handle ICE connection state changes
-        videoCall.oniceconnectionstatechange = () => {
-            console.log('ICE connection state:', videoCall.iceConnectionState);
-        };
-
-        // Handle connection state changes
-        videoCall.onconnectionstatechange = () => {
-            console.log('Connection state:', videoCall.connectionState);
-        };
-
-        // Create offer if host
-        if (isHost) {
-            const offer = await videoCall.createOffer();
-            await videoCall.setLocalDescription(offer);
-
-            console.log('Sending video call offer');
-            sendToOpponent({
-                type: 'VIDEO_CALL_OFFER',
-                offer: offer
-            });
-
-            if (endVideoBtn) endVideoBtn.disabled = false;
-        } else {
-            // Wait for offer from host
-            if (endVideoBtn) endVideoBtn.disabled = false;
-        }
-
-    } catch (error) {
-        console.error('Error starting video call:', error);
-        alert('Could not access camera/microphone. Please check permissions.');
-        const startVideoBtn = document.getElementById('startVideoBtn');
-        if (startVideoBtn) startVideoBtn.disabled = false;
-    }
-}
-
-async function handleVideoCallOffer(data) {
-    try {
-        console.log('Received video call offer');
-        if (!videoCall) {
-            // Get local stream first with mobile-friendly constraints
-            const constraints = {
-                audio: {
-                    echoCancellation: true,
-                    noiseSuppression: true,
-                    autoGainControl: true
-                },
-                video: {
-                    facingMode: 'user',
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                }
-            };
-
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            if (isMobile) {
-                constraints.video.width = { ideal: 320 };
-                constraints.video.height = { ideal: 240 };
-            }
-
-            localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = localStream;
-                localVideo.playsInline = true;
-                localVideo.muted = true;
-            }
-
-            // Create WebRTC peer connection with mobile-friendly ICE servers
-            videoCall = new RTCPeerConnection({
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' }
-                ]
-            });
-
-            // Add local stream to peer connection
-            localStream.getTracks().forEach(track => {
-                videoCall.addTrack(track, localStream);
-            });
-
-            // Handle remote stream
-            videoCall.ontrack = (event) => {
-                console.log('Received remote track', event);
-                const remoteVideo = document.getElementById('remoteVideo');
-                if (remoteVideo) {
-                    console.log('Setting remote video srcObject');
-                    remoteVideo.srcObject = event.streams[0];
-                    remoteVideo.playsInline = true;
-                    remoteVideo.muted = false;
-
-                    // Force video to play
-                    remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
-                }
-            };
-
-            // Handle ICE candidates
-            videoCall.onicecandidate = (event) => {
-                if (event.candidate) {
-                    console.log('Sending ICE candidate');
-                    sendToOpponent({
-                        type: 'VIDEO_CALL_ICE',
-                        candidate: event.candidate
-                    });
-                }
-            };
-
-            // Handle ICE connection state changes
-            videoCall.oniceconnectionstatechange = () => {
-                console.log('ICE connection state:', videoCall.iceConnectionState);
-            };
-
-            // Handle connection state changes
-            videoCall.onconnectionstatechange = () => {
-                console.log('Connection state:', videoCall.connectionState);
-            };
-        } else {
-            // videoCall already exists, just set up handlers if not already set
-            if (!videoCall.ontrack) {
-                videoCall.ontrack = (event) => {
-                    console.log('Received remote track (existing call)', event);
-                    const remoteVideo = document.getElementById('remoteVideo');
-                    if (remoteVideo) {
-                        console.log('Setting remote video srcObject (existing call)');
-                        remoteVideo.srcObject = event.streams[0];
-                        remoteVideo.playsInline = true;
-                        remoteVideo.muted = false;
-
-                        // Force video to play
-                        remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
-                    }
-                };
-            }
-        }
-
-        // Set remote description (offer)
-        console.log('Setting remote description');
-        await videoCall.setRemoteDescription(new RTCSessionDescription(data.offer));
-
-        // Create answer
-        console.log('Creating answer');
-        const answer = await videoCall.createAnswer();
-        await videoCall.setLocalDescription(answer);
-
-        console.log('Sending answer');
-        sendToOpponent({
-            type: 'VIDEO_CALL_ANSWER',
-            answer: answer
-        });
-
-        const endVideoBtn = document.getElementById('endVideoBtn');
-        if (endVideoBtn) endVideoBtn.disabled = false;
-
-    } catch (error) {
-        console.error('Error handling video call offer:', error);
-    }
-}
-
-async function handleVideoCallAnswer(data) {
-    try {
-        console.log('Received video call answer');
-        if (videoCall) {
-            await videoCall.setRemoteDescription(new RTCSessionDescription(data.answer));
-            console.log('Remote description set from answer');
-        }
-    } catch (error) {
-        console.error('Error handling video call answer:', error);
-    }
-}
-
-async function handleVideoCallIce(data) {
-    try {
-        console.log('Received ICE candidate');
-        if (videoCall && data.candidate) {
-            await videoCall.addIceCandidate(new RTCIceCandidate(data.candidate));
-            console.log('ICE candidate added');
-        }
-    } catch (error) {
-        console.error('Error handling ICE candidate:', error);
-    }
-}
-
-function endVideoCall() {
-    if (videoCall) {
-        videoCall.close();
-        videoCall = null;
+    if (embed) {
+        // Use the brie.fi/ng embed URL with the room ID
+        embed.src = `https://brie.fi/ng/${roomId}`;
     }
 
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
+    if (videoRoomIdDisplay) {
+        videoRoomIdDisplay.textContent = roomId;
     }
 
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const startVideoBtn = document.getElementById('startVideoBtn');
-    const endVideoBtn = document.getElementById('endVideoBtn');
-
-    if (localVideo) localVideo.srcObject = null;
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (startVideoBtn) startVideoBtn.disabled = false;
-    if (endVideoBtn) endVideoBtn.disabled = true;
-
-    // Notify opponent
-    sendToOpponent({ type: 'VIDEO_CALL_END' });
-}
-
-function handleVideoCallEnd() {
-    if (videoCall) {
-        videoCall.close();
-        videoCall = null;
+    if (videoStatus) {
+        videoStatus.textContent = 'Connected';
+        videoStatus.className = 'connection-status connected';
     }
-
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-    }
-
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const startVideoBtn = document.getElementById('startVideoBtn');
-    const endVideoBtn = document.getElementById('endVideoBtn');
-
-    if (localVideo) localVideo.srcObject = null;
-    if (remoteVideo) remoteVideo.srcObject = null;
-    if (startVideoBtn) startVideoBtn.disabled = false;
-    if (endVideoBtn) endVideoBtn.disabled = true;
 }
 
 function playTone(frequency, duration, volume, type = 'sine') {

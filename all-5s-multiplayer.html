@@ -490,72 +490,36 @@
             overflow-y: auto;
         }
 
-        .video-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .video-wrapper {
-            position: relative;
-            background: #5c4a3d;
+        .video-embed-container {
+            width: 100%;
+            height: 400px;
             border-radius: 12px;
             overflow: hidden;
-            aspect-ratio: 4/3;
             border: 2px solid #8b5a2b;
+            background: #5c4a3d;
         }
 
-        .video-wrapper video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .video-label {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-        }
-
-        .video-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
-        .video-btn {
-            padding: 10px 20px;
-            background: linear-gradient(145deg, #8b5a2b, #a0522d);
-            border: 2px solid #5c4a3d;
+        .video-info {
+            text-align: center;
+            padding: 12px;
+            background: rgba(139, 90, 43, 0.1);
             border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
         }
 
-        .video-btn:hover {
-            background: linear-gradient(145deg, #a0522d, #cd853f);
-            transform: translateY(-2px);
+        .video-info p {
+            color: #5c4a3d;
+            margin: 8px 0;
+            font-size: 0.9rem;
         }
 
-        .video-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .video-info strong {
+            color: #8b5a2b;
+            font-size: 1.1rem;
         }
 
-        .video-btn.end-call {
-            background: linear-gradient(145deg, #8b2d2d, #a33);
-            border-color: #5c2d2d;
-        }
-
-        .video-btn.end-call:hover {
-            background: linear-gradient(145deg, #a33, #c44);
+        .video-instruction {
+            font-size: 0.85rem;
+            opacity: 0.8;
         }
 
         /* Chat Section */
@@ -729,9 +693,8 @@
                 max-width: 90%;
             }
 
-            .video-btn {
-                padding: 8px 16px;
-                font-size: 0.9rem;
+            .video-embed-container {
+                height: 300px;
             }
         }
     </style>
@@ -853,21 +816,14 @@
             </div>
             <!-- Video Section -->
             <div id="videoSection" class="panel-section">
-                <div class="connection-status" id="videoConnectionStatus">Not connected</div>
+                <div class="connection-status" id="videoConnectionStatus">Connecting...</div>
                 <div class="video-section">
-                    <div class="video-container">
-                        <div class="video-wrapper">
-                            <video id="localVideo" autoplay muted playsinline></video>
-                            <div class="video-label">You</div>
-                        </div>
-                        <div class="video-wrapper">
-                            <video id="remoteVideo" autoplay playsinline></video>
-                            <div class="video-label">Opponent</div>
-                        </div>
+                    <div class="video-embed-container">
+                        <iframe id="brieFiEmbed" src="" allow="camera; microphone; fullscreen; display-capture; autoplay" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation" style="width: 100%; height: 100%; border: none; border-radius: 12px;"></iframe>
                     </div>
-                    <div class="video-controls">
-                        <button id="startVideoBtn" class="video-btn">Start Video</button>
-                        <button id="endVideoBtn" class="video-btn end-call" disabled>End Call</button>
+                    <div class="video-info">
+                        <p>Video chat room: <strong id="videoRoomId"></strong></p>
+                        <p class="video-instruction">Both players use the same room ID</p>
                     </div>
                 </div>
             </div>
