@@ -2212,20 +2212,20 @@ function updateChatVideoConnectionStatus(connected) {
     }
 }
 
-// Video Chat Functions (Talky)
+// Video Chat Functions (Jitsi Meet)
 function initializeVideoChat() {
     // Use the lobby ID as the video room ID so both players join the same room
     const roomId = myPeerId || generateLobbyCode();
     videoRoomId = roomId;
 
-    // Set up the Talky embed
+    // Set up the Jitsi Meet embed
     const embed = document.getElementById('videoEmbed');
     const videoRoomIdDisplay = document.getElementById('videoRoomId');
     const videoStatus = document.getElementById('videoConnectionStatus');
 
     if (embed) {
-        // Use Talky which allows embedding without account requirements
-        embed.src = `https://talky.io/${roomId}`;
+        // Use Jitsi Meet with simple iframe embed
+        embed.src = `https://meet.jit.si/${roomId}`;
     }
 
     if (videoRoomIdDisplay) {
