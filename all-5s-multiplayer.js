@@ -2212,20 +2212,20 @@ function updateChatVideoConnectionStatus(connected) {
     }
 }
 
-// Video Chat Functions (Whereby)
+// Video Chat Functions (Talky)
 function initializeVideoChat() {
     // Use the lobby ID as the video room ID so both players join the same room
     const roomId = myPeerId || generateLobbyCode();
     videoRoomId = roomId;
 
-    // Set up the Whereby embed
-    const embed = document.getElementById('brieFiEmbed');
+    // Set up the Talky embed
+    const embed = document.getElementById('videoEmbed');
     const videoRoomIdDisplay = document.getElementById('videoRoomId');
     const videoStatus = document.getElementById('videoConnectionStatus');
 
     if (embed) {
-        // Use Whereby which allows embedding without moderator requirements
-        embed.src = `https://whereby.com/${roomId}`;
+        // Use Talky which allows embedding without account requirements
+        embed.src = `https://talky.io/${roomId}`;
     }
 
     if (videoRoomIdDisplay) {
