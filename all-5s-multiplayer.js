@@ -1659,7 +1659,7 @@ function playDomino(domino, side, x, y, isHorizontal) {
     
     const placedWidth = isHorizontal ? 100 : 50;
     const placedHeight = isHorizontal ? 50 : 100;
-    focusOnBoardPoint(x, y, placedWidth, placedHeight);
+    focusOnBoardPoint(x, y, placedWidth, placedHeight, camera.zoom);
     
     checkGameEndAfterMove(true);
     if (gameOver) return;
@@ -1682,6 +1682,11 @@ function placeDominoOnBoard(orientedDomino, side, x, y, isHorizontal) {
         startingDomino = null;
     }
     mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, 'cpu');
+    
+    const placedWidth = isHorizontal ? 100 : 50;
+    const placedHeight = isHorizontal ? 50 : 100;
+    focusOnBoardPoint(x, y, placedWidth, placedHeight, camera.zoom);
+    
     dismissStarterOverlay();
 }
 
@@ -2131,7 +2136,7 @@ function centerCameraOnBoard() {
     }
     cameraAnimating = false;
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    camera = { x: 0, y: 0, zoom: isMobile ? MOBILE_FOCUS_ZOOM : FOCUS_ZOOM };
+    camera = { x: 0, y: 0, zoom: isMobile ? 0.5 : 1 };
     requestAnimationFrame(() => applyCamera());
 }
 
