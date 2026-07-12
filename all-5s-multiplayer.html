@@ -669,23 +669,31 @@
         /* Mobile responsive */
         @media (max-width: 768px) {
             .chat-video-btn {
-                top: 12px;
-                right: 12px;
-                padding: 8px 12px;
+                top: auto;
+                bottom: 16px;
+                right: 16px;
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.98);
             }
 
             .chat-video-btn svg {
-                width: 20px;
-                height: 20px;
+                width: 22px;
+                height: 22px;
             }
 
             .chat-video-panel {
                 width: 100%;
                 right: -100%;
+                top: 0;
+                padding-top: env(safe-area-inset-top);
             }
 
             .chat-video-panel.open {
                 right: 0;
+            }
+
+            .panel-header {
+                padding-top: calc(16px + env(safe-area-inset-top));
             }
 
             .panel-header h3 {
@@ -699,9 +707,19 @@
             .chat-input {
                 height: 44px;
             }
+
+            .chat-input-container {
+                padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            }
         }
 
         @media (max-width: 480px) {
+            .chat-video-btn {
+                bottom: 12px;
+                right: 12px;
+                padding: 10px 14px;
+            }
+
             .panel-tab {
                 padding: 12px 8px;
                 font-size: 0.9rem;

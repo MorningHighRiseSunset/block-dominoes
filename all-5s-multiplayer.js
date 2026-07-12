@@ -2241,22 +2241,45 @@ async function startVideoCall() {
 
         if (startVideoBtn) startVideoBtn.disabled = true;
 
-        // Get local media stream
-        localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
-        });
+        // Get local media stream with mobile-friendly constraints
+        const constraints = {
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: {
+                facingMode: 'user',
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+            }
+        };
+
+        // Check if mobile and adjust constraints
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) {
+            constraints.video.width = { ideal: 320 };
+            constraints.video.height = { ideal: 240 };
+        }
+
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
         const localVideo = document.getElementById('localVideo');
         if (localVideo) {
             localVideo.srcObject = localStream;
+            // Ensure video plays inline on iOS
+            localVideo.playsInline = true;
+            localVideo.muted = true;
         }
 
-        // Create WebRTC peer connection
+        // Create WebRTC peer connection with mobile-friendly ICE servers
         videoCall = new RTCPeerConnection({
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
             ]
         });
 
@@ -2270,6 +2293,7 @@ async function startVideoCall() {
             const remoteVideo = document.getElementById('remoteVideo');
             if (remoteVideo) {
                 remoteVideo.srcObject = event.streams[0];
+                remoteVideo.playsInline = true;
             }
         };
 
@@ -2310,22 +2334,43 @@ async function startVideoCall() {
 async function handleVideoCallOffer(data) {
     try {
         if (!videoCall) {
-            // Get local stream first
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true
-            });
+            // Get local stream first with mobile-friendly constraints
+            const constraints = {
+                audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                },
+                video: {
+                    facingMode: 'user',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                }
+            };
+
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                constraints.video.width = { ideal: 320 };
+                constraints.video.height = { ideal: 240 };
+            }
+
+            localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
             const localVideo = document.getElementById('localVideo');
             if (localVideo) {
                 localVideo.srcObject = localStream;
+                localVideo.playsInline = true;
+                localVideo.muted = true;
             }
 
-            // Create WebRTC peer connection
+            // Create WebRTC peer connection with mobile-friendly ICE servers
             videoCall = new RTCPeerConnection({
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' }
                 ]
             });
 
