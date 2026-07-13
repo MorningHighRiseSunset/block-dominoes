@@ -61,9 +61,10 @@ function init() {
 
 function createDominoSet() {
     const dominoes = [];
+    let dominoIndex = 0;
     for (let i = 0; i <= 6; i++) {
         for (let j = i; j <= 6; j++) {
-            dominoes.push({ top: i, bottom: j, id: `${i}-${j}` });
+            dominoes.push({ top: i, bottom: j, id: `${i}-${j}-${dominoIndex++}` });
         }
     }
     return shuffle(dominoes);
