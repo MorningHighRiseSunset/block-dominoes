@@ -650,8 +650,7 @@ function showTurnIndicator() {
     if (!indicator || boardDominoes.length > 0 || !openingDomino) return;
 
     if (isPlayerTurn && startingDomino) {
-        const dominoLabel = formatDominoLabel(startingDomino);
-        indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
+        indicator.innerHTML = `<strong>You go first!</strong>Play your starting domino in the center`;
     } else {
         indicator.innerHTML = `<strong>Opponent goes first</strong>`;
     }
@@ -830,9 +829,6 @@ function renderRacks() {
 
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
-        if (boardDominoes.length === 0 && isPlayerTurn && startingDomino && domino.id === startingDomino.id) {
-            el.classList.add('starter-domino');
-        }
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });
@@ -1019,17 +1015,11 @@ function getMatchingEndForSide(side) {
 }
 
 function findValidPlacementsForDomino(domino) {
-    console.log('Finding placements for domino:', domino);
-    console.log('Board ends:', boardEnds);
-    console.log('End positions:', endPositions);
-    
     if (boardDominoes.length === 0) {
         if (!startingDomino || domino.id !== startingDomino.id) {
-            console.log('Board empty but not starting domino');
             return [];
         }
         const placement = getFirstMovePlacement(domino);
-        console.log('First move placement:', placement);
         return [{ side: 'center', x: placement.x, y: placement.y, width: placement.width, height: placement.height, horizontal: placement.horizontal }];
     }
 
@@ -1046,16 +1036,12 @@ function findValidPlacementsForDomino(domino) {
             const zoneY = dominoCenterY - 50;
             if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
                 validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            } else {
-                console.log('Left placement blocked by overlap for domino', domino);
             }
         } else {
             const zoneX = leftPos.x - 100;
             const zoneY = dominoCenterY - 25;
             if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
                 validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            } else {
-                console.log('Left placement blocked by overlap for domino', domino);
             }
         }
     }
@@ -1071,16 +1057,12 @@ function findValidPlacementsForDomino(domino) {
             const zoneY = dominoCenterY - 50;
             if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
                 validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            } else {
-                console.log('Right placement blocked by overlap for domino', domino);
             }
         } else {
             const zoneX = rightPos.x;
             const zoneY = dominoCenterY - 25;
             if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
                 validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            } else {
-                console.log('Right placement blocked by overlap for domino', domino);
             }
         }
     }
@@ -1106,16 +1088,12 @@ function findValidPlacementsForDomino(domino) {
                 const zoneY = topPos.y - 50;
                 if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
                     validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-                } else {
-                    console.log('Top placement blocked by overlap for domino', domino);
                 }
             } else {
                 const zoneX = dominoCenterX - 25;
                 const zoneY = topPos.y - 100;
                 if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
                     validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-                } else {
-                    console.log('Top placement blocked by overlap for domino', domino);
                 }
             }
         }
@@ -1139,22 +1117,17 @@ function findValidPlacementsForDomino(domino) {
                 const zoneY = bottomPos.y;
                 if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
                     validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-                } else {
-                    console.log('Bottom placement blocked by overlap for domino', domino);
                 }
             } else {
                 const zoneX = dominoCenterX - 25;
                 const zoneY = bottomPos.y;
                 if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
                     validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-                } else {
-                    console.log('Bottom placement blocked by overlap for domino', domino);
                 }
             }
         }
     }
 
-    console.log('Found', validZones.length, 'valid zones for domino', domino, ':', validZones);
     return validZones;
 }
 

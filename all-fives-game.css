@@ -414,24 +414,6 @@ body {
     margin-bottom: 2px;
 }
 
-.turn-indicator .starter-domino-label {
-    font-weight: bold;
-    color: #8b5a2b;
-}
-
-@keyframes turn-pulse {
-    0%, 100% { border-color: rgba(139, 119, 101, 0.55); }
-    50% { border-color: rgba(139, 90, 43, 0.95); }
-}
-
-.rack .domino.starter-domino {
-    animation: starter-glow 1.5s ease-in-out infinite;
-}
-
-@keyframes starter-glow {
-    0%, 100% { box-shadow: 0 0 0 2px rgba(139, 90, 43, 0.45); }
-    50% { box-shadow: 0 0 0 4px rgba(139, 90, 43, 0.9); }
-}
 
 .boneyard {
     background: linear-gradient(145deg, #fff8e7, #f5e6d3);

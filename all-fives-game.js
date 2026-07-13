@@ -720,11 +720,10 @@ function showTurnIndicator(starter) {
     const indicator = document.getElementById('turnIndicator');
     if (!indicator) return;
 
-    const dominoLabel = formatDominoLabel(starter.domino);
     if (starter.owner === 'player') {
-        indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
+        indicator.innerHTML = `<strong>You go first!</strong>Play your starting domino in the center`;
     } else {
-        indicator.innerHTML = `<strong>CPU goes first</strong>CPU has the <span class="starter-domino-label">${dominoLabel}</span>`;
+        indicator.innerHTML = `<strong>CPU goes first</strong>CPU has the starting domino`;
     }
     indicator.classList.remove('hidden');
 }
@@ -1029,9 +1028,6 @@ function renderRacks() {
 
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
-        if (boardDominoes.length === 0 && isPlayerTurn && startingDomino && domino.id === startingDomino.id) {
-            el.classList.add('starter-domino');
-        }
         el.addEventListener('click', () => selectDomino(domino, el));
         playerRack.appendChild(el);
     });

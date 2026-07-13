@@ -144,11 +144,10 @@ function showTurnIndicator(starter) {
     const indicator = document.getElementById('turnIndicator');
     if (!indicator) return;
 
-    const dominoLabel = formatDominoLabel(starter.domino);
     if (starter.owner === 'player') {
-        indicator.innerHTML = `<strong>You go first!</strong>Play your <span class="starter-domino-label">${dominoLabel}</span> in the center`;
+        indicator.innerHTML = `<strong>You go first!</strong>Play your starting domino in the center`;
     } else {
-        indicator.innerHTML = `<strong>CPU goes first</strong>CPU has the <span class="starter-domino-label">${dominoLabel}</span>`;
+        indicator.innerHTML = `<strong>CPU goes first</strong>CPU has the starting domino`;
     }
     indicator.classList.remove('hidden');
 }
