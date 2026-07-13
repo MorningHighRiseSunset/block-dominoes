@@ -381,11 +381,11 @@ body {
     text-align: center;
     width: 60px;
     height: 120px;
-    border: 3px solid rgba(139, 119, 101, 0.6);
+    border: 3px solid rgba(255, 255, 255, 0.8);
     border-radius: 6px;
-    background: rgba(255, 248, 231, 0.4);
-    box-shadow: 0 4px 20px rgba(92, 74, 61, 0.15);
-    color: #5c4a3d;
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    color: #333;
     font-size: 0.6rem;
     line-height: 1.2;
     display: flex;
@@ -400,7 +400,7 @@ body {
     left: 0;
     right: 0;
     height: 2px;
-    background: rgba(139, 119, 101, 0.5);
+    background: rgba(255, 255, 255, 0.5);
     transform: translateY(-50%);
 }
 
@@ -666,6 +666,25 @@ body {
 
 .placement-zone:hover {
     background: rgba(139, 119, 101, 0.4);
+}
+
+.board-slot {
+    position: absolute;
+    border: 1px dashed rgba(100, 100, 100, 0.3);
+    background: rgba(100, 100, 100, 0.05);
+    pointer-events: none;
+    z-index: 1;
+    display: none;
+}
+
+.board-slot.center-slot {
+    border: 2px dashed rgba(100, 100, 100, 0.5);
+    background: rgba(100, 100, 100, 0.1);
+}
+
+.board-slot.occupied {
+    border: 1px solid rgba(100, 100, 100, 0.2);
+    background: rgba(100, 100, 100, 0.02);
 }
 
 .selected {

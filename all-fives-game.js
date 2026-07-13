@@ -6,6 +6,7 @@ let selectedDomino = null;
 let isPlayerTurn = true;
 let boardEnds = { left: null, right: null, top: null, bottom: null };
 let endPositions = { left: null, right: null, top: null, bottom: null };
+let endDominoRefs = { left: null, right: null, top: null, bottom: null };
 let endIsDouble = { left: false, right: false, top: false, bottom: false };
 let boardDimensions = { width: 0, height: 0 };
 let isShowingZones = false;
@@ -114,6 +115,7 @@ function initializeBoard() {
     boardDominoes = [];
     boardEnds = { left: null, right: null, top: null, bottom: null };
     endPositions = { left: null, right: null, top: null, bottom: null };
+    endDominoRefs = { left: null, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
     boardDimensions.width = 800;
     boardDimensions.height = 600;
@@ -934,6 +936,7 @@ function proceedToNextHand() {
     boardEnds = { left: null, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
     endPositions = { left: null, right: null, top: null, bottom: null };
+    endDominoRefs = { left: null, right: null, top: null, bottom: null };
     leftArmFilled = false;
     rightArmFilled = false;
     passesInRow = 0;
@@ -1010,14 +1013,14 @@ function createDominoElement(domino, isHorizontal, owner = 'player') {
 function createPips(value) {
     const container = document.createElement('div');
     container.className = 'pips';
-    container.dataset.value = value;
-    
+    container.dataset.value = String(value);
+
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');
         pip.className = 'pip';
         container.appendChild(pip);
     }
-    
+
     return container;
 }
 
@@ -1028,7 +1031,10 @@ function renderRacks() {
 
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
-        el.addEventListener('click', () => selectDomino(domino, el));
+        el.addEventListener('click', () => {
+            console.log('DOMINO ELEMENT CLICKED:', domino.top, '/', domino.bottom);
+            selectDomino(domino, el);
+        });
         playerRack.appendChild(el);
     });
 
@@ -1138,14 +1144,14 @@ function clearScoringBreakdown() {
 function createMiniPips(value) {
     const container = document.createElement('div');
     container.className = 'last-played-pips';
-    container.setAttribute('data-value', value);
-    
+    container.setAttribute('data-value', String(value));
+
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');
         pip.className = 'last-played-pip';
         container.appendChild(pip);
     }
-    
+
     return container;
 }
 
@@ -1217,6 +1223,65 @@ function getMatchingEndForSide(side) {
     return spinnerArm ? spinnerArm.matchingEnd : null;
 }
 
+function getEndDominoForSide(side) {
+    if (endDominoRefs[side]) {
+        return endDominoRefs[side];
+    }
+
+    if (boardDominoes.length > 0) {
+        if ((side === 'top' || side === 'bottom') && leftArmFilled && rightArmFilled) {
+            return boardDominoes[0];
+        }
+        if (side === 'left' || side === 'right') {
+            return boardDominoes[0];
+        }
+    }
+
+    return null;
+}
+
+function computePlacementZone(endDomino, side, domino) {
+    const isDouble = domino.top === domino.bottom;
+    const endWidth = endDomino.isHorizontal ? 100 : 50;
+    const endHeight = endDomino.isHorizontal ? 50 : 100;
+    const centerY = endDomino.y + endHeight / 2;
+    const centerX = endDomino.x + endWidth / 2;
+
+    if (side === 'left') {
+        if (isDouble) {
+            return { side: 'left', x: endDomino.x - 50, y: centerY - 50, width: 50, height: 100, horizontal: false };
+        }
+        return { side: 'left', x: endDomino.x - 100, y: centerY - 25, width: 100, height: 50, horizontal: true };
+    }
+
+    if (side === 'right') {
+        if (isDouble) {
+            return { side: 'right', x: endDomino.x + endWidth, y: centerY - 50, width: 50, height: 100, horizontal: false };
+        }
+        return { side: 'right', x: endDomino.x + endWidth, y: centerY - 25, width: 100, height: 50, horizontal: true };
+    }
+
+    if (side === 'top') {
+        if (isDouble) {
+            return { side: 'top', x: centerX - 50, y: endDomino.y - 50, width: 100, height: 50, horizontal: true };
+        }
+        return { side: 'top', x: centerX - 25, y: endDomino.y - 100, width: 50, height: 100, horizontal: false };
+    }
+
+    if (side === 'bottom') {
+        if (isDouble) {
+            return { side: 'bottom', x: centerX - 50, y: endDomino.y + endHeight, width: 100, height: 50, horizontal: true };
+        }
+        return { side: 'bottom', x: centerX - 25, y: endDomino.y + endHeight, width: 50, height: 100, horizontal: false };
+    }
+
+    return null;
+}
+
+function dominoMatchesEnd(domino, endValue) {
+    return domino.top === endValue || domino.bottom === endValue;
+}
+
 function findValidPlacementsForDomino(domino) {
     if (boardDominoes.length === 0) {
         if (!startingDomino || domino.id !== startingDomino.id) {
@@ -1227,109 +1292,24 @@ function findValidPlacementsForDomino(domino) {
     }
 
     const validZones = [];
+    const sidesToCheck = isAllFivesMode ? ['left', 'right', 'top', 'bottom'] : ['left', 'right'];
 
-    if (boardEnds.left !== null && endPositions.left && (domino.top === boardEnds.left || domino.bottom === boardEnds.left)) {
-        const leftPos = endPositions.left;
-        const dominoCenterX = leftPos.x + (leftPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = leftPos.y + (leftPos.isHorizontal ? 25 : 50);
-        const isDouble = domino.top === domino.bottom;
-
-        if (isDouble) {
-            const zoneX = leftPos.x - 50;
-            const zoneY = dominoCenterY - 50;
-            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            const zoneX = leftPos.x - 100;
-            const zoneY = dominoCenterY - 25;
-            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                validZones.push({ side: 'left', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        }
-    }
-
-    if (boardEnds.right !== null && endPositions.right && (domino.top === boardEnds.right || domino.bottom === boardEnds.right)) {
-        const rightPos = endPositions.right;
-        const dominoCenterX = rightPos.x + (rightPos.isHorizontal ? 50 : 25);
-        const dominoCenterY = rightPos.y + (rightPos.isHorizontal ? 25 : 50);
-        const isDouble = domino.top === domino.bottom;
-
-        if (isDouble) {
-            const zoneX = rightPos.x;
-            const zoneY = dominoCenterY - 50;
-            if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-            }
-        } else {
-            const zoneX = rightPos.x;
-            const zoneY = dominoCenterY - 25;
-            if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                validZones.push({ side: 'right', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-            }
-        }
-    }
-
-    // Top and bottom placements only in All 5s mode (spinner)
-    if (isAllFivesMode) {
-        let topPos = null;
-        if (boardEnds.top !== null && endPositions.top && (domino.top === boardEnds.top || domino.bottom === boardEnds.top)) {
-            topPos = endPositions.top;
-        } else {
-            const spinnerTop = getSpinnerArmMatch('top');
-            if (spinnerTop && (domino.top === spinnerTop.matchingEnd || domino.bottom === spinnerTop.matchingEnd)) {
-                topPos = spinnerTop;
-            }
+    sidesToCheck.forEach(side => {
+        const matchingEnd = getMatchingEndForSide(side);
+        if (matchingEnd === null || !dominoMatchesEnd(domino, matchingEnd)) {
+            return;
         }
 
-        if (topPos) {
-            const dominoCenterX = topPos.x + (topPos.isHorizontal ? 50 : 25);
-            const isDouble = domino.top === domino.bottom;
-
-            if (isDouble) {
-                const zoneX = dominoCenterX - 50;
-                const zoneY = topPos.y - 50;
-                if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                    validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-                }
-            } else {
-                const zoneX = dominoCenterX - 25;
-                const zoneY = topPos.y - 100;
-                if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                    validZones.push({ side: 'top', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-                }
-            }
+        const endDomino = getEndDominoForSide(side);
+        if (!endDomino) {
+            return;
         }
 
-        let bottomPos = null;
-        if (boardEnds.bottom !== null && endPositions.bottom && (domino.top === boardEnds.bottom || domino.bottom === boardEnds.bottom)) {
-            bottomPos = endPositions.bottom;
-        } else {
-            const spinnerBottom = getSpinnerArmMatch('bottom');
-            if (spinnerBottom && (domino.top === spinnerBottom.matchingEnd || domino.bottom === spinnerBottom.matchingEnd)) {
-                bottomPos = spinnerBottom;
-            }
+        const zone = computePlacementZone(endDomino, side, domino);
+        if (zone) {
+            validZones.push(zone);
         }
-
-        if (bottomPos) {
-            const dominoCenterX = bottomPos.x + (bottomPos.isHorizontal ? 50 : 25);
-            const isDouble = domino.top === domino.bottom;
-
-            if (isDouble) {
-                const zoneX = dominoCenterX - 50;
-                const zoneY = bottomPos.y;
-                if (!checkZoneOverlap(zoneX, zoneY, 100, 50)) {
-                    validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 100, height: 50, horizontal: true });
-                }
-            } else {
-                const zoneX = dominoCenterX - 25;
-                const zoneY = bottomPos.y;
-                if (!checkZoneOverlap(zoneX, zoneY, 50, 100)) {
-                    validZones.push({ side: 'bottom', x: zoneX, y: zoneY, width: 50, height: 100, horizontal: false });
-                }
-            }
-        }
-    }
+    });
 
     return validZones;
 }
@@ -1560,7 +1540,7 @@ function createMiniDomino(domino) {
 function createMiniPipsForGameOver(value) {
     const container = document.createElement('div');
     container.className = 'mini-pips';
-    container.setAttribute('data-value', value);
+    container.setAttribute('data-value', String(value));
 
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');
@@ -1624,22 +1604,18 @@ function showCpuDrawNotification() {
 function selectDomino(domino, element) {
     if (!isPlayerTurn || gameOver) return;
     resumeAudio();
-    
+
     document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     selectedDomino = domino;
-    
+
     // Play selection sound
     playSelectSound();
-    
+
     // Show valid placement zones (use requestAnimationFrame to prevent layout thrashing)
     requestAnimationFrame(() => {
-        if (!isShowingZones) {
-            isShowingZones = true;
-            showValidPlacementZones(domino);
-            isShowingZones = false;
-            requestAnimationFrame(() => updateZoneHintArrows());
-        }
+        showValidPlacementZones(domino);
+        requestAnimationFrame(() => updateZoneHintArrows());
     });
 }
 
@@ -1780,15 +1756,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
 
     if (side === 'center') {
         hideTurnIndicator();
-        if (domino.top === domino.bottom) {
-            orientedDomino = { ...domino };
-            isHorizontal = false;
-        } else {
-            const high = Math.max(domino.top, domino.bottom);
-            const low = Math.min(domino.top, domino.bottom);
-            orientedDomino = { top: high, bottom: low, id: domino.id };
-            isHorizontal = true;
-        }
+        // Starting domino is always vertical
+        orientedDomino = { ...domino };
+        isHorizontal = false;
     } else {
         const matchingEnd = getMatchingEndForSide(side);
 
@@ -1857,6 +1827,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         isHorizontal: isHorizontal,
         element: dominoEl
     });
+
+    const placedRef = boardDominoes[boardDominoes.length - 1];
     
     // Update board ends to the NEW exposed number
     lastPlayedSide = side; // Track which side was just played for scoring
@@ -1879,6 +1851,10 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endIsDouble.right = false;
         endIsDouble.top = false;
         endIsDouble.bottom = false;
+        endDominoRefs.left = placedRef;
+        endDominoRefs.right = placedRef;
+        endDominoRefs.top = null;
+        endDominoRefs.bottom = null;
     } else if (side === 'left') {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
@@ -1887,6 +1863,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
         endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
         leftArmFilled = true;
+        endDominoRefs.left = placedRef;
         // Top and bottom remain null until a domino is actually placed on them
     } else if (side === 'right') {
         // For right placement, the right side of the domino is the NEW open end
@@ -1896,6 +1873,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
         endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
         rightArmFilled = true;
+        endDominoRefs.right = placedRef;
         // Top and bottom remain null until a domino is actually placed on them
     } else if (side === 'top') {
         // For top placement, the top side of the domino is the NEW open end
@@ -1904,6 +1882,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         const dominoHeight = isHorizontal ? 50 : 100;
         endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
         endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
+        endDominoRefs.top = placedRef;
     } else if (side === 'bottom') {
         // For bottom placement, the bottom side of the domino is the NEW open end
         boardEnds.bottom = orientedDomino.bottom;
@@ -1911,6 +1890,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         const dominoHeight = isHorizontal ? 50 : 100;
         endPositions.bottom = { x: x, y: y + dominoHeight, isHorizontal: isHorizontal };
         endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
+        endDominoRefs.bottom = placedRef;
     }
     
     // In a turning chain, when you place on one side, you might block adjacent sides
