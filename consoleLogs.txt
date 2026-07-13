@@ -1,361 +1,288 @@
-Peer opened with ID: fd85851d-5cd3-4562-89ec-d332bf7a7588
+Peer opened with ID: 3da4d2b7-61df-4093-96e4-9ade3d0f2f08
 all-5s-multiplayer.js:239 Received message: Object
 all-5s-multiplayer.js:242 START_GAME data: Object
 all-5s-multiplayer.js:328 initializeGameState called with: Object
 all-5s-multiplayer.js:239 Received message: Object
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1057 Left placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1082 Right placement blocked by overlap for domino Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
-all-5s-multiplayer.js:1021 Finding placements for domino: Object
-all-5s-multiplayer.js:1022 Board ends: Object
-all-5s-multiplayer.js:1023 End positions: Object
-all-5s-multiplayer.js:1156 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+favicon.ico:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)
+all-5s-multiplayer.js:1033 Finding placements for domino: Object
+all-5s-multiplayer.js:1034 Board ends: Object
+all-5s-multiplayer.js:1035 End positions: Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1069 Left placement blocked by overlap for domino Object
+all-5s-multiplayer.js:965 Checking overlap for zone: Object
+all-5s-multiplayer.js:966 Board dominoes: Array(1)
+all-5s-multiplayer.js:978 Checking against placed domino: Object
+all-5s-multiplayer.js:987 OVERLAP DETECTED
+all-5s-multiplayer.js:1094 Right placement blocked by overlap for domino Object
+all-5s-multiplayer.js:1168 Found 0 valid zones for domino Object : Array(0)

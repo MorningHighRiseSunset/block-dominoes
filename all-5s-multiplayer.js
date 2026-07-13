@@ -961,12 +961,7 @@ function roundDownToMultipleOf5(value) {
 }
 
 function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
-    const padding = 2; // Small padding to prevent edge cases
-    console.log('Checking overlap for zone:', { zoneX, zoneY, zoneWidth, zoneHeight });
-    console.log('Board dominoes:', boardDominoes.map(d => ({
-        x: d.x, y: d.y, isHorizontal: d.isHorizontal, domino: d.domino
-    })));
-    
+    // No padding - allow zones to be adjacent to existing dominoes
     for (const placed of boardDominoes) {
         const placedWidth = placed.isHorizontal ? 100 : 50;
         const placedHeight = placed.isHorizontal ? 50 : 100;
@@ -975,20 +970,14 @@ function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
         const zoneRight = zoneX + zoneWidth;
         const zoneBottom = zoneY + zoneHeight;
 
-        console.log('Checking against placed domino:', {
-            placedX: placed.x, placedY: placed.y, placedWidth, placedHeight, placedRight, placedBottom,
-            zoneRight, zoneBottom, padding
-        });
-
-        if (!(zoneRight + padding <= placed.x ||
-              zoneX - padding >= placedRight ||
-              zoneBottom + padding <= placed.y ||
-              zoneY - padding >= placedBottom)) {
-            console.log('OVERLAP DETECTED');
+        // Check for actual overlap (not just touching)
+        if (!(zoneRight <= placed.x ||
+              zoneX >= placedRight ||
+              zoneBottom <= placed.y ||
+              zoneY >= placedBottom)) {
             return true;
         }
     }
-    console.log('No overlap detected');
     return false;
 }
 
