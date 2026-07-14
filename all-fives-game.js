@@ -1012,8 +1012,7 @@ function createDominoElement(domino, isHorizontal, owner = 'player') {
 
 function createPips(value) {
     const container = document.createElement('div');
-    container.className = 'pips';
-    container.dataset.value = String(value);
+    container.className = 'pips value-' + value;
 
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');

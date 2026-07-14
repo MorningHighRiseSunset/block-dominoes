@@ -303,12 +303,12 @@ function sendToOpponent(data) {
 
 function startGame() {
     initializeBoard();
-    
+
     const allDominoes = createDominoSet();
     playerDominoes = allDominoes.slice(0, 7);
     opponentDominoes = allDominoes.slice(7, 14);
     boneyard = allDominoes.slice(14);
-    
+
     // Remove any duplicates from player rack (by value, not just ID)
     const seenValues = new Set();
     playerDominoes = playerDominoes.filter(d => {
@@ -356,12 +356,12 @@ function startGame() {
 
 function initializeGameState(data) {
     initializeBoard();
-    
+
     const allDominoes = data.dominoSet;
     playerDominoes = allDominoes.slice(7, 14);
     opponentDominoes = [];
     boneyard = allDominoes.slice(14);
-    
+
     // Remove any duplicates from player rack (by value, not just ID)
     const seenValues = new Set();
     playerDominoes = playerDominoes.filter(d => {
@@ -1139,25 +1139,31 @@ function createDominoElement(domino, isHorizontal, owner = 'player') {
     const el = document.createElement('div');
     el.className = 'domino' + (isHorizontal ? ' horizontal' : '') + (owner === 'player' ? ' player-domino' : ' cpu-domino');
     el.dataset.id = domino.id;
-    
+
+    if (domino.top === 3 || domino.bottom === 3 || domino.top === 4 || domino.bottom === 4) {
+        console.log('=== DOMINO ELEMENT DEBUG ===');
+        console.log('Creating domino element for:', domino);
+        console.log('domino.top:', domino.top, 'domino.bottom:', domino.bottom);
+        console.log('=== END DOMINO ELEMENT DEBUG ===');
+    }
+
     const topHalf = document.createElement('div');
     topHalf.className = 'domino-half';
     topHalf.appendChild(createPips(domino.top));
-    
+
     const bottomHalf = document.createElement('div');
     bottomHalf.className = 'domino-half';
     bottomHalf.appendChild(createPips(domino.bottom));
-    
+
     el.appendChild(topHalf);
     el.appendChild(bottomHalf);
-    
+
     return el;
 }
 
 function createPips(value) {
     const container = document.createElement('div');
-    container.className = 'pips';
-    container.dataset.value = String(value);
+    container.className = 'pips value-' + value;
 
     for (let i = 0; i < 9; i++) {
         const pip = document.createElement('div');
@@ -1173,9 +1179,16 @@ function renderRacks() {
 
     playerRack.innerHTML = '';
 
-    playerDominoes.forEach(domino => {
+    playerDominoes.forEach((domino, index) => {
         const el = createDominoElement(domino, false, 'player');
-        el.addEventListener('click', () => selectDomino(domino, el));
+        el.addEventListener('click', () => {
+            console.log('=== CLICK DEBUG ===');
+            console.log('Clicked element index:', index);
+            console.log('Expected domino:', domino);
+            console.log('Element dataset.id:', el.dataset.id);
+            console.log('=== END CLICK DEBUG ===');
+            selectDomino(domino, el);
+        });
         playerRack.appendChild(el);
     });
 
@@ -2303,6 +2316,7 @@ function proceedToNextHand() {
     initializeBoard();
     renderRacks();
     updateDrawButton();
+    updateRackState();
     showTurnIndicator();
     centerCameraOnBoard();
     

@@ -626,34 +626,21 @@ body {
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.pips[data-value="0"] .pip { visibility: hidden; }
-.pips[data-value="1"] .pip:nth-child(5) { visibility: visible; }
-.pips[data-value="1"] .pip:not(:nth-child(5)) { visibility: hidden; }
-.pips[data-value="2"] .pip:nth-child(1), .pips[data-value="2"] .pip:nth-child(9) { visibility: visible; }
-.pips[data-value="2"] .pip:not(:nth-child(1)):not(:nth-child(9)) { visibility: hidden; }
-.pips[data-value="3"] .pip:nth-child(1), .pips[data-value="3"] .pip:nth-child(5), .pips[data-value="3"] .pip:nth-child(9) { visibility: visible; }
-.pips[data-value="3"] .pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { visibility: hidden; }
-.pips[data-value="4"] .pip:nth-child(1), .pips[data-value="4"] .pip:nth-child(3), .pips[data-value="4"] .pip:nth-child(7), .pips[data-value="4"] .pip:nth-child(9) { visibility: visible; }
-.pips[data-value="4"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
-.pips[data-value="5"] .pip:nth-child(1), .pips[data-value="5"] .pip:nth-child(3), .pips[data-value="5"] .pip:nth-child(5), .pips[data-value="5"] .pip:nth-child(7), .pips[data-value="5"] .pip:nth-child(9) { visibility: visible; }
-.pips[data-value="5"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
-.pips[data-value="6"] .pip:nth-child(1), .pips[data-value="6"] .pip:nth-child(3), .pips[data-value="6"] .pip:nth-child(4), .pips[data-value="6"] .pip:nth-child(6), .pips[data-value="6"] .pip:nth-child(7), .pips[data-value="6"] .pip:nth-child(9) { visibility: visible; }
-.pips[data-value="6"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+.pips.value-0 .pip { visibility: hidden; }
+.pips.value-1 .pip:nth-child(5) { visibility: visible; }
+.pips.value-1 .pip:not(:nth-child(5)) { visibility: hidden; }
+.pips.value-2 .pip:nth-child(1), .pips.value-2 .pip:nth-child(9) { visibility: visible; }
+.pips.value-2 .pip:not(:nth-child(1)):not(:nth-child(9)) { visibility: hidden; }
+.pips.value-3 .pip:nth-child(1), .pips.value-3 .pip:nth-child(5), .pips.value-3 .pip:nth-child(9) { visibility: visible; }
+.pips.value-3 .pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { visibility: hidden; }
+.pips.value-4 .pip:nth-child(1), .pips.value-4 .pip:nth-child(3), .pips.value-4 .pip:nth-child(7), .pips.value-4 .pip:nth-child(9) { visibility: visible; }
+.pips.value-4 .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+.pips.value-5 .pip:nth-child(1), .pips.value-5 .pip:nth-child(3), .pips.value-5 .pip:nth-child(5), .pips.value-5 .pip:nth-child(7), .pips.value-5 .pip:nth-child(9) { visibility: visible; }
+.pips.value-5 .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+.pips.value-6 .pip:nth-child(1), .pips.value-6 .pip:nth-child(3), .pips.value-6 .pip:nth-child(4), .pips.value-6 .pip:nth-child(6), .pips.value-6 .pip:nth-child(7), .pips.value-6 .pip:nth-child(9) { visibility: visible; }
+.pips.value-6 .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
 
-/* Rack-specific dice-style pip patterns */
-.rack .pips[data-value="0"] .pip { visibility: hidden; }
-.rack .pips[data-value="1"] .pip:nth-child(5) { visibility: visible; }
-.rack .pips[data-value="1"] .pip:not(:nth-child(5)) { visibility: hidden; }
-.rack .pips[data-value="2"] .pip:nth-child(1), .rack .pips[data-value="2"] .pip:nth-child(9) { visibility: visible; }
-.rack .pips[data-value="2"] .pip:not(:nth-child(1)):not(:nth-child(9)) { visibility: hidden; }
-.rack .pips[data-value="3"] .pip:nth-child(1), .rack .pips[data-value="3"] .pip:nth-child(5), .rack .pips[data-value="3"] .pip:nth-child(9) { visibility: visible; }
-.rack .pips[data-value="3"] .pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { visibility: hidden; }
-.rack .pips[data-value="4"] .pip:nth-child(1), .rack .pips[data-value="4"] .pip:nth-child(3), .rack .pips[data-value="4"] .pip:nth-child(7), .rack .pips[data-value="4"] .pip:nth-child(9) { visibility: visible; }
-.rack .pips[data-value="4"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
-.rack .pips[data-value="5"] .pip:nth-child(1), .rack .pips[data-value="5"] .pip:nth-child(3), .rack .pips[data-value="5"] .pip:nth-child(5), .rack .pips[data-value="5"] .pip:nth-child(7), .rack .pips[data-value="5"] .pip:nth-child(9) { visibility: visible; }
-.rack .pips[data-value="5"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
-.rack .pips[data-value="6"] .pip:nth-child(1), .rack .pips[data-value="6"] .pip:nth-child(3), .rack .pips[data-value="6"] .pip:nth-child(4), .rack .pips[data-value="6"] .pip:nth-child(6), .rack .pips[data-value="6"] .pip:nth-child(7), .rack .pips[data-value="6"] .pip:nth-child(9) { visibility: visible; }
-.rack .pips[data-value="6"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+/* Rack-specific dice-style pip patterns - REMOVED, using general rules only */
 
 .placement-zone {
     position: absolute;
