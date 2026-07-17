@@ -871,10 +871,13 @@ function centerCameraOnBoard() {
     const board = getBoardElement();
     if (!board) return;
 
+    const boardContainer = document.querySelector('.board-container');
+    if (!boardContainer) return;
+
     const bounds = getBoardContentBounds();
     if (!bounds) {
-        camera.x = 0;
-        camera.y = 0;
+        camera.x = boardDimensions.width / 2 - boardContainer.offsetWidth / 2;
+        camera.y = boardDimensions.height / 2 - boardContainer.offsetHeight / 2;
         camera.zoom = 1;
         applyCamera();
         return;
@@ -883,8 +886,8 @@ function centerCameraOnBoard() {
     const centerX = (bounds.minX + bounds.maxX) / 2;
     const centerY = (bounds.minY + bounds.maxY) / 2;
 
-    camera.x = centerX - board.offsetWidth / 2;
-    camera.y = centerY - board.offsetHeight / 2;
+    camera.x = centerX - boardContainer.offsetWidth / 2;
+    camera.y = centerY - boardContainer.offsetHeight / 2;
     camera.zoom = 1;
     applyCamera();
 }
