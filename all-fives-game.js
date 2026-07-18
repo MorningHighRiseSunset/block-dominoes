@@ -2393,8 +2393,8 @@ function centerCameraOnBoard() {
 
     const bounds = getBoardContentBounds();
     if (!bounds) {
-        camera.x = boardDimensions.width / 2 - boardContainer.offsetWidth / 2;
-        camera.y = boardDimensions.height / 2 - boardContainer.offsetHeight / 2;
+        camera.x = boardDimensions.width / 2;
+        camera.y = boardDimensions.height / 2;
         camera.zoom = targetZoom;
         applyCamera();
         return;
