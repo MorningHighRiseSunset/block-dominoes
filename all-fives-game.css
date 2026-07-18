@@ -504,8 +504,8 @@ body {
 }
 
 .domino {
-    width: 50px;
-    height: 100px;
+    width: 40px;
+    height: 80px;
     background: linear-gradient(145deg, #ffffff 0%, #f8f8f0 50%, #f0ebe0 100%);
     border: 3px solid #2d2d2d;
     border-radius: 6px;
@@ -574,8 +574,8 @@ body {
 
 
 .domino.horizontal {
-    width: 100px;
-    height: 50px;
+    width: 80px;
+    height: 40px;
     flex-direction: row;
 }
 
@@ -596,16 +596,16 @@ body {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     grid-template-rows: repeat(3, 1fr);
-    gap: 4px;
-    width: 32px;
-    height: 32px;
-    padding: 4px;
+    gap: 3px;
+    width: 26px;
+    height: 26px;
+    padding: 3px;
     /* Explicitly place items in grid cells */
     justify-items: center;
     align-items: center;
     /* Shift grid left and up */
-    margin-left: -6px;
-    margin-top: -6px;
+    margin-left: -5px;
+    margin-top: -5px;
 }
 
 .pip:nth-child(1) { grid-area: 1 / 1; }
@@ -619,8 +619,8 @@ body {
 .pip:nth-child(9) { grid-area: 3 / 3; }
 
 .pip {
-    width: 9px;
-    height: 9px;
+    width: 7px;
+    height: 7px;
     background: radial-gradient(circle at 35% 35%, #333 0%, #000 100%);
     border-radius: 50%;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
@@ -729,6 +729,16 @@ body {
     .board {
         min-width: 800px;
         min-height: 600px;
+    }
+
+    .board .domino {
+        width: 60px;
+        height: 120px;
+    }
+
+    .board .domino.horizontal {
+        width: 120px;
+        height: 60px;
     }
     
     .boneyard {
@@ -867,7 +877,7 @@ body {
 }
 
 /* Narrow phones — slightly smaller tiles so 7 fit comfortably */
-@media (max-width: 390px) {
+@media (max-width: 414px) {
     :root {
         --rack-tile-w: 38px;
         --rack-tile-h: 76px;
@@ -877,7 +887,7 @@ body {
     }
 }
 
-@media (max-width: 375px) {
+@media (max-width: 393px) {
     :root {
         --rack-tile-w: 36px;
         --rack-tile-h: 72px;
@@ -900,6 +910,33 @@ body {
     
     .score {
         font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 360px) {
+    :root {
+        --rack-tile-w: 34px;
+        --rack-tile-h: 68px;
+        --rack-gap: 2px;
+        --rack-pip-grid: 20px;
+        --rack-pip-dot: 4px;
+        --player-rack-height: 100px;
+        --player-rack-pad-top: 10px;
+        --player-rack-pad-bottom: 8px;
+    }
+
+    .score-bar {
+        padding: 3px 4px;
+        gap: 2px;
+    }
+    
+    .score-item h2 {
+        font-size: 0.8rem;
+    }
+    
+    .score {
+        font-size: 0.65rem;
+        padding: 2px 4px;
     }
 }
 

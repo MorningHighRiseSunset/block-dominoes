@@ -22,6 +22,16 @@ let lastPanVelocity = { x: 0, y: 0 };
 const FOCUS_ZOOM = 1.35;
 const MOBILE_FOCUS_ZOOM = 1.22;
 const BOARD_EDGE_MARGIN = 150;
+
+// Domino dimensions (smaller for better board fit)
+const DOMINO_WIDTH = 40;
+const DOMINO_HEIGHT = 80;
+const DOMINO_HORIZONTAL_WIDTH = 80;
+const DOMINO_HORIZONTAL_HEIGHT = 40;
+
+// Board dimensions
+const BOARD_WIDTH = 800;
+const BOARD_HEIGHT = 600;
 let startingDomino = null;
 let gameOver = false;
 let passesInRow = 0;
@@ -38,6 +48,20 @@ const GAME_HINTS = [
     'Tap a tile, then tap a highlighted spot to play',
     'Empty your hand first to win the round'
 ];
+
+function getDominoDimensions(isHorizontal) {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        return {
+            width: isHorizontal ? 120 : 60,
+            height: isHorizontal ? 60 : 120
+        };
+    }
+    return {
+        width: isHorizontal ? DOMINO_HORIZONTAL_WIDTH : DOMINO_WIDTH,
+        height: isHorizontal ? DOMINO_HORIZONTAL_HEIGHT : DOMINO_HEIGHT
+    };
+}
 
 function init() {
     // Detect game mode from page title
@@ -117,12 +141,12 @@ function initializeBoard() {
     endPositions = { left: null, right: null, top: null, bottom: null };
     endDominoRefs = { left: null, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
-    boardDimensions.width = 800;
-    boardDimensions.height = 600;
-    board.style.width = '800px';
-    board.style.height = '600px';
-    board.style.minWidth = '800px';
-    board.style.minHeight = '600px';
+    boardDimensions.width = BOARD_WIDTH;
+    boardDimensions.height = BOARD_HEIGHT;
+    board.style.width = BOARD_WIDTH + 'px';
+    board.style.height = BOARD_HEIGHT + 'px';
+    board.style.minWidth = BOARD_WIDTH + 'px';
+    board.style.minHeight = BOARD_HEIGHT + 'px';
     leftArmFilled = false;
     rightArmFilled = false;
     
@@ -703,8 +727,9 @@ function findStarter(playerHand, cpuHand) {
 
 function getFirstMovePlacement(domino) {
     const isDouble = domino.top === domino.bottom;
-    const width = isDouble ? 50 : 100;
-    const height = isDouble ? 100 : 50;
+    const dims = getDominoDimensions(!isDouble);
+    const width = dims.width;
+    const height = dims.height;
     const x = (boardDimensions.width - width) / 2;
     const y = (boardDimensions.height - height) / 2;
 
@@ -828,8 +853,9 @@ function getBoardContentBounds(extraZones = []) {
     let maxY = 0;
 
     boardDominoes.forEach(placed => {
-        const width = placed.isHorizontal ? 100 : 50;
-        const height = placed.isHorizontal ? 50 : 100;
+        const dims = getDominoDimensions(placed.isHorizontal);
+        const width = dims.width;
+        const height = dims.height;
         minX = Math.min(minX, placed.x);
         minY = Math.min(minY, placed.y);
         maxX = Math.max(maxX, placed.x + width);
@@ -1168,8 +1194,9 @@ function roundDownToMultipleOf5(value) {
 
 function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
     for (const placed of boardDominoes) {
-        const placedWidth = placed.isHorizontal ? 100 : 50;
-        const placedHeight = placed.isHorizontal ? 50 : 100;
+        const placedDims = getDominoDimensions(placed.isHorizontal);
+        const placedWidth = placedDims.width;
+        const placedHeight = placedDims.height;
         const placedRight = placed.x + placedWidth;
         const placedBottom = placed.y + placedHeight;
         const zoneRight = zoneX + zoneWidth;
@@ -1201,7 +1228,8 @@ function getSpinnerArmMatch(side) {
     }
 
     if (side === 'bottom' && boardEnds.bottom === null) {
-        const attachHeight = spinner.isHorizontal ? 50 : 100;
+        const spinnerDims = getDominoDimensions(spinner.isHorizontal);
+        const attachHeight = spinnerDims.height;
         return {
             matchingEnd: spinner.domino.bottom,
             x: spinner.x,
@@ -1241,37 +1269,41 @@ function getEndDominoForSide(side) {
 
 function computePlacementZone(endDomino, side, domino) {
     const isDouble = domino.top === domino.bottom;
-    const endWidth = endDomino.isHorizontal ? 100 : 50;
-    const endHeight = endDomino.isHorizontal ? 50 : 100;
+    const endDims = getDominoDimensions(endDomino.isHorizontal);
+    const endWidth = endDims.width;
+    const endHeight = endDims.height;
     const centerY = endDomino.y + endHeight / 2;
     const centerX = endDomino.x + endWidth / 2;
 
+    const doubleDims = getDominoDimensions(false);
+    const horizontalDims = getDominoDimensions(true);
+
     if (side === 'left') {
         if (isDouble) {
-            return { side: 'left', x: endDomino.x - 50, y: centerY - 50, width: 50, height: 100, horizontal: false };
+            return { side: 'left', x: endDomino.x - doubleDims.width, y: centerY - doubleDims.height / 2, width: doubleDims.width, height: doubleDims.height, horizontal: false };
         }
-        return { side: 'left', x: endDomino.x - 100, y: centerY - 25, width: 100, height: 50, horizontal: true };
+        return { side: 'left', x: endDomino.x - horizontalDims.width, y: centerY - horizontalDims.height / 2, width: horizontalDims.width, height: horizontalDims.height, horizontal: true };
     }
 
     if (side === 'right') {
         if (isDouble) {
-            return { side: 'right', x: endDomino.x + endWidth, y: centerY - 50, width: 50, height: 100, horizontal: false };
+            return { side: 'right', x: endDomino.x + endWidth, y: centerY - doubleDims.height / 2, width: doubleDims.width, height: doubleDims.height, horizontal: false };
         }
-        return { side: 'right', x: endDomino.x + endWidth, y: centerY - 25, width: 100, height: 50, horizontal: true };
+        return { side: 'right', x: endDomino.x + endWidth, y: centerY - horizontalDims.height / 2, width: horizontalDims.width, height: horizontalDims.height, horizontal: true };
     }
 
     if (side === 'top') {
         if (isDouble) {
-            return { side: 'top', x: centerX - 50, y: endDomino.y - 50, width: 100, height: 50, horizontal: true };
+            return { side: 'top', x: centerX - horizontalDims.width / 2, y: endDomino.y - horizontalDims.height, width: horizontalDims.width, height: horizontalDims.height, horizontal: true };
         }
-        return { side: 'top', x: centerX - 25, y: endDomino.y - 100, width: 50, height: 100, horizontal: false };
+        return { side: 'top', x: centerX - doubleDims.width / 2, y: endDomino.y - doubleDims.height, width: doubleDims.width, height: doubleDims.height, horizontal: false };
     }
 
     if (side === 'bottom') {
         if (isDouble) {
-            return { side: 'bottom', x: centerX - 50, y: endDomino.y + endHeight, width: 100, height: 50, horizontal: true };
+            return { side: 'bottom', x: centerX - horizontalDims.width / 2, y: endDomino.y + endHeight, width: horizontalDims.width, height: horizontalDims.height, horizontal: true };
         }
-        return { side: 'bottom', x: centerX - 25, y: endDomino.y + endHeight, width: 50, height: 100, horizontal: false };
+        return { side: 'bottom', x: centerX - doubleDims.width / 2, y: endDomino.y + endHeight, width: doubleDims.width, height: doubleDims.height, horizontal: false };
     }
 
     return null;
@@ -1642,8 +1674,14 @@ function updateDrawButton() {
         return;
     }
 
-    const hasValidMove = hasAnyValidMove(playerDominoes);
-    drawBtn.disabled = hasValidMove || boneyard.length === 0;
+    // In All 5s mode, players can draw even with valid moves (strategic choice)
+    // In Draw mode, only allow drawing when no valid moves exist
+    if (isAllFivesMode) {
+        drawBtn.disabled = boneyard.length === 0;
+    } else {
+        const hasValidMove = hasAnyValidMove(playerDominoes);
+        drawBtn.disabled = hasValidMove || boneyard.length === 0;
+    }
 }
 
 function handlePlayerTurnStart() {
@@ -1726,16 +1764,18 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     clearZoneHintArrows();
     document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
     
-    const dominoWidth = isHorizontal ? 100 : 50;
-    const dominoHeight = isHorizontal ? 50 : 100;
+    const dims = getDominoDimensions(isHorizontal);
+    const dominoWidth = dims.width;
+    const dominoHeight = dims.height;
     const { shiftX, shiftY } = ensureBoardBounds(x, y, x + dominoWidth, y + dominoHeight, true);
     x += shiftX;
     y += shiftY;
     
     // Final overlap check after board shifts
     for (const placed of boardDominoes) {
-        const placedWidth = placed.isHorizontal ? 100 : 50;
-        const placedHeight = placed.isHorizontal ? 50 : 100;
+        const placedDims = getDominoDimensions(placed.isHorizontal);
+        const placedWidth = placedDims.width;
+        const placedHeight = placedDims.height;
         const placedRight = placed.x + placedWidth;
         const placedBottom = placed.y + placedHeight;
         const newRight = x + dominoWidth;
@@ -1839,7 +1879,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         boardEnds.right = orientedDomino.bottom;
         boardEnds.top = null;  // Not available yet
         boardEnds.bottom = null;  // Not available yet
-        const spinnerWidth = isHorizontal ? 100 : 50;
+        const spinnerDims = getDominoDimensions(isHorizontal);
+        const spinnerWidth = spinnerDims.width;
         endPositions.left = { x, y, isHorizontal };
         endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
         endPositions.top = null;  // Not available yet
@@ -1858,7 +1899,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // For left placement, the left side of the domino is the NEW open end
         boardEnds.left = orientedDomino.top;
         // Store the position of the OPEN end (left side of the placed domino)
-        const dominoWidth = isHorizontal ? 100 : 50;
+        const dims = getDominoDimensions(isHorizontal);
+        const dominoWidth = dims.width;
         endPositions.left = { x: x, y: y, isHorizontal: isHorizontal };
         endIsDouble.left = (orientedDomino.top === orientedDomino.bottom);
         leftArmFilled = true;
@@ -1868,7 +1910,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // For right placement, the right side of the domino is the NEW open end
         boardEnds.right = orientedDomino.bottom;
         // Store the position of the OPEN end (right side of the placed domino)
-        const dominoWidth = isHorizontal ? 100 : 50;
+        const dims = getDominoDimensions(isHorizontal);
+        const dominoWidth = dims.width;
         endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
         endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
         rightArmFilled = true;
@@ -1878,7 +1921,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // For top placement, the top side of the domino is the NEW open end
         boardEnds.top = orientedDomino.top;
         // Store the position of the OPEN end (top side of the placed domino)
-        const dominoHeight = isHorizontal ? 50 : 100;
+        const dims = getDominoDimensions(isHorizontal);
+        const dominoHeight = dims.height;
         endPositions.top = { x: x, y: y, isHorizontal: isHorizontal };
         endIsDouble.top = (orientedDomino.top === orientedDomino.bottom);
         endDominoRefs.top = placedRef;
@@ -1886,7 +1930,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // For bottom placement, the bottom side of the domino is the NEW open end
         boardEnds.bottom = orientedDomino.bottom;
         // Store the position of the OPEN end (bottom side of the placed domino)
-        const dominoHeight = isHorizontal ? 50 : 100;
+        const dims = getDominoDimensions(isHorizontal);
+        const dominoHeight = dims.height;
         endPositions.bottom = { x: x, y: y + dominoHeight, isHorizontal: isHorizontal };
         endIsDouble.bottom = (orientedDomino.top === orientedDomino.bottom);
         endDominoRefs.bottom = placedRef;
@@ -1927,8 +1972,9 @@ function placeDomino(domino, side, x, y, isHorizontal) {
 
     updateBoneyardCount();
     
-    const placedWidth = isHorizontal ? 100 : 50;
-    const placedHeight = isHorizontal ? 50 : 100;
+    const focusDims = getDominoDimensions(isHorizontal);
+    const placedWidth = focusDims.width;
+    const placedHeight = focusDims.height;
     focusOnBoardPoint(x, y, placedWidth, placedHeight);
     
     checkGameEndAfterMove(wasPlayerTurn);
@@ -2337,9 +2383,30 @@ function centerCameraOnBoard() {
         cameraAnimationFrame = null;
     }
     cameraAnimating = false;
-    const isMobile = window.matchMedia('(max-width: 768px)').matches;
-    camera = { x: 0, y: 0, zoom: isMobile ? 0.5 : 1 };
-    requestAnimationFrame(() => applyCamera());
+
+    const board = document.getElementById('board');
+    const boardContainer = document.querySelector('.board-container');
+    if (!board || !boardContainer) return;
+
+    const isMobile = window.innerWidth <= 768;
+    const targetZoom = isMobile ? MOBILE_FOCUS_ZOOM : 1;
+
+    const bounds = getBoardContentBounds();
+    if (!bounds) {
+        camera.x = boardDimensions.width / 2 - boardContainer.offsetWidth / 2;
+        camera.y = boardDimensions.height / 2 - boardContainer.offsetHeight / 2;
+        camera.zoom = targetZoom;
+        applyCamera();
+        return;
+    }
+
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerY = (bounds.minY + bounds.maxY) / 2;
+
+    camera.x = centerX - boardContainer.offsetWidth / 2;
+    camera.y = centerY - boardContainer.offsetHeight / 2;
+    camera.zoom = targetZoom;
+    applyCamera();
 }
 
 function initAudio() {
