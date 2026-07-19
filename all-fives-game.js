@@ -19,8 +19,8 @@ let cameraAnimating = false;
 let cameraAnimationFrame = null;
 let momentumFrame = null;
 let lastPanVelocity = { x: 0, y: 0 };
-const FOCUS_ZOOM = 1.35;
-const MOBILE_FOCUS_ZOOM = 1.22;
+const FOCUS_ZOOM = 1;
+const MOBILE_FOCUS_ZOOM = 1;
 const BOARD_EDGE_MARGIN = 150;
 
 // Domino dimensions (smaller for better board fit)
@@ -74,11 +74,15 @@ function init() {
     startingDomino = starter.domino;
     isPlayerTurn = starter.owner === 'player';
     renderRacks();
-    showTurnIndicator(starter);
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
-    centerCameraOnBoard();
+    // Delay camera centering to ensure board dimensions are available
+    console.log('Setting timeout for centerCameraOnBoard');
+    setTimeout(() => {
+        console.log('Timeout fired, calling centerCameraOnBoard');
+        centerCameraOnBoard();
+    }, 100);
     handlePlayerTurnStart();
     setupHintSystem();
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
@@ -743,22 +747,6 @@ function getFirstMovePlacement(domino) {
     };
 }
 
-function showTurnIndicator(starter) {
-    const indicator = document.getElementById('turnIndicator');
-    if (!indicator) return;
-
-    if (starter.owner === 'player') {
-        indicator.innerHTML = `<strong>You go first!</strong>Play your starting domino in the center`;
-    } else {
-        indicator.innerHTML = `<strong>CPU goes first</strong>CPU has the starting domino`;
-    }
-    indicator.classList.remove('hidden');
-}
-
-function hideTurnIndicator() {
-    const indicator = document.getElementById('turnIndicator');
-    if (indicator) indicator.classList.add('hidden');
-}
 
 function shiftBoardContent(shiftX, shiftY) {
     if (!shiftX && !shiftY) return;
@@ -1004,7 +992,6 @@ function proceedToNextHand() {
     initializeBoard();
     renderRacks();
     updateDrawButton();
-    showTurnIndicator(starter);
     centerCameraOnBoard();
     
     // Small delay to ensure board is ready before CPU plays
@@ -1674,14 +1661,9 @@ function updateDrawButton() {
         return;
     }
 
-    // In All 5s mode, players can draw even with valid moves (strategic choice)
-    // In Draw mode, only allow drawing when no valid moves exist
-    if (isAllFivesMode) {
-        drawBtn.disabled = boneyard.length === 0;
-    } else {
-        const hasValidMove = hasAnyValidMove(playerDominoes);
-        drawBtn.disabled = hasValidMove || boneyard.length === 0;
-    }
+    // Only allow drawing when no valid moves exist
+    const hasValidMove = hasAnyValidMove(playerDominoes);
+    drawBtn.disabled = hasValidMove || boneyard.length === 0;
 }
 
 function handlePlayerTurnStart() {
@@ -1759,6 +1741,12 @@ function placeDomino(domino, side, x, y, isHorizontal) {
 
     const boardEl = document.getElementById('board');
     const wasPlayerTurn = isPlayerTurn;
+
+    // Remove ghost starting domino if it exists
+    const ghostDomino = document.getElementById('ghostStartingDomino');
+    if (ghostDomino) {
+        ghostDomino.remove();
+    }
     
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
     clearZoneHintArrows();
@@ -1794,7 +1782,6 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     let orientedDomino = { ...domino };
 
     if (side === 'center') {
-        hideTurnIndicator();
         // Starting domino is always vertical
         orientedDomino = { ...domino };
         isHorizontal = false;
@@ -1971,15 +1958,21 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     isPlayerTurn = !wasPlayerTurn;
 
     updateBoneyardCount();
-    
-    const focusDims = getDominoDimensions(isHorizontal);
-    const placedWidth = focusDims.width;
-    const placedHeight = focusDims.height;
-    focusOnBoardPoint(x, y, placedWidth, placedHeight);
-    
+
+    // Center camera after placement on mobile
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+        centerCameraOnBoard();
+    } else {
+        const focusDims = getDominoDimensions(isHorizontal);
+        const placedWidth = focusDims.width;
+        const placedHeight = focusDims.height;
+        focusOnBoardPoint(x, y, placedWidth, placedHeight);
+    }
+
     checkGameEndAfterMove(wasPlayerTurn);
     if (gameOver) return;
-    
+
     if (isPlayerTurn) {
         handlePlayerTurnStart();
     } else {
@@ -2377,6 +2370,7 @@ function setupTouchScrolling() {
 }
 
 function centerCameraOnBoard() {
+    console.log('centerCameraOnBoard called');
     stopMomentum();
     if (cameraAnimationFrame) {
         cancelAnimationFrame(cameraAnimationFrame);
@@ -2386,15 +2380,59 @@ function centerCameraOnBoard() {
 
     const board = document.getElementById('board');
     const boardContainer = document.querySelector('.board-container');
-    if (!board || !boardContainer) return;
+    if (!board || !boardContainer) {
+        console.log('Board or container not found');
+        return;
+    }
 
     const isMobile = window.innerWidth <= 768;
     const targetZoom = isMobile ? MOBILE_FOCUS_ZOOM : 1;
 
+    console.log(`startingDomino: ${startingDomino ? 'exists' : 'null'}, boardDominoes.length: ${boardDominoes.length}`);
+
     const bounds = getBoardContentBounds();
     if (!bounds) {
-        camera.x = boardDimensions.width / 2;
-        camera.y = boardDimensions.height / 2;
+        // Board is empty, center camera on where starting domino will be placed
+        if (startingDomino && boardDominoes.length === 0) {
+            // Board is CSS-centered at 50%,50% with translate(-50%,-50%)
+            // So board center is at camera-layer center: (container.offsetWidth/2, container.offsetHeight/2)
+            // Starting domino is at board center, so its position is also at camera-layer center
+            const boardCenterX = boardContainer.offsetWidth / 2;
+            const boardCenterY = boardContainer.offsetHeight / 2;
+
+            console.log(`Board CSS-centered, so domino center is at: ${boardCenterX},${boardCenterY}`);
+            console.log(`Container: ${boardContainer.offsetWidth}x${boardContainer.offsetHeight}`);
+            console.log(`Mobile: ${isMobile}, Zoom: ${targetZoom}`);
+
+            if (isMobile) {
+                // On mobile, board is larger than container, so we need to pan
+                // Board center is at (boardCenterX, boardCenterY) in camera-layer
+                // We want this to end up at container center (boardCenterX, boardCenterY)
+                // Since they're the same, camera should be 0
+                camera.x = 0;
+                camera.y = 0;
+            } else {
+                camera.x = 0;
+                camera.y = 0;
+            }
+            camera.zoom = targetZoom;
+            applyCamera();
+            console.log(`Camera set to: x=${camera.x}, y=${camera.y}, zoom=${camera.zoom}`);
+            return;
+        }
+
+        // Fallback to board center
+        if (isMobile) {
+            const boardCenterX = 400;
+            const boardCenterY = 300;
+            const containerCenterX = boardContainer.offsetWidth / 2;
+            const containerCenterY = boardContainer.offsetHeight / 2;
+            camera.x = boardCenterX - containerCenterX / targetZoom;
+            camera.y = boardCenterY - containerCenterY / targetZoom;
+        } else {
+            camera.x = 0;
+            camera.y = 0;
+        }
         camera.zoom = targetZoom;
         applyCamera();
         return;
@@ -2403,8 +2441,23 @@ function centerCameraOnBoard() {
     const centerX = (bounds.minX + bounds.maxX) / 2;
     const centerY = (bounds.minY + bounds.maxY) / 2;
 
-    camera.x = centerX - boardContainer.offsetWidth / 2;
-    camera.y = centerY - boardContainer.offsetHeight / 2;
+    // Board is CSS-centered at 50%,50% with translate(-50%,-50%)
+    // So board's top-left is at: (containerCenter - boardWidth/2, containerCenter - boardHeight/2)
+    const boardOffsetX = boardContainer.offsetWidth / 2 - board.offsetWidth / 2;
+    const boardOffsetY = boardContainer.offsetHeight / 2 - board.offsetHeight / 2;
+
+    // Domino positions are relative to board, so convert to camera-layer coordinates
+    const dominoCenterX = centerX + boardOffsetX;
+    const dominoCenterY = centerY + boardOffsetY;
+
+    // Account for zoom: with transform-origin: 0 0, point (x,y) becomes (x-camera.x)*zoom
+    // We want domino center to end up at container center: (dominoCenterX - camera.x) * zoom = containerCenter
+    // Solving: camera.x = dominoCenterX - containerCenter / zoom
+    const containerCenterX = boardContainer.offsetWidth / 2;
+    const containerCenterY = boardContainer.offsetHeight / 2;
+
+    camera.x = dominoCenterX - containerCenterX / targetZoom;
+    camera.y = dominoCenterY - containerCenterY / targetZoom;
     camera.zoom = targetZoom;
     applyCamera();
 }

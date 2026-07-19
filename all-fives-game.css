@@ -339,7 +339,7 @@ body {
     height: 100%;
     min-width: 800px;
     min-height: 600px;
-    transform-origin: center center;
+    transform-origin: 0 0;
     will-change: transform;
     overflow: visible;
 }
@@ -726,6 +726,11 @@ body {
         overflow: hidden;
     }
 
+    .camera-layer {
+        min-width: 100%;
+        min-height: 100%;
+    }
+
     .board {
         min-width: 800px;
         min-height: 600px;
@@ -739,6 +744,16 @@ body {
     .board .domino.horizontal {
         width: 120px;
         height: 60px;
+    }
+
+    .turn-indicator {
+        width: 120px;
+        height: 120px;
+        font-size: 0.7rem;
+    }
+
+    .placement-zone {
+        border-width: 4px;
     }
     
     .boneyard {
