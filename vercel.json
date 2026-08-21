@@ -1,4 +1,5 @@
 {
+  "name": "dominoes",
   "version": 2,
   "outputDirectory": ".",
   "routes": [
