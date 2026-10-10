@@ -1200,11 +1200,19 @@ function checkZoneOverlap(zoneX, zoneY, zoneWidth, zoneHeight) {
 }
 
 function getSpinnerArmMatch(side) {
-    if (!leftArmFilled || !rightArmFilled || boardDominoes.length === 0) {
+    if (boardDominoes.length === 0) {
         return null;
     }
 
     const spinner = boardDominoes[0];
+    const spinnerIsDouble = spinner.domino.top === spinner.domino.bottom;
+
+    // If spinner is a double, can play on all sides immediately
+    // Otherwise, need left/right arms filled first
+    if (!spinnerIsDouble && (!leftArmFilled || !rightArmFilled)) {
+        return null;
+    }
+
     if (side === 'top' && boardEnds.top === null) {
         return {
             matchingEnd: spinner.domino.top,
@@ -1243,7 +1251,10 @@ function getEndDominoForSide(side) {
     }
 
     if (boardDominoes.length > 0) {
-        if ((side === 'top' || side === 'bottom') && leftArmFilled && rightArmFilled) {
+        const spinner = boardDominoes[0];
+        const spinnerIsDouble = spinner.domino.top === spinner.domino.bottom;
+
+        if ((side === 'top' || side === 'bottom') && (leftArmFilled && rightArmFilled || spinnerIsDouble)) {
             return boardDominoes[0];
         }
         if (side === 'left' || side === 'right') {

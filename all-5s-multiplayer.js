@@ -1374,7 +1374,10 @@ function getEndDominoForSide(side) {
     }
 
     if (boardDominoes.length > 0) {
-        if ((side === 'top' || side === 'bottom') && leftArmFilled && rightArmFilled) {
+        const spinner = boardDominoes[0];
+        const spinnerIsDouble = spinner.domino.top === spinner.domino.bottom;
+
+        if ((side === 'top' || side === 'bottom') && (leftArmFilled && rightArmFilled || spinnerIsDouble)) {
             return boardDominoes[0];
         }
         if (side === 'left' || side === 'right') {
@@ -1462,7 +1465,15 @@ function findValidPlacementsForDomino(domino) {
 
     const validZones = [];
     const sidesToCheck = ['left', 'right'];
-    if (leftArmFilled && rightArmFilled) {
+    
+    // Check if spinner is a double - if so, top/bottom are available immediately
+    let spinnerIsDouble = false;
+    if (boardDominoes.length > 0) {
+        const spinner = boardDominoes[0];
+        spinnerIsDouble = spinner.domino.top === spinner.domino.bottom;
+    }
+    
+    if (leftArmFilled && rightArmFilled || spinnerIsDouble) {
         sidesToCheck.push('top', 'bottom');
     }
 
