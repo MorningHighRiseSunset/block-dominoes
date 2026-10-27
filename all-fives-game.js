@@ -219,44 +219,27 @@ function calculateScoreFromEnds(playedSide) {
     // Count top and bottom based on spinner arm fill status
     const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
 
-    if (sideArmsFilled < 2) {
-        // 0 or 1 side arms filled: count both spinner top and bottom (even if not played on)
-        // The spinner's values are stored in the first domino
-        const spinner = boardDominoes[0];
-        if (spinner) {
-            sum += spinner.domino.top;
-            sum += spinner.domino.bottom;
-            breakdown.push({ side: 'spinner-top', value: spinner.domino.top, isDouble: false, counted: spinner.domino.top });
-            breakdown.push({ side: 'spinner-bottom', value: spinner.domino.bottom, isDouble: false, counted: spinner.domino.bottom });
-        }
-    } else if (sideArmsFilled === 2 && boardEnds.top === null && boardEnds.bottom === null) {
-        // Both side arms filled but no top/bottom played: ignore spinner top/bottom
-        // Don't add anything for top/bottom
-    } else {
-        // 3 or 4 arms filled, or top/bottom have been played: count played arms
-        if (boardEnds.top !== null) {
-            const value = endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
-            sum += value;
-            breakdown.push({ side: 'top', value: boardEnds.top, isDouble: endIsDouble.top, counted: value });
-        }
-        if (boardEnds.bottom !== null) {
-            const value = endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
-            sum += value;
-            breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: endIsDouble.bottom, counted: value });
-        }
+    // Count top and bottom endpoints if they exist
+    if (boardEnds.top !== null) {
+        const value = endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+        sum += value;
+        breakdown.push({ side: 'top', value: boardEnds.top, isDouble: endIsDouble.top, counted: value });
+    }
+    if (boardEnds.bottom !== null) {
+        const value = endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+        sum += value;
+        breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: endIsDouble.bottom, counted: value });
     }
 
-    // Count left end (double if it's a double) - only if there's a domino there
-    // Don't count on first move since spinner top/bottom already covers it
-    if (boardEnds.left !== null && leftArmFilled) {
+    // Count left end (double if it's a double) - if there's a domino there
+    if (boardEnds.left !== null) {
         const value = endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
         sum += value;
         breakdown.push({ side: 'left', value: boardEnds.left, isDouble: endIsDouble.left, counted: value });
     }
 
-    // Count right end (double if it's a double) - only if there's a domino there
-    // Don't count on first move since spinner top/bottom already covers it
-    if (boardEnds.right !== null && rightArmFilled) {
+    // Count right end (double if it's a double) - if there's a domino there
+    if (boardEnds.right !== null) {
         const value = endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
         sum += value;
         breakdown.push({ side: 'right', value: boardEnds.right, isDouble: endIsDouble.right, counted: value });
@@ -1936,6 +1919,12 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         element: dominoEl
     });
 
+    console.log('=== DOMINO PLACED ===');
+    console.log('Player:', wasPlayerTurn ? 'Player' : 'CPU');
+    console.log('Domino:', orientedDomino.top + '/' + orientedDomino.bottom);
+    console.log('Side:', side);
+    console.log('Position:', x, y);
+
     const placedRef = boardDominoes[boardDominoes.length - 1];
     
     // Update board ends to the NEW exposed number
@@ -1954,8 +1943,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
         endPositions.top = null;  // Not available yet
         endPositions.bottom = null;  // Not available yet
-        // Spinner is a double, but it's not at the end of a chain
-        // Double-counting only applies to doubles at chain ends, not the spinner
+        // Spinner ends are not marked as double - the spinner itself counts as its full value
+        // but the exposed ends don't get double-counted
         endIsDouble.left = false;
         endIsDouble.right = false;
         endIsDouble.top = false;
@@ -2022,12 +2011,22 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     // Calculate and add score for All 5s mode
     if (isAllFivesMode) {
         const scoreResult = calculateScoreFromEnds(side);
+        console.log('=== SCORING CALCULATION ===');
+        console.log('Board ends:', JSON.stringify(boardEnds));
+        console.log('End is double:', JSON.stringify(endIsDouble));
+        console.log('Left arm filled:', leftArmFilled);
+        console.log('Right arm filled:', rightArmFilled);
+        console.log('Score result:', scoreResult.score);
+        console.log('Breakdown:', JSON.stringify(scoreResult.breakdown));
+        
         if (scoreResult.score > 0) {
             addScore(wasPlayerTurn, scoreResult.score);
             playScoreSound();
             updateScoringBreakdown(scoreResult.breakdown, scoreResult.score);
+            console.log('Added', scoreResult.score, 'points to', wasPlayerTurn ? 'Player' : 'CPU');
         } else {
             clearScoringBreakdown();
+            console.log('No points awarded (sum not multiple of 5)');
         }
     }
 
