@@ -834,20 +834,21 @@ function addScore(isPlayer, points) {
     }
 }
 
-function calculateScoreFromEnds(playedSide) {
+function calculateScoreFromEnds() {
     let sum = 0;
     let breakdown = [];
+    const playedSide = lastPlayedSide;
 
     // Count top and bottom endpoints if they exist
     if (boardEnds.top !== null) {
         const isDouble = endIsDouble.top;
-        const value = isDouble && side !== 'top' ? boardEnds.top * 2 : boardEnds.top;
+        const value = isDouble ? boardEnds.top * 2 : boardEnds.top;
         sum += value;
         breakdown.push({ side: 'top', value: boardEnds.top, isDouble: isDouble, counted: value });
     }
     if (boardEnds.bottom !== null) {
         const isDouble = endIsDouble.bottom;
-        const value = isDouble && side !== 'bottom' ? boardEnds.bottom * 2 : boardEnds.bottom;
+        const value = isDouble ? boardEnds.bottom * 2 : boardEnds.bottom;
         sum += value;
         breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value });
     }
@@ -860,13 +861,13 @@ function calculateScoreFromEnds(playedSide) {
     if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
         if (boardEnds.left !== null) {
             const isDouble = endIsDouble.left;
-            const value = isDouble && side !== 'left' ? boardEnds.left * 2 : boardEnds.left;
+            const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
             sum += value;
             breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
         }
         if (boardEnds.right !== null) {
             const isDouble = endIsDouble.right;
-            const value = isDouble && side !== 'right' ? boardEnds.right * 2 : boardEnds.right;
+            const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
             sum += value;
             breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
         }
@@ -882,6 +883,9 @@ function simulateMoveScore(domino, side) {
     const matchingEnd = boardEnds[side];
     let newEnd = null;
     let newIsDouble = false;
+    
+    // For simulation, use the passed side directly
+    const playedSide = side;
 
     if (side === 'left' || side === 'right') {
         if (side === 'left') {
@@ -918,13 +922,13 @@ function simulateMoveScore(domino, side) {
     if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
         if (simulatedEnds.left !== null) {
             const isDouble = simulatedIsDouble.left;
-            const value = isDouble && side !== 'left' ? simulatedEnds.left * 2 : simulatedEnds.left;
+            const value = isDouble ? simulatedEnds.left * 2 : simulatedEnds.left;
             sum += value;
             breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: isDouble, counted: value });
         }
         if (simulatedEnds.right !== null) {
             const isDouble = simulatedIsDouble.right;
-            const value = isDouble && side !== 'right' ? simulatedEnds.right * 2 : simulatedEnds.right;
+            const value = isDouble ? simulatedEnds.right * 2 : simulatedEnds.right;
             sum += value;
             breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: isDouble, counted: value });
         }
@@ -933,13 +937,13 @@ function simulateMoveScore(domino, side) {
     // Count top and bottom endpoints if they exist
     if (simulatedEnds.top !== null) {
         const isDouble = simulatedIsDouble.top;
-        const value = isDouble && side !== 'top' ? simulatedEnds.top * 2 : simulatedEnds.top;
+        const value = isDouble ? simulatedEnds.top * 2 : simulatedEnds.top;
         sum += value;
         breakdown.push({ side: 'top', value: simulatedEnds.top, isDouble: isDouble, counted: value });
     }
     if (simulatedEnds.bottom !== null) {
         const isDouble = simulatedIsDouble.bottom;
-        const value = isDouble && side !== 'bottom' ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
+        const value = isDouble ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
         sum += value;
         breakdown.push({ side: 'bottom', value: simulatedEnds.bottom, isDouble: isDouble, counted: value });
     }
@@ -2043,11 +2047,17 @@ function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
         element: owner === 'player' ? el : undefined
     });
 
-    console.log(`PLACE: ${owner} ${orientedDomino.top}/${orientedDomino.bottom} ${side} → ends:${JSON.stringify(boardEnds)} arms:L${leftArmFilled?1:0}R${rightArmFilled?1:0}`);
+    console.log(`PLACE: ${owner} ${orientedDomino.top}/${orientedDomino.bottom} ${side} → ends:${JSON.stringify(boardEnds)} arms:L${leftArmFilled?1:0}R${rightArmFilled?1:0}${orientedDomino.top === orientedDomino.bottom ? ' [DOUBLE]' : ''}`);
 
     const placedRef = boardDominoes[boardDominoes.length - 1];
 
     lastPlayedSide = side;
+    
+    // Only the spinner (center placement) should not be double-counted
+    if (side === 'center') {
+        endIsDouble.left = false;
+        endIsDouble.right = false;
+    }
     if (side === 'center') {
         // Starting domino placement (spinner)
         // Spinner rule: only left and right are open initially
@@ -2062,7 +2072,6 @@ function mountDominoOnBoard(orientedDomino, side, x, y, isHorizontal, owner) {
         endPositions.top = null;
         endPositions.bottom = null;
         // Spinner ends are NOT marked as double - spinner counts as sum of its pips
-        // Only doubles at the END of a chain get double-counted
         endIsDouble.left = false;
         endIsDouble.right = false;
         endIsDouble.top = false;
@@ -2189,7 +2198,7 @@ function playDomino(domino, side, x, y, isHorizontal, slotId) {
     
     recordMove();
 
-    const scoreResult = calculateScoreFromEnds(side);
+    const scoreResult = calculateScoreFromEnds();
     console.log(`  Score: ${scoreResult.score} (breakdown: ${JSON.stringify(scoreResult.breakdown)})`);
     
     if (scoreResult.score > 0) {

@@ -220,16 +220,15 @@ function calculateScoreFromEnds(playedSide) {
 
     // Count top and bottom based on spinner arm fill status
     // Count top and bottom endpoints if they exist
-    // Newly placed side counts as single value (not double-counted even if it's a double)
     if (boardEnds.top !== null) {
         const isDouble = endIsDouble.top;
-        const value = isDouble && playedSide !== 'top' ? boardEnds.top * 2 : boardEnds.top;
+        const value = isDouble ? boardEnds.top * 2 : boardEnds.top;
         sum += value;
         breakdown.push({ side: 'top', value: boardEnds.top, isDouble: isDouble, counted: value });
     }
     if (boardEnds.bottom !== null) {
         const isDouble = endIsDouble.bottom;
-        const value = isDouble && playedSide !== 'bottom' ? boardEnds.bottom * 2 : boardEnds.bottom;
+        const value = isDouble ? boardEnds.bottom * 2 : boardEnds.bottom;
         sum += value;
         breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value });
     }
@@ -247,13 +246,13 @@ function calculateScoreFromEnds(playedSide) {
     if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
         if (boardEnds.left !== null) {
             const isDouble = endIsDouble.left;
-            const value = isDouble && playedSide !== 'left' ? boardEnds.left * 2 : boardEnds.left;
+            const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
             sum += value;
             breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
         }
         if (boardEnds.right !== null) {
             const isDouble = endIsDouble.right;
-            const value = isDouble && playedSide !== 'right' ? boardEnds.right * 2 : boardEnds.right;
+            const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
             sum += value;
             breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
         }
@@ -1948,6 +1947,14 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     
     // Update board ends to the NEW exposed number
     lastPlayedSide = side; // Track which side was just played for scoring
+    
+    // Only the spinner (center placement) should not be double-counted
+    // All other doubles should be double-counted immediately
+    if (side === 'center') {
+        // Spinner: mark as NOT double
+        endIsDouble.left = false;
+        endIsDouble.right = false;
+    }
     if (side === 'center') {
         // Starting domino placement (spinner)
         // Spinner rule: only left and right are open initially
@@ -2014,7 +2021,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endDominoRefs.bottom = placedRef;
     }
     
-    console.log(`${wasPlayerTurn ? 'P' : 'C'} ${orientedDomino.top}/${orientedDomino.bottom} ${side} → ends:${JSON.stringify(boardEnds)} arms:L${leftArmFilled?1:0}R${rightArmFilled?1:0}`);
+    console.log(`${wasPlayerTurn ? 'P' : 'C'} ${orientedDomino.top}/${orientedDomino.bottom} ${side} → ends:${JSON.stringify(boardEnds)} arms:L${leftArmFilled?1:0}R${rightArmFilled?1:0}${orientedDomino.top === orientedDomino.bottom ? ' [DOUBLE]' : ''}`);
     
     // In a turning chain, when you place on one side, you might block adjacent sides
     // This is a simplified version - a full implementation would track chain topology
