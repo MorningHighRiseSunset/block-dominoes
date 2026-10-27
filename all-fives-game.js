@@ -86,6 +86,13 @@ function init() {
             }
         }
     });
+    
+    // Stop all click events on UI elements from propagating to camera-layer
+    document.querySelectorAll('.score-bar, .boneyard, .player-rack').forEach(el => {
+        el.addEventListener('mousedown', (e) => e.stopPropagation());
+        el.addEventListener('touchstart', (e) => e.stopPropagation());
+    });
+    
     // Delay camera centering to ensure board dimensions are available
     console.log('Setting timeout for centerCameraOnBoard');
     setTimeout(() => {
@@ -2372,12 +2379,18 @@ function applyMomentum() {
 
 function setupTouchScrolling() {
     const container = getBoardContainer();
+    const cameraLayer = getCameraLayer();
+    if (!container || !cameraLayer) return;
+
     let isPanning = false;
     let lastX = 0;
     let lastY = 0;
 
     function shouldIgnorePan(target) {
-        return target.closest('.placement-zone') || target.closest('.rack');
+        return target.closest('.placement-zone') || 
+               target.closest('.rack') ||
+               target.closest('.boneyard') ||
+               target.closest('.score-bar');
     }
 
     function startPan(clientX, clientY) {
@@ -2414,34 +2427,47 @@ function setupTouchScrolling() {
         }
     }
 
-    container.addEventListener('mousedown', (e) => {
+    // All events on camera-layer, not window
+    cameraLayer.addEventListener('mousedown', (e) => {
         if (shouldIgnorePan(e.target)) return;
         e.preventDefault();
+        e.stopPropagation();
         startPan(e.clientX, e.clientY);
     });
 
-    window.addEventListener('mousemove', (e) => {
+    cameraLayer.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
+        
+        // Stop panning if cursor leaves camera-layer bounds
+        const layerRect = cameraLayer.getBoundingClientRect();
+        if (e.clientX < layerRect.left || e.clientX > layerRect.right ||
+            e.clientY < layerRect.top || e.clientY > layerRect.bottom) {
+            endPan();
+            return;
+        }
+        
         e.preventDefault();
         movePan(e.clientX, e.clientY);
     });
 
-    window.addEventListener('mouseup', endPan);
+    cameraLayer.addEventListener('mouseup', endPan);
+    cameraLayer.addEventListener('mouseleave', endPan);
 
-    container.addEventListener('touchstart', (e) => {
+    cameraLayer.addEventListener('touchstart', (e) => {
         if (shouldIgnorePan(e.target)) return;
         if (e.touches.length !== 1) return;
+        e.preventDefault();
         startPan(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
+    }, { passive: false });
 
-    container.addEventListener('touchmove', (e) => {
+    cameraLayer.addEventListener('touchmove', (e) => {
         if (!isPanning || e.touches.length !== 1) return;
         e.preventDefault();
         movePan(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
 
-    container.addEventListener('touchend', endPan);
-    container.addEventListener('touchcancel', endPan);
+    cameraLayer.addEventListener('touchend', endPan);
+    cameraLayer.addEventListener('touchcancel', endPan);
 }
 
 function centerCameraOnBoard() {

@@ -145,6 +145,9 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     flex-wrap: wrap;
     gap: 8px;
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
 }
 
 .last-played-container {
@@ -321,10 +324,13 @@ body {
     background: radial-gradient(ellipse at center, #fff8e7 0%, #f5e6d3 50%, #e8d4bc 100%);
     position: relative;
     min-width: 400px;
-    overflow: visible;
+    overflow: hidden;
     box-shadow: inset 0 0 30px rgba(139, 119, 101, 0.2);
-    touch-action: none;
-    cursor: grab;
+    pointer-events: none;
+}
+
+.board-container * {
+    pointer-events: auto;
 }
 
 .board-container.is-panning {
@@ -484,6 +490,12 @@ body {
     min-height: 600px;
     user-select: none;
     -webkit-user-select: none;
+    pointer-events: auto;
+    cursor: grab;
+}
+
+.board.is-panning {
+    cursor: grabbing;
 }
 
 .board:active {

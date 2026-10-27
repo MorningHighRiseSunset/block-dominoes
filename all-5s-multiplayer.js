@@ -348,6 +348,13 @@ function startGame() {
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
+    
+    // Stop all click events on UI elements from propagating to camera-layer
+    document.querySelectorAll('.score-bar, .boneyard, .player-rack').forEach(el => {
+        el.addEventListener('mousedown', (e) => e.stopPropagation());
+        el.addEventListener('touchstart', (e) => e.stopPropagation());
+    });
+    
     centerCameraOnBoard();
     handlePlayerTurnStart();
     setupHintSystem();
@@ -381,6 +388,13 @@ function initializeGameState(data) {
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
+    
+    // Stop all click events on UI elements from propagating to camera-layer
+    document.querySelectorAll('.score-bar, .boneyard, .player-rack').forEach(el => {
+        el.addEventListener('mousedown', (e) => e.stopPropagation());
+        el.addEventListener('touchstart', (e) => e.stopPropagation());
+    });
+    
     centerCameraOnBoard();
     handlePlayerTurnStart();
     setupHintSystem();
@@ -2670,14 +2684,18 @@ function applyMomentum() {
 
 function setupTouchScrolling() {
     const container = getBoardContainer();
-    if (!container) return;
-    
+    const board = getBoardElement();
+    if (!container || !board) return;
+
     let isPanning = false;
     let lastX = 0;
     let lastY = 0;
 
     function shouldIgnorePan(target) {
-        return target.closest('.placement-zone') || target.closest('.rack');
+        return target.closest('.placement-zone') || 
+               target.closest('.rack') ||
+               target.closest('.boneyard') ||
+               target.closest('.score-bar');
     }
 
     function startPan(clientX, clientY) {
@@ -2713,7 +2731,8 @@ function setupTouchScrolling() {
         }
     }
 
-    container.addEventListener('mousedown', (e) => {
+    // Only add panning listeners to the board element itself, not the container
+    board.addEventListener('mousedown', (e) => {
         if (shouldIgnorePan(e.target)) return;
         e.preventDefault();
         startPan(e.clientX, e.clientY);
@@ -2727,20 +2746,20 @@ function setupTouchScrolling() {
 
     window.addEventListener('mouseup', endPan);
 
-    container.addEventListener('touchstart', (e) => {
+    board.addEventListener('touchstart', (e) => {
         if (shouldIgnorePan(e.target)) return;
         if (e.touches.length !== 1) return;
         startPan(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: true });
 
-    container.addEventListener('touchmove', (e) => {
+    window.addEventListener('touchmove', (e) => {
         if (!isPanning || e.touches.length !== 1) return;
         e.preventDefault();
         movePan(e.touches[0].clientX, e.touches[0].clientY);
     }, { passive: false });
 
-    container.addEventListener('touchend', endPan);
-    container.addEventListener('touchcancel', endPan);
+    window.addEventListener('touchend', endPan);
+    window.addEventListener('touchcancel', endPan);
 }
 
 function centerCameraOnBoard() {
