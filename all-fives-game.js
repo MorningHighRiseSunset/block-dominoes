@@ -236,26 +236,23 @@ function calculateScoreFromEnds(playedSide) {
     // Count left and right ends
     // Spinner rule:
     // - 0 or 1 side arms filled: spinner contributes, count both ends
-    // - 2 side arms filled: spinner no longer contributes, DON'T count left/right
+    // - 2 side arms filled: spinner no longer contributes, but chain ends DO count
     // - 3 or 4 arms filled (top/bottom played): count all exposed ends
     const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
     const topBottomArmsFilled = (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
-    const totalArmsFilled = sideArmsFilled + topBottomArmsFilled;
     
-    // Count left/right when < 2 side arms filled OR when top/bottom arms are filled (making it 3+ total arms)
-    if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
-        if (boardEnds.left !== null) {
-            const isDouble = endIsDouble.left;
-            const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
-            sum += value;
-            breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
-        }
-        if (boardEnds.right !== null) {
-            const isDouble = endIsDouble.right;
-            const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
-            sum += value;
-            breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
-        }
+    // Always count left/right chain ends
+    if (boardEnds.left !== null) {
+        const isDouble = endIsDouble.left;
+        const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
+    }
+    if (boardEnds.right !== null) {
+        const isDouble = endIsDouble.right;
+        const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
     }
 
     if (sum % 5 === 0) {

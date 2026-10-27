@@ -853,24 +853,18 @@ function calculateScoreFromEnds() {
         breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value });
     }
 
-    // Count left and right ends
-    // Spinner rule: count when < 2 side arms filled OR when top/bottom arms are filled
-    const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
-    const topBottomArmsFilled = (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
-    
-    if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
-        if (boardEnds.left !== null) {
-            const isDouble = endIsDouble.left;
-            const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
-            sum += value;
-            breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
-        }
-        if (boardEnds.right !== null) {
-            const isDouble = endIsDouble.right;
-            const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
-            sum += value;
-            breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
-        }
+    // Count left and right ends - always count chain ends
+    if (boardEnds.left !== null) {
+        const isDouble = endIsDouble.left;
+        const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
+    }
+    if (boardEnds.right !== null) {
+        const isDouble = endIsDouble.right;
+        const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
     }
 
     if (sum % 5 === 0) {
@@ -916,22 +910,18 @@ function simulateMoveScore(domino, side) {
     let sum = 0;
     let breakdown = [];
 
-    const sideArmsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0);
-    const topBottomArmsFilled = (simulatedEnds.top !== null ? 1 : 0) + (simulatedEnds.bottom !== null ? 1 : 0);
-    
-    if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
-        if (simulatedEnds.left !== null) {
-            const isDouble = simulatedIsDouble.left;
-            const value = isDouble ? simulatedEnds.left * 2 : simulatedEnds.left;
-            sum += value;
-            breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: isDouble, counted: value });
-        }
-        if (simulatedEnds.right !== null) {
-            const isDouble = simulatedIsDouble.right;
-            const value = isDouble ? simulatedEnds.right * 2 : simulatedEnds.right;
-            sum += value;
-            breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: isDouble, counted: value });
-        }
+    // Count left and right ends - always count chain ends
+    if (simulatedEnds.left !== null) {
+        const isDouble = simulatedIsDouble.left;
+        const value = isDouble ? simulatedEnds.left * 2 : simulatedEnds.left;
+        sum += value;
+        breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: isDouble, counted: value });
+    }
+    if (simulatedEnds.right !== null) {
+        const isDouble = simulatedIsDouble.right;
+        const value = isDouble ? simulatedEnds.right * 2 : simulatedEnds.right;
+        sum += value;
+        breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: isDouble, counted: value });
     }
 
     // Count top and bottom endpoints if they exist
