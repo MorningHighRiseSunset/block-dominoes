@@ -1811,16 +1811,20 @@ function updateBoneyardCount() {
 
 function drawFromBoneyard() {
     if (!isPlayerTurn || boneyard.length === 0 || gameOver) return;
-    
+
+    // Only allow drawing when no valid moves exist (same logic as updateDrawButton)
+    const hasValidMove = hasAnyValidMove(playerDominoes);
+    if (hasValidMove) return;
+
     const drawnDomino = boneyard.pop();
     playerDominoes.push(drawnDomino);
     recordMove();
     playDrawSound();
-    
+
     updateBoneyardCount();
     renderRacks();
     updateDrawButton();
-    
+
     sendToOpponent({ type: 'DRAW_DOMINO' });
 }
 
@@ -1840,11 +1844,61 @@ function handlePlayerTurnStart() {
 
     updateDrawButton();
 
+    // Highlight starting domino if player has it and board is empty
+    if (boardDominoes.length === 0 && startingDomino) {
+        highlightStartingDomino();
+    }
+
     if (!hasAnyValidMove(playerDominoes) && boneyard.length === 0) {
         isPlayerTurn = false;
         recordPass();
         sendToOpponent({ type: 'PASS' });
     }
+}
+
+function highlightStartingDomino() {
+    // Find and highlight the starting domino in the player's rack
+    const rack = document.getElementById('playerRack');
+    if (!rack) return;
+
+    const dominoElements = rack.querySelectorAll('.domino');
+    dominoElements.forEach(el => {
+        if (el.dataset.id === startingDomino.id) {
+            el.classList.add('starting-domino');
+        } else {
+            el.classList.remove('starting-domino');
+        }
+    });
+
+    // Show center placement zone
+    const board = document.getElementById('board');
+    if (!board) return;
+
+    const centerZone = document.createElement('div');
+    centerZone.className = 'placement-zone center-zone';
+    centerZone.id = 'centerPlacementZone';
+
+    const isDouble = startingDomino.top === startingDomino.bottom;
+    const isHorizontal = !isDouble;
+    const width = isHorizontal ? 100 : 50;
+    const height = isHorizontal ? 50 : 100;
+
+    const centerX = boardDimensions.width / 2;
+    const centerY = boardDimensions.height / 2;
+
+    centerZone.style.left = (centerX - width / 2) + 'px';
+    centerZone.style.top = (centerY - height / 2) + 'px';
+    centerZone.style.width = width + 'px';
+    centerZone.style.height = height + 'px';
+
+    centerZone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedDomino && selectedDomino.id === startingDomino.id) {
+            playDomino(selectedDomino, 'center', centerX - width / 2, centerY - height / 2, isHorizontal, 'center');
+        }
+    });
+
+    board.appendChild(centerZone);
 }
 
 function showValidPlacementZones(domino) {
@@ -2070,6 +2124,12 @@ function playDomino(domino, side, x, y, isHorizontal, slotId) {
     if (!isPlayerTurn || gameOver) return;
 
     clearActivePlacement();
+
+    // Remove starting domino highlighting
+    document.querySelectorAll('.rack .domino').forEach(el => {
+        el.classList.remove('selected');
+        el.classList.remove('starting-domino');
+    });
     
     // Mark slot as occupied and advance to next slot
     if (slotId) {

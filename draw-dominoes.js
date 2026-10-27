@@ -308,6 +308,10 @@ function updateBoneyardCount() {
 function drawFromBoneyard() {
     if (!isPlayerTurn || boneyard.length === 0 || gameOver) return;
 
+    // Only allow drawing when no valid moves exist (same logic as updateDrawButton)
+    const hasValidMove = hasAnyValidMove(playerDominoes);
+    if (hasValidMove) return;
+
     const drawnDomino = boneyard.pop();
     playerDominoes.push(drawnDomino);
     updateBoneyardCount();

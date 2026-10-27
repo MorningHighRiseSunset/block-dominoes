@@ -77,6 +77,15 @@ function init() {
     setupTouchScrolling();
     initAudio();
     document.getElementById('drawBtn').addEventListener('click', drawFromBoneyard);
+    // Make boneyard container clickable too for larger hit area
+    document.getElementById('boneyard').addEventListener('click', (e) => {
+        if (e.target.id !== 'drawBtn') {
+            const drawBtn = document.getElementById('drawBtn');
+            if (!drawBtn.disabled) {
+                drawFromBoneyard();
+            }
+        }
+    });
     // Delay camera centering to ensure board dimensions are available
     console.log('Setting timeout for centerCameraOnBoard');
     setTimeout(() => {
@@ -1654,12 +1663,15 @@ function updateBoneyardCount() {
 
 function drawFromBoneyard() {
     if (!isPlayerTurn || boneyard.length === 0 || gameOver) return;
-    
+
+    const hasValidMove = hasAnyValidMove(playerDominoes);
+    if (hasValidMove) return;
+
     const drawnDomino = boneyard.pop();
     playerDominoes.push(drawnDomino);
     recordMove();
     playDrawSound();
-    
+
     updateBoneyardCount();
     renderRacks();
     updateDrawButton();
@@ -1682,6 +1694,11 @@ function handlePlayerTurnStart() {
 
     updateDrawButton();
 
+    // Highlight starting domino if player has it and board is empty
+    if (boardDominoes.length === 0 && startingDomino) {
+        highlightStartingDomino();
+    }
+
     if (!hasAnyValidMove(playerDominoes) && boneyard.length === 0) {
         isPlayerTurn = false;
         recordPass();
@@ -1689,6 +1706,50 @@ function handlePlayerTurnStart() {
             setTimeout(cpuPlay, 1000);
         }
     }
+}
+
+function highlightStartingDomino() {
+    // Find and highlight the starting domino in the player's rack
+    const rack = document.getElementById('playerRack');
+    if (!rack) return;
+
+    const dominoElements = rack.querySelectorAll('.domino');
+    dominoElements.forEach(el => {
+        if (el.dataset.id === startingDomino.id) {
+            el.classList.add('starting-domino');
+        } else {
+            el.classList.remove('starting-domino');
+        }
+    });
+
+    // Show center placement zone
+    const board = document.getElementById('board');
+    if (!board) return;
+
+    const centerZone = document.createElement('div');
+    centerZone.className = 'placement-zone center-zone';
+    centerZone.id = 'centerPlacementZone';
+
+    const isDouble = startingDomino.top === startingDomino.bottom;
+    const dims = getDominoDimensions(!isDouble);
+
+    const centerX = boardDimensions.width / 2;
+    const centerY = boardDimensions.height / 2;
+
+    centerZone.style.left = (centerX - dims.width / 2) + 'px';
+    centerZone.style.top = (centerY - dims.height / 2) + 'px';
+    centerZone.style.width = dims.width + 'px';
+    centerZone.style.height = dims.height + 'px';
+
+    centerZone.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedDomino && selectedDomino.id === startingDomino.id) {
+            const placement = getFirstMovePlacement(startingDomino);
+            placeDomino(startingDomino, 'center', placement.x, placement.y, placement.horizontal);
+        }
+    });
+
+    board.appendChild(centerZone);
 }
 
 function showValidPlacementZones(domino) {
@@ -1761,7 +1822,10 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     
     document.querySelectorAll('.placement-zone').forEach(z => z.remove());
     clearZoneHintArrows();
-    document.querySelectorAll('.rack .domino').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('.rack .domino').forEach(el => {
+        el.classList.remove('selected');
+        el.classList.remove('starting-domino');
+    });
     
     const dims = getDominoDimensions(isHorizontal);
     const dominoWidth = dims.width;
