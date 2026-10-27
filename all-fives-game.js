@@ -1948,7 +1948,6 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     
     // Update board ends to the NEW exposed number
     lastPlayedSide = side; // Track which side was just played for scoring
-    console.log(`  endIsDouble after placement:`, JSON.stringify(endIsDouble));
     if (side === 'center') {
         // Starting domino placement (spinner)
         // Spinner rule: only left and right are open initially
