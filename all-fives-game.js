@@ -94,9 +94,9 @@ function init() {
     });
     
     // Delay camera centering to ensure board dimensions are available
-    console.log('Setting timeout for centerCameraOnBoard');
+    // console.log('Setting timeout for centerCameraOnBoard');
     setTimeout(() => {
-        console.log('Timeout fired, calling centerCameraOnBoard');
+        // console.log('Timeout fired, calling centerCameraOnBoard');
         centerCameraOnBoard();
     }, 100);
     handlePlayerTurnStart();
@@ -161,6 +161,8 @@ function initializeBoard() {
     endPositions = { left: null, right: null, top: null, bottom: null };
     endDominoRefs = { left: null, right: null, top: null, bottom: null };
     endIsDouble = { left: false, right: false, top: false, bottom: false };
+    // Track spinner's original values to know when to stop counting them
+    spinnerOriginalValues = { left: null, right: null };
     boardDimensions.width = BOARD_WIDTH;
     boardDimensions.height = BOARD_HEIGHT;
     board.style.width = BOARD_WIDTH + 'px';
@@ -217,32 +219,44 @@ function calculateScoreFromEnds(playedSide) {
     const isFirstMove = boardDominoes.length === 1;
 
     // Count top and bottom based on spinner arm fill status
-    const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
-
     // Count top and bottom endpoints if they exist
+    // Newly placed side counts as single value (not double-counted even if it's a double)
     if (boardEnds.top !== null) {
-        const value = endIsDouble.top ? boardEnds.top * 2 : boardEnds.top;
+        const isDouble = endIsDouble.top;
+        const value = isDouble && playedSide !== 'top' ? boardEnds.top * 2 : boardEnds.top;
         sum += value;
-        breakdown.push({ side: 'top', value: boardEnds.top, isDouble: endIsDouble.top, counted: value });
+        breakdown.push({ side: 'top', value: boardEnds.top, isDouble: isDouble, counted: value });
     }
     if (boardEnds.bottom !== null) {
-        const value = endIsDouble.bottom ? boardEnds.bottom * 2 : boardEnds.bottom;
+        const isDouble = endIsDouble.bottom;
+        const value = isDouble && playedSide !== 'bottom' ? boardEnds.bottom * 2 : boardEnds.bottom;
         sum += value;
-        breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: endIsDouble.bottom, counted: value });
+        breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value });
     }
 
-    // Count left end (double if it's a double) - if there's a domino there
-    if (boardEnds.left !== null) {
-        const value = endIsDouble.left ? boardEnds.left * 2 : boardEnds.left;
-        sum += value;
-        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: endIsDouble.left, counted: value });
-    }
-
-    // Count right end (double if it's a double) - if there's a domino there
-    if (boardEnds.right !== null) {
-        const value = endIsDouble.right ? boardEnds.right * 2 : boardEnds.right;
-        sum += value;
-        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: endIsDouble.right, counted: value });
+    // Count left and right ends
+    // Spinner rule:
+    // - 0 or 1 side arms filled: spinner contributes, count both ends
+    // - 2 side arms filled: spinner no longer contributes, DON'T count left/right
+    // - 3 or 4 arms filled (top/bottom played): count all exposed ends
+    const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
+    const topBottomArmsFilled = (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
+    const totalArmsFilled = sideArmsFilled + topBottomArmsFilled;
+    
+    // Count left/right when < 2 side arms filled OR when top/bottom arms are filled (making it 3+ total arms)
+    if (sideArmsFilled < 2 || topBottomArmsFilled > 0) {
+        if (boardEnds.left !== null) {
+            const isDouble = endIsDouble.left;
+            const value = isDouble && playedSide !== 'left' ? boardEnds.left * 2 : boardEnds.left;
+            sum += value;
+            breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
+        }
+        if (boardEnds.right !== null) {
+            const isDouble = endIsDouble.right;
+            const value = isDouble && playedSide !== 'right' ? boardEnds.right * 2 : boardEnds.right;
+            sum += value;
+            breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
+        }
     }
 
     if (sum % 5 === 0) {
@@ -1043,7 +1057,7 @@ function renderRacks() {
     playerDominoes.forEach(domino => {
         const el = createDominoElement(domino, false, 'player');
         el.addEventListener('click', () => {
-            console.log('DOMINO ELEMENT CLICKED:', domino.top, '/', domino.bottom);
+            // console.log('DOMINO ELEMENT CLICKED:', domino.top, '/', domino.bottom);
             selectDomino(domino, el);
         });
         playerRack.appendChild(el);
@@ -1320,7 +1334,18 @@ function findValidPlacementsForDomino(domino) {
     }
 
     const validZones = [];
-    const sidesToCheck = isAllFivesMode ? ['left', 'right', 'top', 'bottom'] : ['left', 'right'];
+    // Spinner rule: first 2 tiles must be on left/right, then top/bottom are allowed
+    const bothSideArmsFilled = leftArmFilled && rightArmFilled;
+    let sidesToCheck;
+    if (isAllFivesMode) {
+        if (bothSideArmsFilled) {
+            sidesToCheck = ['left', 'right', 'top', 'bottom'];
+        } else {
+            sidesToCheck = ['left', 'right'];
+        }
+    } else {
+        sidesToCheck = ['left', 'right'];
+    }
 
     sidesToCheck.forEach(side => {
         const matchingEnd = getMatchingEndForSide(side);
@@ -1919,16 +1944,11 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         element: dominoEl
     });
 
-    console.log('=== DOMINO PLACED ===');
-    console.log('Player:', wasPlayerTurn ? 'Player' : 'CPU');
-    console.log('Domino:', orientedDomino.top + '/' + orientedDomino.bottom);
-    console.log('Side:', side);
-    console.log('Position:', x, y);
-
     const placedRef = boardDominoes[boardDominoes.length - 1];
     
     // Update board ends to the NEW exposed number
     lastPlayedSide = side; // Track which side was just played for scoring
+    console.log(`  endIsDouble after placement:`, JSON.stringify(endIsDouble));
     if (side === 'center') {
         // Starting domino placement (spinner)
         // Spinner rule: only left and right are open initially
@@ -1943,8 +1963,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endPositions.right = { x: x + spinnerWidth, y, isHorizontal };
         endPositions.top = null;  // Not available yet
         endPositions.bottom = null;  // Not available yet
-        // Spinner ends are not marked as double - the spinner itself counts as its full value
-        // but the exposed ends don't get double-counted
+        // Spinner ends are NOT marked as double - the spinner counts as sum of its pips
+        // Only doubles at the END of a chain get double-counted
         endIsDouble.left = false;
         endIsDouble.right = false;
         endIsDouble.top = false;
@@ -1970,7 +1990,7 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         // Store the position of the OPEN end (right side of the placed domino)
         const dims = getDominoDimensions(isHorizontal);
         const dominoWidth = dims.width;
-        endPositions.right = { x: x + dominoWidth, y: y, isHorizontal: isHorizontal };
+        endPositions.right = { x: x + dominoWidth, y, isHorizontal: isHorizontal };
         endIsDouble.right = (orientedDomino.top === orientedDomino.bottom);
         rightArmFilled = true;
         endDominoRefs.right = placedRef;
@@ -1995,6 +2015,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         endDominoRefs.bottom = placedRef;
     }
     
+    console.log(`${wasPlayerTurn ? 'P' : 'C'} ${orientedDomino.top}/${orientedDomino.bottom} ${side} → ends:${JSON.stringify(boardEnds)} arms:L${leftArmFilled?1:0}R${rightArmFilled?1:0}`);
+    
     // In a turning chain, when you place on one side, you might block adjacent sides
     // This is a simplified version - a full implementation would track chain topology
     // For now, we'll keep all 4 ends independent as per the current game design
@@ -2011,22 +2033,13 @@ function placeDomino(domino, side, x, y, isHorizontal) {
     // Calculate and add score for All 5s mode
     if (isAllFivesMode) {
         const scoreResult = calculateScoreFromEnds(side);
-        console.log('=== SCORING CALCULATION ===');
-        console.log('Board ends:', JSON.stringify(boardEnds));
-        console.log('End is double:', JSON.stringify(endIsDouble));
-        console.log('Left arm filled:', leftArmFilled);
-        console.log('Right arm filled:', rightArmFilled);
-        console.log('Score result:', scoreResult.score);
-        console.log('Breakdown:', JSON.stringify(scoreResult.breakdown));
-        
         if (scoreResult.score > 0) {
             addScore(wasPlayerTurn, scoreResult.score);
             playScoreSound();
-            updateScoringBreakdown(scoreResult.breakdown, scoreResult.score);
-            console.log('Added', scoreResult.score, 'points to', wasPlayerTurn ? 'Player' : 'CPU');
+            // updateScoringBreakdown(scoreResult.breakdown, scoreResult.score);
+            console.log(`  ${wasPlayerTurn ? 'Player' : 'CPU'} +${scoreResult.score} pts (${JSON.stringify(scoreResult.breakdown)})`);
         } else {
             clearScoringBreakdown();
-            console.log('No points awarded (sum not multiple of 5)');
         }
     }
 
@@ -2470,7 +2483,7 @@ function setupTouchScrolling() {
 }
 
 function centerCameraOnBoard() {
-    console.log('centerCameraOnBoard called');
+    // console.log('centerCameraOnBoard called');
     stopMomentum();
     if (cameraAnimationFrame) {
         cancelAnimationFrame(cameraAnimationFrame);
@@ -2481,7 +2494,7 @@ function centerCameraOnBoard() {
     const board = document.getElementById('board');
     const boardContainer = document.querySelector('.board-container');
     if (!board || !boardContainer) {
-        console.log('Board or container not found');
+        // console.log('Board or container not found');
         return;
     }
 
@@ -2500,9 +2513,9 @@ function centerCameraOnBoard() {
             const boardCenterX = boardContainer.offsetWidth / 2;
             const boardCenterY = boardContainer.offsetHeight / 2;
 
-            console.log(`Board CSS-centered, so domino center is at: ${boardCenterX},${boardCenterY}`);
-            console.log(`Container: ${boardContainer.offsetWidth}x${boardContainer.offsetHeight}`);
-            console.log(`Mobile: ${isMobile}, Zoom: ${targetZoom}`);
+            // console.log(`Board CSS-centered, so domino center is at: ${boardCenterX},${boardCenterY}`);
+            // console.log(`Container: ${boardContainer.offsetWidth}x${boardContainer.offsetHeight}`);
+            // console.log(`Mobile: ${isMobile}, Zoom: ${targetZoom}`);
 
             if (isMobile) {
                 // On mobile, board is larger than container, so we need to pan
@@ -2517,7 +2530,7 @@ function centerCameraOnBoard() {
             }
             camera.zoom = targetZoom;
             applyCamera();
-            console.log(`Camera set to: x=${camera.x}, y=${camera.y}, zoom=${camera.zoom}`);
+            // console.log(`Camera set to: x=${camera.x}, y=${camera.y}, zoom=${camera.zoom}`);
             return;
         }
 
