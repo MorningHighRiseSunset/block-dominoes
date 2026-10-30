@@ -1180,20 +1180,20 @@ function updateLastPlayedDomino(domino, breakdown = null, totalScore = 0) {
             const nonZeroBreakdown = breakdown.filter(item => item.counted > 0);
 
             nonZeroBreakdown.forEach((item, index) => {
-                // Create a domino with the exposed value and 0 (horizontal layout)
+                // Create a domino with the exposed value and 0
                 const dominoEl = document.createElement('div');
                 dominoEl.className = 'scoring-domino';
 
-                const leftHalf = document.createElement('div');
-                leftHalf.className = 'scoring-domino-half';
-                leftHalf.appendChild(createPips(item.value));
+                const topHalf = document.createElement('div');
+                topHalf.className = 'scoring-domino-half';
+                topHalf.appendChild(createPips(item.value));
 
-                const rightHalf = document.createElement('div');
-                rightHalf.className = 'scoring-domino-half';
-                rightHalf.appendChild(createPips(0));
+                const bottomHalf = document.createElement('div');
+                bottomHalf.className = 'scoring-domino-half';
+                bottomHalf.appendChild(createPips(0));
 
-                dominoEl.appendChild(leftHalf);
-                dominoEl.appendChild(rightHalf);
+                dominoEl.appendChild(topHalf);
+                dominoEl.appendChild(bottomHalf);
                 container.appendChild(dominoEl);
 
                 // Add plus sign between dominoes (except after last one)

@@ -169,13 +169,13 @@ body {
 }
 
 .scoring-domino {
-    width: 40px;
-    height: 20px;
+    width: 20px;
+    height: 40px;
     background: linear-gradient(145deg, #ffffff 0%, #f8f8f0 50%, #f0ebe0 100%);
     border: 2px solid #2d2d2d;
     border-radius: 4px;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -184,11 +184,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-right: 1px solid #888;
+    border-bottom: 1px solid #888;
 }
 
 .scoring-domino-half:last-child {
-    border-right: none;
+    border-bottom: none;
 }
 
 .scoring-domino .pips {
