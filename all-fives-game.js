@@ -209,16 +209,15 @@ function addScore(isPlayer, points) {
 function calculateScoreFromEnds(playedSide) {
     // Muggins All 5s scoring rules:
     // 1. If an end has a double, count both sides (double the value)
-    // 2. Spinner top/bottom:
-    //    - If 0 or 1 side arms filled: count both top and bottom
-    //    - If 2 side arms filled: ignore top and bottom
-    //    - If 3 or 4 arms filled: count the played arms
+    // 2. Spinner (starting double): count both sides until BOTH sides are played on
+    //    - If 0 or 1 side arms filled: spinner counts as double (both sides)
+    //    - If 2 side arms filled: spinner no longer counts
+    // 3. Top/bottom arms count when played
     let sum = 0;
     let breakdown = [];
 
     const isFirstMove = boardDominoes.length === 1;
 
-    // Count top and bottom based on spinner arm fill status
     // Count top and bottom endpoints if they exist
     if (boardEnds.top !== null) {
         const isDouble = endIsDouble.top;
@@ -235,22 +234,38 @@ function calculateScoreFromEnds(playedSide) {
 
     // Count left and right ends
     // Spinner rule:
-    // - 0 or 1 side arms filled: spinner contributes, count both ends
+    // - 0 or 1 side arms filled: spinner contributes as double (both sides count)
     // - 2 side arms filled: spinner no longer contributes, but chain ends DO count
-    // - 3 or 4 arms filled (top/bottom played): count all exposed ends
     const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
-    const topBottomArmsFilled = (boardEnds.top !== null ? 1 : 0) + (boardEnds.bottom !== null ? 1 : 0);
-    
-    // Always count left/right chain ends
+
+    // Check if this is the spinner (first domino is a double)
+    const spinner = boardDominoes.length > 0 ? boardDominoes[0] : null;
+    const spinnerIsDouble = spinner && spinner.domino.top === spinner.domino.bottom;
+
+    // Count left end
     if (boardEnds.left !== null) {
         const isDouble = endIsDouble.left;
-        const value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+        let value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+
+        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
+        if (spinnerIsDouble && sideArmsFilled < 2 && endDominoRefs.left === spinner) {
+            value = boardEnds.left * 2; // Count as double
+        }
+
         sum += value;
         breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
     }
+
+    // Count right end
     if (boardEnds.right !== null) {
         const isDouble = endIsDouble.right;
-        const value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+        let value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+
+        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
+        if (spinnerIsDouble && sideArmsFilled < 2 && endDominoRefs.right === spinner) {
+            value = boardEnds.right * 2; // Count as double
+        }
+
         sum += value;
         breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
     }
@@ -675,41 +690,48 @@ function simulateMoveScore(domino, side) {
     let sum = 0;
     let breakdown = [];
 
-    if (simulatedEnds.left !== null && simLeftArmFilled) {
-        const value = simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+    // Count top and bottom endpoints if they exist
+    if (simulatedEnds.top !== null) {
+        const value = simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
         sum += value;
-        breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: simulatedIsDouble.left, counted: value });
+        breakdown.push({ side: 'top', value: simulatedEnds.top, isDouble: simulatedIsDouble.top, counted: value });
     }
-
-    if (simulatedEnds.right !== null && simRightArmFilled) {
-        const value = simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
+    if (simulatedEnds.bottom !== null) {
+        const value = simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
         sum += value;
-        breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: simulatedIsDouble.right, counted: value });
+        breakdown.push({ side: 'bottom', value: simulatedEnds.bottom, isDouble: simulatedIsDouble.bottom, counted: value });
     }
 
     const sideArmsFilled = (simLeftArmFilled ? 1 : 0) + (simRightArmFilled ? 1 : 0);
 
-    if (sideArmsFilled < 2) {
-        const spinner = boardDominoes[0];
-        if (spinner) {
-            sum += spinner.domino.top;
-            sum += spinner.domino.bottom;
-            breakdown.push({ side: 'spinner-top', value: spinner.domino.top, isDouble: false, counted: spinner.domino.top });
-            breakdown.push({ side: 'spinner-bottom', value: spinner.domino.bottom, isDouble: false, counted: spinner.domino.bottom });
+    // Check if this is the spinner (first domino is a double)
+    const spinner = boardDominoes.length > 0 ? boardDominoes[0] : null;
+    const spinnerIsDouble = spinner && spinner.domino.top === spinner.domino.bottom;
+
+    // Count left end
+    if (simulatedEnds.left !== null) {
+        let value = simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+
+        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
+        if (spinnerIsDouble && sideArmsFilled < 2) {
+            value = simulatedEnds.left * 2; // Count as double
         }
-    } else if (sideArmsFilled === 2 && simulatedEnds.top === null && simulatedEnds.bottom === null) {
-        // Both side arms filled but no top/bottom played: ignore spinner top/bottom
-    } else {
-        if (simulatedEnds.top !== null) {
-            const value = simulatedIsDouble.top ? simulatedEnds.top * 2 : simulatedEnds.top;
-            sum += value;
-            breakdown.push({ side: 'top', value: simulatedEnds.top, isDouble: simulatedIsDouble.top, counted: value });
+
+        sum += value;
+        breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: simulatedIsDouble.left, counted: value });
+    }
+
+    // Count right end
+    if (simulatedEnds.right !== null) {
+        let value = simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
+
+        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
+        if (spinnerIsDouble && sideArmsFilled < 2) {
+            value = simulatedEnds.right * 2; // Count as double
         }
-        if (simulatedEnds.bottom !== null) {
-            const value = simulatedIsDouble.bottom ? simulatedEnds.bottom * 2 : simulatedEnds.bottom;
-            sum += value;
-            breakdown.push({ side: 'bottom', value: simulatedEnds.bottom, isDouble: simulatedIsDouble.bottom, counted: value });
-        }
+
+        sum += value;
+        breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: simulatedIsDouble.right, counted: value });
     }
 
     // Return score if multiple of 5
