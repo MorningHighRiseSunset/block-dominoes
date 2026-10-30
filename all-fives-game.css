@@ -143,14 +143,15 @@ body {
     flex-shrink: 0;
     border-bottom: 3px solid #8b7765;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     position: relative;
     z-index: 100;
     pointer-events: auto;
 }
 
-.last-played-container {
+.last-played-container,
+.scoring-display-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -158,6 +159,90 @@ body {
     padding: 8px 16px;
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.last-played-container.scoring-display {
+    flex-direction: row !important;
+    display: flex !important;
+    align-items: center;
+    gap: 4px;
+}
+
+.scoring-domino {
+    width: 40px;
+    height: 20px;
+    background: linear-gradient(145deg, #ffffff 0%, #f8f8f0 50%, #f0ebe0 100%);
+    border: 2px solid #2d2d2d;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: row;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.scoring-domino-half {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #888;
+}
+
+.scoring-domino-half:last-child {
+    border-right: none;
+}
+
+.scoring-domino .pips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 1px;
+    width: 14px;
+    height: 14px;
+    padding: 2px;
+    margin: auto;
+}
+
+.scoring-domino .pip {
+    width: 3px;
+    height: 3px;
+    background: radial-gradient(circle at 30% 30%, #888888 0%, #444446 40%, #1a1a1a 100%);
+    border-radius: 50%;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6), 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+.scoring-domino .pips[data-value="0"] .pip { visibility: hidden; }
+.scoring-domino .pips[data-value="1"] .pip:nth-child(5) { visibility: visible; }
+.scoring-domino .pips[data-value="1"] .pip:not(:nth-child(5)) { visibility: hidden; }
+.scoring-domino .pips[data-value="2"] .pip:nth-child(1), .scoring-domino .pips[data-value="2"] .pip:nth-child(9) { visibility: visible; }
+.scoring-domino .pips[data-value="2"] .pip:not(:nth-child(1)):not(:nth-child(9)) { visibility: hidden; }
+.scoring-domino .pips[data-value="3"] .pip:nth-child(1), .scoring-domino .pips[data-value="3"] .pip:nth-child(5), .scoring-domino .pips[data-value="3"] .pip:nth-child(9) { visibility: visible; }
+.scoring-domino .pips[data-value="3"] .pip:not(:nth-child(1)):not(:nth-child(5)):not(:nth-child(9)) { visibility: hidden; }
+.scoring-domino .pips[data-value="4"] .pip:nth-child(1), .scoring-domino .pips[data-value="4"] .pip:nth-child(3), .scoring-domino .pips[data-value="4"] .pip:nth-child(7), .scoring-domino .pips[data-value="4"] .pip:nth-child(9) { visibility: visible; }
+.scoring-domino .pips[data-value="4"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+.scoring-domino .pips[data-value="5"] .pip:nth-child(1), .scoring-domino .pips[data-value="5"] .pip:nth-child(3), .scoring-domino .pips[data-value="5"] .pip:nth-child(5), .scoring-domino .pips[data-value="5"] .pip:nth-child(7), .scoring-domino .pips[data-value="5"] .pip:nth-child(9) { visibility: visible; }
+.scoring-domino .pips[data-value="5"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(5)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+.scoring-domino .pips[data-value="6"] .pip:nth-child(1), .scoring-domino .pips[data-value="6"] .pip:nth-child(3), .scoring-domino .pips[data-value="6"] .pip:nth-child(4), .scoring-domino .pips[data-value="6"] .pip:nth-child(6), .scoring-domino .pips[data-value="6"] .pip:nth-child(7), .scoring-domino .pips[data-value="6"] .pip:nth-child(9) { visibility: visible; }
+.scoring-domino .pips[data-value="6"] .pip:not(:nth-child(1)):not(:nth-child(3)):not(:nth-child(4)):not(:nth-child(6)):not(:nth-child(7)):not(:nth-child(9)) { visibility: hidden; }
+
+.scoring-plus {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #5c4a3d;
+    margin: 0 2px;
+}
+
+.scoring-equals {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #5c4a3d;
+    margin: 0 2px;
+}
+
+.scoring-total {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #8b5a2b;
+    margin-left: 2px;
 }
 
 .last-played-label {

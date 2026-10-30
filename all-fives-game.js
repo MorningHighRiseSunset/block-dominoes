@@ -222,19 +222,23 @@ function calculateScoreFromEnds(playedSide) {
     if (boardEnds.top !== null) {
         const isDouble = endIsDouble.top;
         const value = isDouble ? boardEnds.top * 2 : boardEnds.top;
+        const dominoRef = endDominoRefs.top;
+        const domino = dominoRef ? dominoRef.domino : null;
         sum += value;
-        breakdown.push({ side: 'top', value: boardEnds.top, isDouble: isDouble, counted: value });
+        breakdown.push({ side: 'top', value: boardEnds.top, isDouble: isDouble, counted: value, domino: domino });
     }
     if (boardEnds.bottom !== null) {
         const isDouble = endIsDouble.bottom;
         const value = isDouble ? boardEnds.bottom * 2 : boardEnds.bottom;
+        const dominoRef = endDominoRefs.bottom;
+        const domino = dominoRef ? dominoRef.domino : null;
         sum += value;
-        breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value });
+        breakdown.push({ side: 'bottom', value: boardEnds.bottom, isDouble: isDouble, counted: value, domino: domino });
     }
 
     // Count left and right ends
     // Spinner rule:
-    // - 0 or 1 side arms filled: spinner contributes as double (both sides count)
+    // - 0 or 1 side arms filled: spinner contributes as its full value (both sides)
     // - 2 side arms filled: spinner no longer contributes, but chain ends DO count
     const sideArmsFilled = (leftArmFilled ? 1 : 0) + (rightArmFilled ? 1 : 0);
 
@@ -242,32 +246,44 @@ function calculateScoreFromEnds(playedSide) {
     const spinner = boardDominoes.length > 0 ? boardDominoes[0] : null;
     const spinnerIsDouble = spinner && spinner.domino.top === spinner.domino.bottom;
 
-    // Count left end
-    if (boardEnds.left !== null) {
-        const isDouble = endIsDouble.left;
-        let value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+    // Determine if spinner should still contribute
+    const spinnerContributes = spinnerIsDouble && sideArmsFilled < 2;
 
-        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
-        if (spinnerIsDouble && sideArmsFilled < 2 && endDominoRefs.left === spinner) {
-            value = boardEnds.left * 2; // Count as double
-        }
-
-        sum += value;
-        breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value });
+    // If spinner contributes, add its full value once (top + bottom)
+    if (spinnerContributes) {
+        const spinnerValue = spinner.domino.top + spinner.domino.bottom;
+        sum += spinnerValue;
+        breakdown.push({ side: 'spinner', value: spinnerValue, isDouble: true, counted: spinnerValue, domino: spinner.domino });
     }
 
-    // Count right end
+    // Count left end (only if not the spinner, or if spinner doesn't contribute)
+    if (boardEnds.left !== null) {
+        const isDouble = endIsDouble.left;
+        const isSpinnerEnd = endDominoRefs.left === spinner;
+        const dominoRef = endDominoRefs.left;
+        const domino = dominoRef ? dominoRef.domino : null;
+
+        // Skip if this is the spinner and it's already been counted
+        if (!isSpinnerEnd || !spinnerContributes) {
+            let value = isDouble ? boardEnds.left * 2 : boardEnds.left;
+            sum += value;
+            breakdown.push({ side: 'left', value: boardEnds.left, isDouble: isDouble, counted: value, domino: domino });
+        }
+    }
+
+    // Count right end (only if not the spinner, or if spinner doesn't contribute)
     if (boardEnds.right !== null) {
         const isDouble = endIsDouble.right;
-        let value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+        const isSpinnerEnd = endDominoRefs.right === spinner;
+        const dominoRef = endDominoRefs.right;
+        const domino = dominoRef ? dominoRef.domino : null;
 
-        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
-        if (spinnerIsDouble && sideArmsFilled < 2 && endDominoRefs.right === spinner) {
-            value = boardEnds.right * 2; // Count as double
+        // Skip if this is the spinner and it's already been counted
+        if (!isSpinnerEnd || !spinnerContributes) {
+            let value = isDouble ? boardEnds.right * 2 : boardEnds.right;
+            sum += value;
+            breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value, domino: domino });
         }
-
-        sum += value;
-        breakdown.push({ side: 'right', value: boardEnds.right, isDouble: isDouble, counted: value });
     }
 
     if (sum % 5 === 0) {
@@ -708,30 +724,36 @@ function simulateMoveScore(domino, side) {
     const spinner = boardDominoes.length > 0 ? boardDominoes[0] : null;
     const spinnerIsDouble = spinner && spinner.domino.top === spinner.domino.bottom;
 
-    // Count left end
-    if (simulatedEnds.left !== null) {
-        let value = simulatedIsDouble.left ? simulatedEnds.left * 2 : simulatedEnds.left;
+    // Determine if spinner should still contribute
+    const spinnerContributes = spinnerIsDouble && sideArmsFilled < 2;
 
-        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
-        if (spinnerIsDouble && sideArmsFilled < 2) {
-            value = simulatedEnds.left * 2; // Count as double
-        }
-
-        sum += value;
-        breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: simulatedIsDouble.left, counted: value });
+    // If spinner contributes, add its full value once (top + bottom)
+    if (spinnerContributes) {
+        const spinnerValue = spinner.domino.top + spinner.domino.bottom;
+        sum += spinnerValue;
+        breakdown.push({ side: 'spinner', value: spinnerValue, isDouble: true, counted: spinnerValue });
     }
 
-    // Count right end
-    if (simulatedEnds.right !== null) {
-        let value = simulatedIsDouble.right ? simulatedEnds.right * 2 : simulatedEnds.right;
-
-        // Special case: if this is the spinner and fewer than 2 side arms are filled, count as double
-        if (spinnerIsDouble && sideArmsFilled < 2) {
-            value = simulatedEnds.right * 2; // Count as double
+    // Count left end (only if not the spinner, or if spinner doesn't contribute)
+    if (simulatedEnds.left !== null) {
+        const isDouble = simulatedIsDouble.left;
+        // Skip if spinner contributes (spinner already counted)
+        if (!spinnerContributes) {
+            let value = isDouble ? simulatedEnds.left * 2 : simulatedEnds.left;
+            sum += value;
+            breakdown.push({ side: 'left', value: simulatedEnds.left, isDouble: isDouble, counted: value });
         }
+    }
 
-        sum += value;
-        breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: simulatedIsDouble.right, counted: value });
+    // Count right end (only if not the spinner, or if spinner doesn't contribute)
+    if (simulatedEnds.right !== null) {
+        const isDouble = simulatedIsDouble.right;
+        // Skip if spinner contributes (spinner already counted)
+        if (!spinnerContributes) {
+            let value = isDouble ? simulatedEnds.right * 2 : simulatedEnds.right;
+            sum += value;
+            breakdown.push({ side: 'right', value: simulatedEnds.right, isDouble: isDouble, counted: value });
+        }
     }
 
     // Return score if multiple of 5
@@ -990,8 +1012,7 @@ function proceedToNextHand() {
     isShowingZones = false;
     gameOver = false; // Reset gameOver flag for new hand
     
-    // Clear scoring breakdown display
-    clearScoringBreakdown();
+
     
     // Clear visual board
     const board = getBoardElement();
@@ -1137,52 +1158,82 @@ function updateRackScrollIndicators() {
 }
 
 
-function updateLastPlayedDomino(domino) {
-    const lastPlayedContainer = document.getElementById('lastPlayedDomino');
-    lastPlayedContainer.innerHTML = '';
-    
-    const topHalf = document.createElement('div');
-    topHalf.className = 'last-played-domino-half';
-    topHalf.appendChild(createPips(domino.top));
-    
-    const bottomHalf = document.createElement('div');
-    bottomHalf.className = 'last-played-domino-half';
-    bottomHalf.appendChild(createPips(domino.bottom));
-    
-    lastPlayedContainer.appendChild(topHalf);
-    lastPlayedContainer.appendChild(bottomHalf);
-}
+function updateLastPlayedDomino(domino, breakdown = null, totalScore = 0) {
+    // In All 5s mode, use the scoring display container
+    const container = isAllFivesMode
+        ? document.getElementById('scoringDisplay')
+        : document.getElementById('lastPlayedDomino');
 
-function updateScoringBreakdown(breakdown, totalScore) {
-    const container = document.getElementById('scoringBreakdown');
-    const textEl = document.getElementById('scoringBreakdownText');
+    if (!container) return;
 
-    if (!container || !textEl) return;
+    container.classList.remove('scoring-display');
+    container.style.flexDirection = 'column';
+    container.innerHTML = '';
 
-    container.classList.remove('hidden');
+    // In All 5s mode, only show scoring breakdown when scoring points
+    // Never show the last played domino
+    if (isAllFivesMode) {
+        if (breakdown && totalScore > 0) {
+            container.classList.add('scoring-display');
+            container.style.flexDirection = 'row';
 
-    if (breakdown.length === 0) {
-        textEl.textContent = '-';
+            const nonZeroBreakdown = breakdown.filter(item => item.counted > 0);
+
+            nonZeroBreakdown.forEach((item, index) => {
+                // Create a domino with the exposed value and 0 (horizontal layout)
+                const dominoEl = document.createElement('div');
+                dominoEl.className = 'scoring-domino';
+
+                const leftHalf = document.createElement('div');
+                leftHalf.className = 'scoring-domino-half';
+                leftHalf.appendChild(createPips(item.value));
+
+                const rightHalf = document.createElement('div');
+                rightHalf.className = 'scoring-domino-half';
+                rightHalf.appendChild(createPips(0));
+
+                dominoEl.appendChild(leftHalf);
+                dominoEl.appendChild(rightHalf);
+                container.appendChild(dominoEl);
+
+                // Add plus sign between dominoes (except after last one)
+                if (index < nonZeroBreakdown.length - 1) {
+                    const plus = document.createElement('span');
+                    plus.className = 'scoring-plus';
+                    plus.textContent = '+';
+                    container.appendChild(plus);
+                }
+            });
+
+            // Add equals and total
+            const equals = document.createElement('span');
+            equals.className = 'scoring-equals';
+            equals.textContent = '=';
+            container.appendChild(equals);
+
+            const total = document.createElement('span');
+            total.className = 'scoring-total';
+            total.textContent = totalScore;
+            container.appendChild(total);
+        }
+        // If no score, show nothing in All 5s mode
         return;
     }
 
-    // Filter out zero values from breakdown to avoid confusion
-    const nonZeroBreakdown = breakdown.filter(item => item.counted > 0);
+    // In non-All 5s mode, show the domino visual
+    const topHalf = document.createElement('div');
+    topHalf.className = 'last-played-domino-half';
+    topHalf.appendChild(createPips(domino.top));
 
-    // Format the breakdown as a string like "5 , 5 = 10"
-    const parts = nonZeroBreakdown.map(item => item.counted.toString());
+    const bottomHalf = document.createElement('div');
+    bottomHalf.className = 'last-played-domino-half';
+    bottomHalf.appendChild(createPips(domino.bottom));
 
-    textEl.textContent = `${parts.join(' , ')} = ${totalScore}`;
+    container.appendChild(topHalf);
+    container.appendChild(bottomHalf);
 }
 
-function clearScoringBreakdown() {
-    const container = document.getElementById('scoringBreakdown');
-    const textEl = document.getElementById('scoringBreakdownText');
-    if (container && textEl) {
-        container.classList.remove('hidden');
-        textEl.textContent = '-';
-    }
-}
+
 
 function createMiniPips(value) {
     const container = document.createElement('div');
@@ -1521,12 +1572,16 @@ function endGame(result, message, playerPoints = 0, cpuPoints = 0, opponentDomin
             const dominoesContainer = document.getElementById('gameOverDominoes');
             const playAgainBtn = document.getElementById('playAgainBtn');
 
-            if (playerScore >= 100) {
+            // Determine winner based on higher score
+            if (playerScore > cpuScore) {
                 title.textContent = 'You Win!';
                 playWinSound();
-            } else {
+            } else if (cpuScore > playerScore) {
                 title.textContent = 'You Lose';
                 playLoseSound();
+            } else {
+                title.textContent = 'Draw';
+                playDrawGameSound();
             }
 
             msg.textContent = message + ` Final Score — You: ${playerScore}  ·  CPU: ${cpuScore}`;
@@ -1754,6 +1809,9 @@ function highlightStartingDomino() {
             el.classList.remove('starting-domino');
         }
     });
+
+    // In All 5s mode, don't show the center placement zone
+    if (isAllFivesMode) return;
 
     // Show center placement zone
     const board = document.getElementById('board');
@@ -2052,7 +2110,6 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         cpuDominoes = cpuDominoes.filter(d => d.id !== domino.id);
     }
     
-    updateLastPlayedDomino(orientedDomino);
     recordMove();
 
     // Calculate and add score for All 5s mode
@@ -2061,11 +2118,13 @@ function placeDomino(domino, side, x, y, isHorizontal) {
         if (scoreResult.score > 0) {
             addScore(wasPlayerTurn, scoreResult.score);
             playScoreSound();
-            // updateScoringBreakdown(scoreResult.breakdown, scoreResult.score);
+            updateLastPlayedDomino(orientedDomino, scoreResult.breakdown, scoreResult.score);
             console.log(`  ${wasPlayerTurn ? 'Player' : 'CPU'} +${scoreResult.score} pts (${JSON.stringify(scoreResult.breakdown)})`);
         } else {
-            clearScoringBreakdown();
+            updateLastPlayedDomino(orientedDomino);
         }
+    } else {
+        updateLastPlayedDomino(orientedDomino);
     }
 
     // Check if game ended from scoring
