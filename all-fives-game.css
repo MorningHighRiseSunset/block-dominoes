@@ -159,9 +159,12 @@ body {
     padding: 8px 16px;
     border-radius: 12px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    min-width: 150px;
+    min-height: 50px;
 }
 
-.last-played-container.scoring-display {
+.last-played-container.scoring-display,
+.scoring-display-container.scoring-display {
     flex-direction: row !important;
     display: flex !important;
     align-items: center;

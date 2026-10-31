@@ -357,7 +357,7 @@ function startGame() {
     
     centerCameraOnBoard();
     handlePlayerTurnStart();
-    setupHintSystem();
+    // setupHintSystem(); // Disabled for All 5s
     setupGameOverHandlers();
 }
 
@@ -397,7 +397,7 @@ function initializeGameState(data) {
     
     centerCameraOnBoard();
     handlePlayerTurnStart();
-    setupHintSystem();
+    // setupHintSystem(); // Disabled for All 5s
     setupGameOverHandlers();
 }
 
@@ -441,7 +441,8 @@ function handleOpponentPlay(data) {
         const scoreResult = calculateScoreFromEnds();
         updateLastPlayedDomino(domino, scoreResult.breakdown, score);
     } else {
-        updateLastPlayedDomino(domino);
+        // Clear the scoring display when no points are scored
+        updateLastPlayedDomino(null, null, 0);
     }
 
     isPlayerTurn = true;
@@ -1384,7 +1385,9 @@ function updateLastPlayedDomino(domino, breakdown = null, totalScore = 0) {
         return;
     }
 
-    // In non-All 5s mode, show the domino visual
+    // In non-All 5s mode, show the domino visual (if domino exists)
+    if (!domino) return;
+
     const topHalf = document.createElement('div');
     topHalf.className = 'last-played-domino-half';
     topHalf.appendChild(createPips(domino.top));
@@ -2308,7 +2311,8 @@ function playDomino(domino, side, x, y, isHorizontal, slotId) {
         playScoreSound();
         updateLastPlayedDomino(orientedDomino, scoreResult.breakdown, scoreResult.score);
     } else {
-        updateLastPlayedDomino(orientedDomino);
+        // Clear the scoring display when no points are scored
+        updateLastPlayedDomino(null, null, 0);
     }
 
     if (gameOver) return;

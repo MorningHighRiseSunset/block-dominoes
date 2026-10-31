@@ -100,7 +100,7 @@ function init() {
         centerCameraOnBoard();
     }, 100);
     handlePlayerTurnStart();
-    setupHintSystem();
+    // setupHintSystem(); // Disabled for All 5s
     document.getElementById('playAgainBtn').addEventListener('click', () => location.reload());
     document.getElementById('closeGameOverBtn').addEventListener('click', () => {
         document.getElementById('gameOverOverlay').classList.add('hidden');
@@ -1220,7 +1220,9 @@ function updateLastPlayedDomino(domino, breakdown = null, totalScore = 0) {
         return;
     }
 
-    // In non-All 5s mode, show the domino visual
+    // In non-All 5s mode, show the domino visual (if domino exists)
+    if (!domino) return;
+
     const topHalf = document.createElement('div');
     topHalf.className = 'last-played-domino-half';
     topHalf.appendChild(createPips(domino.top));
@@ -2121,7 +2123,8 @@ function placeDomino(domino, side, x, y, isHorizontal) {
             updateLastPlayedDomino(orientedDomino, scoreResult.breakdown, scoreResult.score);
             console.log(`  ${wasPlayerTurn ? 'Player' : 'CPU'} +${scoreResult.score} pts (${JSON.stringify(scoreResult.breakdown)})`);
         } else {
-            updateLastPlayedDomino(orientedDomino);
+            // Clear the scoring display when no points are scored
+            updateLastPlayedDomino(null, null, 0);
         }
     } else {
         updateLastPlayedDomino(orientedDomino);
