@@ -4,5 +4,8 @@
   "description": "All Fives Dominoes Game",
   "scripts": {
     "build": "echo 'No build needed for static site'"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
